@@ -1,5 +1,5 @@
 ### GyJdbc是什么?
-使用jdbcTemplate不想写sql?写XXXDao和XXXDaoImpl很麻烦?sql拼错查找问题浪费时间?通过使用GyJdbc这些问题将迎刃而解。
+Criteria类似MongoTemplate中的Criteria用法，但又有所区别。使用jdbcTemplate不想写sql?写XXXDao和XXXDaoImpl很麻烦?sql拼错查找问题浪费时间?通过使用GyJdbc这些问题将迎刃而解。
 #### 如何使用
 
 下面以tb_user的增删改查进行演示
@@ -41,7 +41,7 @@ public class TbUser {
 }
 ```
 
-step3.编写TbUserDao和TbUserDaoImpl分别集成EntityDao和EntityDaoImpl
+step3.编写TbUserDao和TbUserDaoImpl分别继承EntityDao和EntityDaoImpl
 
 ```
 /**
@@ -67,29 +67,56 @@ step4.使用criteria优雅的编写sql
 
 ```
         //查询所有用户
+        //select * from tb_user
         List<TbUser> tbUsers = tbUserDao.queryAll();
         //根据主键查询一个用户
+        //select * from tb_user where id = id
         TbUser tbUser = tbUserDao.queryOne(id);
-        //根据用户名查询一个用户
+        //根据用户名查询一个用户 
+        //select * from tb_user where name = name
         TbUser tbUser = tbUserDao.queryOne(new Criteria().where("name",name));
         //根据用户名批量查询用户
+        //select * from tb_user where name in(names)
         List<TbUser> tbUsers = tbUserDao.queryWithCriteria(new Criteria().in("name",names));
         List<TbUser> tbUsers = tbUserDao.queryWithCriteria(new Criteria().where("name","in",names));
-        //根据用户名和邮箱查询
+        //根据用户名和邮箱查询 
+        //select * from tb_user where name in(names) and email = email
         List<TbUser> tbUsers = tbUserDao.queryWithCriteria(new Criteria().in("name",names).and("email",email));
         //根据用户名模糊匹配
+        //select * from tb_user where name like %name%
         List<TbUser> tbUsers = tbUserDao.queryWithCriteria(new Criteria().like("name",name));
+        //select * from tb_user where name like %name
         List<TbUser> tbUsers = tbUserDao.queryWithCriteria(new Criteria().where("name","like","%"+name));
         //用户名或者email满足条件
+        //select * from tb_user where name = name or email = email
         List<TbUser> tbUsers = tbUserDao.queryWithCriteria(new Criteria().and("name",name).or("email",email));
         //id在ids列表+用户名和email同时满足条件结果集
+        //select * from tb_user where id in (ids) and (name = name and email = email)
         List<TbUser> tbUsers = tbUserDao.queryWithCriteria(new Criteria().in("id",ids).andCriteria(new Criteria().and("name",name).and("email",email)));
         //查询总人数
+        //select count(*) from tb_user
         Integer userCount = tbUserDao.queryIntegerWithCriteria(new Criteria().select("count(*)"));
         //查询每个邮箱的注册的人数
+        //select count(*) as emailNum email from tb_user group by email
         Map<String,Object> emailNumMap = tbUserDao.queryMapsWithCriteria(new Criteria().select("count(*) as emailNum","email").groupBy("email"),CustomResultSetExractorFactory.createDoubleColumnValueResultSetExractor());
+        //分页查询
+        //select * from tb_user limit ?,?
+        PageResult<TbUser> tbUserPageResult = tbUserDao.pageQuery(page);
+        //select * from tb_user where birth < birth limit ?,?
+        PageResult<TbUser> tbUserPageResult = tbUserDao.pageQueryWithCriteria(page,new Criteria().lt("birth",birth));
+        //删除用户
+        //delete from tb_user where id = id
+        tbUserDao.delete(id);
+        //条件删除用户
+        //delete from tb_user where name in(names)
+        tbUserDao.deleteWithCriteria(new Criteria().where("name","in",names));
+        //更新一个用户
+        //update tb_user set name = tbUser.name,email = tbUser.email,pwd = tbUser.pwd,birth=tbUser.birth where id = tbUser.id
+        tbUserDao.update(tbUser);
+        //批量更新用户
+        tbUserDao.batchUpdate(tbUsers);
 ```
-还想更变态?
+更变态的sql还有?
 
 ```
         Criteria criteria = new Criteria();
@@ -106,7 +133,18 @@ step4.使用criteria优雅的编写sql
         criteria.orderBy(new Sort("userName"));
         criteria.orderBy(new Sort("createTime", "ASC"));
         criteria.groupBy("userName", "id");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
 ```
+控制台输出:
+
+```
+SELECT * FROM tb_test WHERE password IN(?,?) AND (realName like ? OR userName in(?,?)) OR(ppid = ? AND special = ?) OR userName like ? AND (realName like ? OR userName in(?,?)) AND epid <> ? AND score <= ? AND constructId IS NOT NULL AND (createTime < ? AND productId IN(?,?,?,?,?,?)) AND (createTime < ? OR createTime = ? AND (key = ? AND name IN(?,?,?)) OR(iinnerji = ?)) AND productNum NOT IN(?,?) GROUP BY userName,id ORDER BY userName DESC,createTime ASC
+{1234567890,111111,%周宁%,zhou,he,12305,TJ,%zhouning%,%周宁%,zhou,he,90001000,60,Tue Sep 25 20:11:40 CST 2018,1,2,3,4,5,6,Tue Sep 25 20:11:40 CST 2018,Tue Sep 25 20:11:40 CST 2018,12,1,2,3,我CA,GY-008,GY-009}
+```
+
+
 #### 项目中真实应用:
 
 
