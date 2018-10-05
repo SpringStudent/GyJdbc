@@ -170,9 +170,6 @@ public class Criteria {
         if(CollectionUtils.isNotEmpty(criteria.getSorts())){
             throw new RuntimeException("unsupport doCriteria operate");
         }
-       /* if (EmptyUtils.isNotEmpty(criteria.getCriteriaProxys())) {
-            throw new RuntimeException("criteria nesting query is not support");
-        }*/
         if(CollectionUtils.isEmpty(whereParams)){
             whereParams.add(new WhereParam());
         }
