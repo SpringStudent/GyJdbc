@@ -20,16 +20,21 @@ public class Sort implements Serializable {
      */
     private String sortType = "DESC";
 
-    public Sort() {
-
-    }
-
     public Sort(String sortField) {
         this.sortField = sortField;
     }
 
+    public <T, R> Sort(TypeFunction<T, R> function) {
+        this.sortField = TypeFunction.getLambdaColumnName(function);
+    }
+
     public Sort(String sortField, String sortType) {
         this.sortField = sortField;
+        this.sortType = sortType;
+    }
+
+    public <T, R> Sort(TypeFunction<T, R> function, String sortType) {
+        this.sortField = TypeFunction.getLambdaColumnName(function);
         this.sortType = sortType;
     }
 }

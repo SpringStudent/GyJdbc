@@ -4,6 +4,7 @@ import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * mysql查询条件封装
@@ -82,8 +83,13 @@ public class Criteria {
         groupFields = new LinkedHashSet<>();
     }
 
-    public Criteria select(String... fields){
+    public Criteria select(String... fields) {
         selectFields.addAll(Arrays.asList(fields));
+        return this;
+    }
+
+    public <T,R> Criteria select(TypeFunction<T,R>... functions) {
+        selectFields.addAll(Arrays.stream(functions).map(function->TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()));
         return this;
     }
 
@@ -91,53 +97,105 @@ public class Criteria {
         return this.where(key, "=", value);
     }
 
+    public <T,R> Criteria where(TypeFunction<T, R> function, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "=", value);
+    }
+
     public Criteria where(String key, String opt, Object value) {
         this.whereParams.add(WhereParam.builder().key(key).opt(opt).value(value).build());
         return this;
+    }
+
+    public <T, R> Criteria where(TypeFunction<T, R> function, String opt, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), opt, value);
     }
 
     public Criteria like(String key, Object value) {
         return this.where(key, "LIKE", "%" + value + "%");
     }
 
+    public <T, R> Criteria like(TypeFunction<T, R> function, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "LIKE", "%" + value + "%");
+    }
+
     public Criteria gt(String key, Object value) {
         return this.where(key, ">", value);
+    }
+
+    public <T, R> Criteria gt(TypeFunction<T, R> function, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), ">", value);
     }
 
     public Criteria gte(String key, Object value) {
         return this.where(key, ">=", value);
     }
 
+    public <T,R>Criteria gte(TypeFunction<T, R> function, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), ">=", value);
+    }
+
     public Criteria lt(String key, Object value) {
         return this.where(key, "<", value);
+    }
+
+    public <T,R> Criteria lt(TypeFunction<T, R> function, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "<", value);
     }
 
     public Criteria let(String key, Object value) {
         return this.where(key, "<=", value);
     }
 
+    public <T,R> Criteria let(TypeFunction<T, R> function, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "<=", value);
+    }
+
     public Criteria notEqual(String key, Object value) {
         return this.where(key, "<>", value);
+    }
+
+    public <T,R> Criteria notEqual(TypeFunction<T, R> function, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "<>", value);
     }
 
     public Criteria isNull(String key) {
         return this.where(key, "IS", "NULL");
     }
 
+    public <T,R> Criteria isNull(TypeFunction<T, R> function) {
+        return this.where(TypeFunction.getLambdaColumnName(function),  "IS", "NULL");
+    }
+
     public Criteria isNotNull(String key) {
         return this.where(key, "IS", "NOT NULL");
+    }
+
+    public <T,R> Criteria isNotNull(TypeFunction<T, R> function) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "IS", "NOT NULL");
     }
 
     public Criteria and(String key, Object value) {
         return this.where(key, value);
     }
 
+    public <T,R> Criteria and(TypeFunction<T, R> function, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), value);
+    }
+
     public Criteria and(String key, String opt, Object value) {
         return this.where(key, opt, value);
     }
 
+    public <T,R>Criteria and(TypeFunction<T, R> function, String opt, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), opt, value);
+    }
+
     public Criteria or(String key, Object value) {
         return this.or(key, "=", value);
+    }
+
+    public <T,R> Criteria or(TypeFunction<T, R> function, Object value) {
+        return this.or(TypeFunction.getLambdaColumnName(function), "=", value);
     }
 
     public Criteria or(String key, String opt, Object value) {
@@ -147,33 +205,42 @@ public class Criteria {
         return this.where(" OR " + key, opt, value);
     }
 
+    public <T,R> Criteria or(TypeFunction<T, R> function, String opt, Object value) {
+        return this.or(TypeFunction.getLambdaColumnName(function), opt, value);
+    }
+
     public Criteria in(String key, List<?> args) {
         return this.where(key, "IN", args);
     }
 
-    public Criteria notIn(String key, List<?> args){
+    public <T,R> Criteria in(TypeFunction<T, R> function, List<?> args) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "IN", args);
+    }
+
+    public Criteria notIn(String key, List<?> args) {
         return this.where(key, "NOT IN", args);
     }
 
+    public <T,R> Criteria notIn(TypeFunction<T, R> function, List<?> args) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "NOT IN", args);
+    }
+
     public Criteria andCriteria(Criteria criteria) {
-        return criteria(criteria,"AND");
+        return criteria(criteria, "AND");
     }
 
     public Criteria orCriteria(Criteria criteria) {
-        if(CollectionUtils.isEmpty(whereParams)){
+        if (CollectionUtils.isEmpty(whereParams)) {
             throw new RuntimeException("sql error,condition \"orCriteria\" must be following after \"where\"!");
         }
-        return criteria(criteria,"OR");
+        return criteria(criteria, "OR");
     }
 
-    private Criteria criteria(Criteria criteria,String criteriaType){
-        if(CollectionUtils.isNotEmpty(criteria.getSorts())){
+    private Criteria criteria(Criteria criteria, String criteriaType) {
+        if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
             throw new RuntimeException("unsupport doCriteria operate");
         }
-       /* if (EmptyUtils.isNotEmpty(criteria.getCriteriaProxys())) {
-            throw new RuntimeException("criteria nesting query is not support");
-        }*/
-        if(CollectionUtils.isEmpty(whereParams)){
+        if (CollectionUtils.isEmpty(whereParams)) {
             whereParams.add(new WhereParam());
         }
         CriteriaProxy criteriaProxy = new CriteriaProxy();
@@ -188,6 +255,11 @@ public class Criteria {
 
     public Criteria groupBy(String... fields) {
         groupFields.addAll(Arrays.asList(fields));
+        return this;
+    }
+
+    public <T,R> Criteria groupBy(TypeFunction<T,R>... functions) {
+        groupFields.addAll(Arrays.stream(functions).map(function->TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()));
         return this;
     }
 

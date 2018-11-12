@@ -1,5 +1,4 @@
 ### GyJdbc是什么?
-### GyJdbc是什么?
 像使用mongotemplate一样拼接sql。使用jdbcTemplate不想写sql?写XXXDao和XXXDaoImpl很麻烦?sql拼错查找问题浪费时间?通过使用GyJdbc这些问题将迎刃而解。
 #### 如何使用
 
@@ -20,7 +19,7 @@ CREATE TABLE `tb_user` (
 <dependency>
     <groupId>com.gysoft.jdbc</groupId>
     <artifactId>GyJdbc</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
@@ -182,3 +181,10 @@ Map<String, Integer> result = new HashMap<>();
             }
         });
 ```
+### v1.1.0
+支持使用Lambda表达式拼接sql
+
+```
+criteria.lt("epid",1000)->criteria.lt(UserBasicInfo::getEpid,1000);
+```
+

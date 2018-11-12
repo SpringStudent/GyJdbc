@@ -37,4 +37,5 @@ public class CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
+
 }
