@@ -240,7 +240,7 @@ public class Criteria {
         if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
             throw new RuntimeException("unsupport doCriteria operate");
         }
-        if (CollectionUtils.isEmpty(whereParams)) {
+        if(CollectionUtils.isEmpty(whereParams)){
             whereParams.add(new WhereParam());
         }
         CriteriaProxy criteriaProxy = new CriteriaProxy();
@@ -267,5 +267,4 @@ public class Criteria {
         sorts.add(sort);
         return this;
     }
-
 }
