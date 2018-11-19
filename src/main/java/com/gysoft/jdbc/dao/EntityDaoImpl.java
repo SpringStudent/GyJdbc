@@ -16,6 +16,7 @@ import org.springframework.jdbc.core.*;
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -237,5 +238,24 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     public String queryStringWithCriteria(Criteria criteria) throws Exception {
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, doCriteriaSelect(criteria));
         return jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), String.class);
+    }
+
+    @Override
+    public int updateWithCriteria(Criteria criteria) throws Exception {
+        List<Pair> kvs = criteria.getKvs();
+        if (!CollectionUtils.isEmpty(kvs)) {
+            Object[] params = {};
+            StringBuilder sql = new StringBuilder();
+            sql.append(SQL_UPDATE + SPACE + tableName + SPACE + "SET" + SPACE);
+            for (int i = 0; i < kvs.size(); i++) {
+                Pair pair = kvs.get(i);
+                sql.append(pair.getFirst() + " = ?, ");
+                params = ArrayUtils.add(params, pair.getSecond());
+            }
+            sql.setLength(sql.length() - 2);
+            Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
+            return jdbcTemplate.update(pair.getFirst(), ArrayUtils.addAll(params, pair.getSecond()));
+        }
+        return 0;
     }
 }

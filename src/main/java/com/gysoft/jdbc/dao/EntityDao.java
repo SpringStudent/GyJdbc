@@ -156,4 +156,12 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @throws Exception
 	 */
 	String queryStringWithCriteria(Criteria criteria)throws Exception;
+
+	/**
+	 * 根据条件更新
+	 * @param criteria
+	 * @return int
+	 * @throws Exception
+	 */
+	int updateWithCriteria(Criteria criteria)throws Exception;
 }

@@ -191,3 +191,10 @@ Map<String, Integer> result = new HashMap<>();
 criteria.where("epid",1000)->criteria.where(UserBasicInfo::getEpid,1000);
 ```
 
+### v1.2
+支持按条件更新部分字段
+
+
+```
+tbUserDao.updateWithCriteria(new Criteria().update(SimpleUser::getEmail,"33@qq.com").update(SimpleUser::getBirth,new Date()).where(SimpleUser::getName,"zhouning"));
+```

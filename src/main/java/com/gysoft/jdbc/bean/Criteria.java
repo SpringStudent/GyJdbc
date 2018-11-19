@@ -35,6 +35,11 @@ public class Criteria {
      */
     private Set<String> groupFields;
 
+    /**
+     * 更新
+     */
+    private List<Pair> kvs;
+
     public Set<String> getGroupFields() {
         return groupFields;
     }
@@ -75,12 +80,21 @@ public class Criteria {
         this.selectFields = selectFields;
     }
 
+    public List<Pair> getKvs() {
+        return kvs;
+    }
+
+    public void setKvs(List<Pair> kvs) {
+        this.kvs = kvs;
+    }
+
     public Criteria() {
         selectFields = new LinkedHashSet<>();
         whereParams = new LinkedHashSet<>();
         sorts = new LinkedHashSet<>();
         criteriaProxys = new ArrayList<>();
         groupFields = new LinkedHashSet<>();
+        kvs = new ArrayList<>();
     }
 
     public Criteria select(String... fields) {
@@ -265,6 +279,16 @@ public class Criteria {
 
     public Criteria orderBy(Sort sort) {
         sorts.add(sort);
+        return this;
+    }
+
+    public Criteria update(String key, Object value) {
+        kvs.add(new Pair(key, value));
+        return this;
+    }
+
+    public <T, R> Criteria update(TypeFunction<T, R> function, Object value) {
+        kvs.add(new Pair(TypeFunction.getLambdaColumnName(function), value));
         return this;
     }
 }
