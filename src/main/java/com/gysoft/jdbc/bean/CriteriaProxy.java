@@ -4,7 +4,6 @@ package com.gysoft.jdbc.bean;
  * 代理拼接处更复杂的sql
  *
  * @author 周宁
- * @Date 2018-08-24 14:38
  */
 public class CriteriaProxy {
     /**

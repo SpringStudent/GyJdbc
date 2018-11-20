@@ -8,15 +8,14 @@ import java.util.function.Function;
 
 /**
  * @author 周宁
- * @Date 2018-11-12 12:02
  */
 @FunctionalInterface
 public interface TypeFunction<T, R> extends Serializable, Function<T, R> {
 
     /**
      * 获取列名称
-     * @param lambda
-     * @return String
+     * @param lambda lamda表达式
+     * @return String 列名称
      */
     static String getLambdaColumnName(Serializable lambda) {
         try {

@@ -17,9 +17,9 @@ CREATE TABLE `tb_user` (
 **step1.添加pom.xml**
 ```
 <dependency>
-    <groupId>com.gysoft.jdbc</groupId>
+    <groupId>io.github.springstudent</groupId>
     <artifactId>GyJdbc</artifactId>
-    <version>1.0.0</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 

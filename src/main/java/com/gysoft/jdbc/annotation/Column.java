@@ -10,7 +10,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 /**
  * 字段名及相关属性信息
  * @author 彭佳佳
- * @data 2018年3月7日
  */
 @Target({METHOD, FIELD})
 @Retention(RUNTIME)
@@ -18,25 +17,25 @@ public @interface Column {
 
     /**
      * 字段名称
-     * @return
+     * @return String
      */
     String name() default "";
 
     /**
      * 是否唯一
-     * @return
+     * @return boolean
      */
     boolean unique() default false;
 
     /**
      * 是否允许为空
-     * @return
+     * @return boolean
      */
     boolean nullable() default true;
 
     /**
      * 长度
-     * @return
+     * @return int
      */
     int length() default 255;
 

@@ -12,15 +12,14 @@ import java.lang.reflect.Method;
  * 数据库实体映射工具类
  *
  * @author 彭佳佳
- * @data 2018年3月6日
  */
 public class EntityTools {
 	
     /**
      * 根据实体类名，获取表名称
      *
-     * @param entity
-     * @return
+     * @param entity 实体类型
+     * @return String 表名称
      */
     public static String getTableName(Class<?> entity) {
         Table table = entity.getAnnotation(Table.class);
@@ -61,8 +60,8 @@ public class EntityTools {
     /**
      * 获取主键名称
      *
-     * @param entity
-     * @return
+     * @param entity 实体类型
+     * @return String 表主键
      */
     public static String getPk(Class<?> entity) {
         Table table = entity.getAnnotation(Table.class);
@@ -74,8 +73,9 @@ public class EntityTools {
 
     /**
      * 判断是否为主键
-     *
-     * @return
+     * @param entity 实体类型
+     * @param field 属性
+     * @return boolean true代表主键 false反之
      */
     public static boolean isPk(Class<?> entity, Field field) {
         String pk = getPk(entity);

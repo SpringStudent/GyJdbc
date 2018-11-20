@@ -10,8 +10,7 @@ import java.util.List;
  * 分页返回通用类
  * 
  * @author 彭佳佳
- * @data 2018年3月6日
- * @param <T>
+ * @param <T> 結果類型
  */
 @Data
 public class PageResult<T> implements Serializable {
@@ -36,9 +35,7 @@ public class PageResult<T> implements Serializable {
 	/**
 	 * 创建一个空的分页结果集
      * @author 周宁
-	 * @param
 	 * @return PageResult
-	 * @throws
 	 * @version 1.0
 	 */
 	public static PageResult emptyPageResult(){

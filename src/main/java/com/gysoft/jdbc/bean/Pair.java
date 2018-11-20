@@ -6,7 +6,6 @@ import java.io.Serializable;
  * 包装两个对象关系
  *
  * @author 周宁
- * @date 2017/11/13 11:22
  */
 public class Pair<F, S> implements Serializable {
     /**

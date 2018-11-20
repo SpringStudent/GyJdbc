@@ -6,7 +6,6 @@ import java.io.Serializable;
 
 /**
  * @author 周宁
- * @date 2018/4/10 15:32
  */
 @Data
 public class Sort implements Serializable {

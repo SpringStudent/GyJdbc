@@ -21,10 +21,7 @@ import java.util.stream.Collectors;
 
 /**
  * 支持注解，若实体没有注解，实体类名需要按照驼峰命名，属性与数据库字段一致不区分大小写
- *
- * @param <T>
  * @author 彭佳佳
- * @data 2018年3月7日
  */
 public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, Id> {
 

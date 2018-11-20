@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
  * mysql查询条件封装
  *
  * @author 周宁
- * @date 2018/4/13 16:08
  */
 public class Criteria {
     /**

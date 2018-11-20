@@ -10,7 +10,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 /**
  * 实体映射表自定义注解
  * @author 彭佳佳
- * @data 2018年3月7日
  */
 @Documented
 @Target(TYPE)
@@ -18,13 +17,13 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface Table {
 	/**
 	 * 表名称
-	 * @return
+	 * @return String
 	 */
 	String name() default "";
 
 	/**
 	 * 主键字段
-	 * @return
+	 * @return String
 	 */
 	String pk() default "id";
 }

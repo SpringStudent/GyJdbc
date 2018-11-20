@@ -19,14 +19,17 @@ import static com.gysoft.jdbc.dao.EntityDao.*;
 
 /**
  * @author 周宁
- * @date 2018/4/13 11:18
  */
 public class SqlMakeTools {
 
     /**
      * 组装SQL
+     * @param clazz 类型
+     * @param tbName 表名
+     * @param sqlFlag sql标识
+     * @param <E> 泛型
+     * @return String 创建的sql
      */
-    @SuppressWarnings("rawtypes")
 	public static <E> String makeSql(Class clazz, String tbName, String sqlFlag) {
         StringBuffer sql = new StringBuffer();
         Field[] fields = clazz.getDeclaredFields();
@@ -76,6 +79,10 @@ public class SqlMakeTools {
 
     /**
      * 设置参数
+     * @param entity 实体
+     * @param sqlFlag sql标识
+     * @param <E> 泛型
+     * @return Object[] 参数数组
      */
     public static <E> Object[] setArgs(E entity, String sqlFlag) {
         Class<?> clzz = entity.getClass();
@@ -137,6 +144,10 @@ public class SqlMakeTools {
 
     /**
      * 设置参数类型(缺少的用到了再添加)
+     * @param entity 实体
+     * @param sqlFlag sql标识
+     * @param <E> 泛型
+     * @return int[] 参数类型数组
      */
     public static <E> int[] setArgTypes(E entity, String sqlFlag) {
         Field[] fields = entity.getClass().getDeclaredFields();
@@ -208,12 +219,10 @@ public class SqlMakeTools {
 
     /**
      * 创建条件查询sql和入参
-     *
-     * @param criteria
-     * @param sql
-     * @return
+     * @param criteria 查询条件
+     * @param sql sql语句
+     * @return Pair sql与sql入参对
      */
-    @SuppressWarnings("rawtypes")
 	public static Pair<String, Object[]> doCriteria(Criteria criteria, StringBuilder sql) {
         Pair<String, Object[]> result = new Pair<>();
         Object[] params = {};
@@ -291,10 +300,13 @@ public class SqlMakeTools {
     /**
      * 组装更复杂的sql
      * @author 周宁
-     * @param
+     * @param criteriaProxys
+     * @param whereParamIndex
+     * @param params
+     * @param sql
      * @throws
      * @version 1.0
-     * @return
+     * @return Object[]
      */
     private static Object[] doCriteriaProxy(List<CriteriaProxy> criteriaProxys, int whereParamIndex, StringBuilder sql, Object[] params){
         if (CollectionUtils.isNotEmpty(criteriaProxys)) {

@@ -7,7 +7,6 @@ import java.util.Map;
 
 /**
  * @author 周宁
- * @Date 2018-09-04 14:43
  */
 public class CustomResultSetExractorFactory {
     /**
@@ -24,7 +23,7 @@ public class CustomResultSetExractorFactory {
 
     /**
      * 创建两列结果值得Map集合的RowMapper
-     * @return
+     * @return ResultSetExtractor 两列结果值得映射抽取器
      */
     public static ResultSetExtractor createDoubleColumnValueResultSetExractor(){
         return DOUBLE_COLUMN_VALUE_RESULTSETEXRACTOR;
