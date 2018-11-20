@@ -23,7 +23,7 @@ CREATE TABLE `tb_user` (
 </dependency>
 ```
 
-step2.创建tb_user对应pojo类
+**step2.创建tb_user对应pojo类**
 
 ```
 /**
@@ -41,7 +41,7 @@ public class TbUser {
 }
 ```
 
-step3.编写TbUserDao和TbUserDaoImpl分别继承EntityDao和EntityDaoImpl
+**step3.编写TbUserDao和TbUserDaoImpl分别继承EntityDao和EntityDaoImpl**
 
 ```
 /**
@@ -63,7 +63,7 @@ public interface TbUserDao extends EntityDao<TbUser,Integer> {
 public class TbUserDaoImpl extends EntityDaoImpl<TbUser,Integer> implements TbUserDao {
 }
 ```
-step4.使用criteria优雅的编写sql
+**step4.使用criteria优雅的编写sql**
 
 ```
         //查询所有用户
@@ -116,7 +116,7 @@ step4.使用criteria优雅的编写sql
         //批量更新用户
         tbUserDao.batchUpdate(tbUsers);
 ```
-更变态的sql还有?
+**更变态的sql还有?**
 
 ```
         Criteria criteria = new Criteria();
@@ -137,13 +137,14 @@ step4.使用criteria优雅的编写sql
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
 ```
-控制台输出:
+**控制台输出:**
 
 ```
 SELECT * FROM tb_test WHERE password IN(?,?) AND (realName like ? OR userName in(?,?)) OR(ppid = ? AND special = ?) OR userName like ? AND (realName like ? OR userName in(?,?)) AND epid <> ? AND score <= ? AND constructId IS NOT NULL AND (createTime < ? AND productId IN(?,?,?,?,?,?)) AND (createTime < ? OR createTime = ? AND (key = ? AND name IN(?,?,?)) OR(iinnerji = ?)) AND productNum NOT IN(?,?) GROUP BY userName,id ORDER BY userName DESC,createTime ASC
 {1234567890,111111,%周宁%,zhou,he,12305,TJ,%zhouning%,%周宁%,zhou,he,90001000,60,Tue Sep 25 20:11:40 CST 2018,1,2,3,4,5,6,Tue Sep 25 20:11:40 CST 2018,Tue Sep 25 20:11:40 CST 2018,12,1,2,3,我CA,GY-008,GY-009}
 ```
 
+**Demo:**https://github.com/SpringStudent/GyJdbcTest
 
 #### 项目中真实应用:
 
