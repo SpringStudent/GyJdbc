@@ -144,7 +144,7 @@ SELECT * FROM tb_test WHERE password IN(?,?) AND (realName like ? OR userName in
 {1234567890,111111,%周宁%,zhou,he,12305,TJ,%zhouning%,%周宁%,zhou,he,90001000,60,Tue Sep 25 20:11:40 CST 2018,1,2,3,4,5,6,Tue Sep 25 20:11:40 CST 2018,Tue Sep 25 20:11:40 CST 2018,12,1,2,3,我CA,GY-008,GY-009}
 ```
 
-**Demo:**https://github.com/SpringStudent/GyJdbcTest
+**使用案例**:https://github.com/SpringStudent/GyJdbcTest
 
 #### 项目中真实应用:
 
