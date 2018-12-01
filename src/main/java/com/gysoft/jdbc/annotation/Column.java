@@ -20,23 +20,4 @@ public @interface Column {
      * @return String
      */
     String name() default "";
-
-    /**
-     * 是否唯一
-     * @return boolean
-     */
-    boolean unique() default false;
-
-    /**
-     * 是否允许为空
-     * @return boolean
-     */
-    boolean nullable() default true;
-
-    /**
-     * 长度
-     * @return int
-     */
-    int length() default 255;
-
 }
