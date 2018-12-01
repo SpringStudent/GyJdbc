@@ -32,7 +32,7 @@ public class Result<E> {
         return DataAccessUtils.singleResult(queryAll());
     }
 
-    public E queryForObject() {
+    public E queryObject() {
         return jdbcTemplate.queryForObject(sql, params, type);
     }
 
@@ -40,7 +40,7 @@ public class Result<E> {
         return jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(type), params);
     }
 
-    public List<Map<String, Object>> queryForMaps() {
+    public List<Map<String, Object>> queryMaps() {
         return jdbcTemplate.query(sql, params, new ColumnMapRowMapper());
     }
 
