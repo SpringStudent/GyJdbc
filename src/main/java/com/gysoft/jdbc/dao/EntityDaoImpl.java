@@ -16,7 +16,6 @@ import org.springframework.jdbc.core.*;
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -254,5 +253,10 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             return jdbcTemplate.update(pair.getFirst(), ArrayUtils.addAll(params, pair.getSecond()));
         }
         return 0;
+    }
+
+    @Override
+    public JdbcTemplate getJdbcTemplate() {
+        return jdbcTemplate;
     }
 }

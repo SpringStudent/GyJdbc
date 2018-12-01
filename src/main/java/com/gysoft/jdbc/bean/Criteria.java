@@ -1,5 +1,6 @@
 package com.gysoft.jdbc.bean;
 
+import com.gysoft.jdbc.dao.EntityDao;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.collections.CollectionUtils;
 
@@ -101,8 +102,8 @@ public class Criteria {
         return this;
     }
 
-    public <T,R> Criteria select(TypeFunction<T,R>... functions) {
-        selectFields.addAll(Arrays.stream(functions).map(function->TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()));
+    public <T, R> Criteria select(TypeFunction<T, R>... functions) {
+        selectFields.addAll(Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()));
         return this;
     }
 
@@ -110,7 +111,7 @@ public class Criteria {
         return this.where(key, "=", value);
     }
 
-    public <T,R> Criteria where(TypeFunction<T, R> function, Object value) {
+    public <T, R> Criteria where(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), "=", value);
     }
 
@@ -143,7 +144,7 @@ public class Criteria {
         return this.where(key, ">=", value);
     }
 
-    public <T,R>Criteria gte(TypeFunction<T, R> function, Object value) {
+    public <T, R> Criteria gte(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), ">=", value);
     }
 
@@ -151,7 +152,7 @@ public class Criteria {
         return this.where(key, "<", value);
     }
 
-    public <T,R> Criteria lt(TypeFunction<T, R> function, Object value) {
+    public <T, R> Criteria lt(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), "<", value);
     }
 
@@ -159,7 +160,7 @@ public class Criteria {
         return this.where(key, "<=", value);
     }
 
-    public <T,R> Criteria let(TypeFunction<T, R> function, Object value) {
+    public <T, R> Criteria let(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), "<=", value);
     }
 
@@ -167,7 +168,7 @@ public class Criteria {
         return this.where(key, "<>", value);
     }
 
-    public <T,R> Criteria notEqual(TypeFunction<T, R> function, Object value) {
+    public <T, R> Criteria notEqual(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), "<>", value);
     }
 
@@ -175,15 +176,15 @@ public class Criteria {
         return this.where(key, "IS", "NULL");
     }
 
-    public <T,R> Criteria isNull(TypeFunction<T, R> function) {
-        return this.where(TypeFunction.getLambdaColumnName(function),  "IS", "NULL");
+    public <T, R> Criteria isNull(TypeFunction<T, R> function) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "IS", "NULL");
     }
 
     public Criteria isNotNull(String key) {
         return this.where(key, "IS", "NOT NULL");
     }
 
-    public <T,R> Criteria isNotNull(TypeFunction<T, R> function) {
+    public <T, R> Criteria isNotNull(TypeFunction<T, R> function) {
         return this.where(TypeFunction.getLambdaColumnName(function), "IS", "NOT NULL");
     }
 
@@ -191,7 +192,7 @@ public class Criteria {
         return this.where(key, value);
     }
 
-    public <T,R> Criteria and(TypeFunction<T, R> function, Object value) {
+    public <T, R> Criteria and(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), value);
     }
 
@@ -199,7 +200,7 @@ public class Criteria {
         return this.where(key, opt, value);
     }
 
-    public <T,R>Criteria and(TypeFunction<T, R> function, String opt, Object value) {
+    public <T, R> Criteria and(TypeFunction<T, R> function, String opt, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), opt, value);
     }
 
@@ -207,7 +208,7 @@ public class Criteria {
         return this.or(key, "=", value);
     }
 
-    public <T,R> Criteria or(TypeFunction<T, R> function, Object value) {
+    public <T, R> Criteria or(TypeFunction<T, R> function, Object value) {
         return this.or(TypeFunction.getLambdaColumnName(function), "=", value);
     }
 
@@ -218,7 +219,7 @@ public class Criteria {
         return this.where(" OR " + key, opt, value);
     }
 
-    public <T,R> Criteria or(TypeFunction<T, R> function, String opt, Object value) {
+    public <T, R> Criteria or(TypeFunction<T, R> function, String opt, Object value) {
         return this.or(TypeFunction.getLambdaColumnName(function), opt, value);
     }
 
@@ -226,7 +227,7 @@ public class Criteria {
         return this.where(key, "IN", args);
     }
 
-    public <T,R> Criteria in(TypeFunction<T, R> function, List<?> args) {
+    public <T, R> Criteria in(TypeFunction<T, R> function, List<?> args) {
         return this.where(TypeFunction.getLambdaColumnName(function), "IN", args);
     }
 
@@ -234,7 +235,7 @@ public class Criteria {
         return this.where(key, "NOT IN", args);
     }
 
-    public <T,R> Criteria notIn(TypeFunction<T, R> function, List<?> args) {
+    public <T, R> Criteria notIn(TypeFunction<T, R> function, List<?> args) {
         return this.where(TypeFunction.getLambdaColumnName(function), "NOT IN", args);
     }
 
@@ -253,7 +254,7 @@ public class Criteria {
         if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
             throw new RuntimeException("unsupport doCriteria operate");
         }
-        if(CollectionUtils.isEmpty(whereParams)){
+        if (CollectionUtils.isEmpty(whereParams)) {
             whereParams.add(new WhereParam());
         }
         CriteriaProxy criteriaProxy = new CriteriaProxy();
@@ -271,8 +272,8 @@ public class Criteria {
         return this;
     }
 
-    public <T,R> Criteria groupBy(TypeFunction<T,R>... functions) {
-        groupFields.addAll(Arrays.stream(functions).map(function->TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()));
+    public <T, R> Criteria groupBy(TypeFunction<T, R>... functions) {
+        groupFields.addAll(Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()));
         return this;
     }
 
@@ -289,5 +290,13 @@ public class Criteria {
     public <T, R> Criteria update(TypeFunction<T, R> function, Object value) {
         kvs.add(new Pair(TypeFunction.getLambdaColumnName(function), value));
         return this;
+    }
+
+    public <E> Result<E> useSql(Class<E> clss, String sql, EntityDao entityDao, Object... params) {
+        return new Result<>(clss, sql, params, entityDao);
+    }
+
+    public <E extends Map<String, Object>> Result<E> useSql(String sql, EntityDao entityDao, Object... params) {
+        return new Result<>(null, sql, params, entityDao);
     }
 }
