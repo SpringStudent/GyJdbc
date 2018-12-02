@@ -1,6 +1,5 @@
 package com.gysoft.jdbc.bean;
 
-import com.gysoft.jdbc.dao.EntityDao;
 import org.apache.commons.lang.ArrayUtils;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
