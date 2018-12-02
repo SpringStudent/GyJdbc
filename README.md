@@ -204,7 +204,8 @@ tbUserDao.updateWithCriteria(new Criteria().update(SimpleUser::getEmail,"33@qq.c
 支持自定义sql和实体对象查询
 
 ```
-Integer count = new Criteria().useSql(Integer.class,"select count(*) from tb_user",tbUserDao).queryObject(); 
-List<Map<String,Object>> mapList = new Criteria().useSql("select name,email from tb_user",tbUserDao).queryMaps();
-PageResult<SimpleUser> tbUserPageResult = new Criteria().useSql(SimpleUser.class,"select name,email,birth from tb_user",tbUserDao).pageQuery(new Page(1,1));
+Integer count = tbUserDao.useSql(Integer.class,"select count(*) from tb_user").queryObject();
+List<Map<String,Object>> mapList = tbUserDao.useSql("select name,email from tb_user").queryMaps();
+PageResult<SimpleUser> tbUserPageResult = tbUserDao
+.useSql(SimpleUser.class,"select name,email,birth from tb_user where name = ?","zhouning").pageQuery(new Page(1,1));
 ```
