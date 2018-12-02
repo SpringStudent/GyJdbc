@@ -208,4 +208,5 @@ Integer count = tbUserDao.useSql(Integer.class,"select count(*) from tb_user").q
 List<Map<String,Object>> mapList = tbUserDao.useSql("select name,email from tb_user").queryMaps();
 PageResult<SimpleUser> tbUserPageResult = tbUserDao
 .useSql(SimpleUser.class,"select name,email,birth from tb_user where name = ?","zhouning").pageQuery(new Page(1,1));
+List<SimpleUser> simpleUsers = tbUserDao.useSql(SimpleUser.class,"select name,email,birth from tb_user where name like ?","%zhou%").queryAll();
 ```
