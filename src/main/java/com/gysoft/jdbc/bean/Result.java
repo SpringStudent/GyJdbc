@@ -28,14 +28,14 @@ public class Result<E> {
     }
 
     public E queryOne() throws Exception {
-        return DataAccessUtils.singleResult(queryAll());
+        return DataAccessUtils.singleResult(queryList());
     }
 
     public E queryObject() throws Exception {
         return jdbcTemplate.queryForObject(sql, params, type);
     }
 
-    public List<E> queryAll() throws Exception {
+    public List<E> queryList() throws Exception {
         return jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(type), params);
     }
 
