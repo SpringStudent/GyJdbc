@@ -292,11 +292,11 @@ public class Criteria {
         return this;
     }
 
-    public <E> Result<E> useSql(Class<E> clss, String sql, EntityDao entityDao, Object... params) {
+    public <E> Result<E> useSql(Class<E> clss, EntityDao entityDao, String sql, Object... params) {
         return new Result<>(clss, sql, params, entityDao);
     }
 
-    public <E extends Map<String, Object>> Result<E> useSql(String sql, EntityDao entityDao, Object... params) {
+    public <E extends Map<String, Object>> Result<E> useSql(EntityDao entityDao, String sql, Object... params) {
         return new Result<>(null, sql, params, entityDao);
     }
 }
