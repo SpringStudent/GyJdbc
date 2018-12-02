@@ -3,7 +3,7 @@ package com.gysoft.jdbc.dao;
 import com.gysoft.jdbc.bean.Criteria;
 import com.gysoft.jdbc.bean.Page;
 import com.gysoft.jdbc.bean.PageResult;
-import org.springframework.jdbc.core.JdbcTemplate;
+import com.gysoft.jdbc.bean.Result;
 import org.springframework.jdbc.core.ResultSetExtractor;
 
 import java.io.Serializable;
@@ -168,8 +168,21 @@ public interface EntityDao<T,Id extends Serializable>{
 	int updateWithCriteria(Criteria criteria)throws Exception;
 
 	/**
-	 * 获得jdbcTemplate
-	 * @return JdbcTemplate 返回结果类型
+	 * 使用自定义sql
+	 * @param clss Class类型
+	 * @param sql 自定义Sql
+	 * @param params 参数数组
+	 * @param <E> 结果泛型
+	 * @return Result 结果集
 	 */
-	JdbcTemplate getJdbcTemplate();
+	<E>Result<E> useSql(Class<E> clss,String sql, Object... params);
+
+	/**
+	 * 使用自定义sql
+	 * @param sql 自定义sql
+	 * @param params 参数数组
+	 * @param <E> 结果泛型
+	 * @return Result 结果集
+	 */
+	<E extends Map<String, Object>> Result<E> useSql(String sql, Object... params);
 }

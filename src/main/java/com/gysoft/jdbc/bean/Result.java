@@ -21,11 +21,11 @@ public class Result<E> {
     private final Object[] params;
     private final JdbcTemplate jdbcTemplate;
 
-    public Result(Class<E> type, String sql, Object[] params, EntityDao entityDao) {
+    public Result(Class<E> type, String sql, Object[] params, JdbcTemplate jdbcTemplate) {
         this.type = type;
         this.sql = sql;
         this.params = params;
-        this.jdbcTemplate = entityDao.getJdbcTemplate();
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public E queryOne() throws Exception {

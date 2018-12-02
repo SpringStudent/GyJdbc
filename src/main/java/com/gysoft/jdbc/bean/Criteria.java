@@ -1,6 +1,5 @@
 package com.gysoft.jdbc.bean;
 
-import com.gysoft.jdbc.dao.EntityDao;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.collections.CollectionUtils;
 
@@ -292,11 +291,4 @@ public class Criteria {
         return this;
     }
 
-    public <E> Result<E> useSql(Class<E> clss, EntityDao entityDao, String sql, Object... params) {
-        return new Result<>(clss, sql, params, entityDao);
-    }
-
-    public <E extends Map<String, Object>> Result<E> useSql(EntityDao entityDao, String sql, Object... params) {
-        return new Result<>(null, sql, params, entityDao);
-    }
 }

@@ -1,10 +1,7 @@
 package com.gysoft.jdbc.dao;
 
 
-import com.gysoft.jdbc.bean.Criteria;
-import com.gysoft.jdbc.bean.Page;
-import com.gysoft.jdbc.bean.PageResult;
-import com.gysoft.jdbc.bean.Pair;
+import com.gysoft.jdbc.bean.*;
 import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.collections.CollectionUtils;
@@ -256,7 +253,12 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public JdbcTemplate getJdbcTemplate() {
-        return jdbcTemplate;
+    public <E> Result<E> useSql(Class<E> clss, String sql, Object... params){
+        return new Result<>(clss, sql, params,jdbcTemplate);
+    }
+
+    @Override
+    public <E extends Map<String, Object>> Result<E> useSql(String sql, Object... params) {
+        return new Result<>(null, sql, params, jdbcTemplate);
     }
 }
