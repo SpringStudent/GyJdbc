@@ -28,23 +28,23 @@ public class Result<E> {
         this.jdbcTemplate = entityDao.getJdbcTemplate();
     }
 
-    public E queryOne() {
+    public E queryOne() throws Exception {
         return DataAccessUtils.singleResult(queryAll());
     }
 
-    public E queryObject() {
+    public E queryObject() throws Exception {
         return jdbcTemplate.queryForObject(sql, params, type);
     }
 
-    public List<E> queryAll() {
+    public List<E> queryAll() throws Exception {
         return jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(type), params);
     }
 
-    public List<Map<String, Object>> queryMaps() {
+    public List<Map<String, Object>> queryMaps() throws Exception {
         return jdbcTemplate.query(sql, params, new ColumnMapRowMapper());
     }
 
-    public PageResult<E> pageQuery(Page page) {
+    public PageResult<E> pageQuery(Page page) throws Exception {
         Object pageParams[] = {};
         String pageSql = "SELECT SQL_CALC_FOUND_ROWS * FROM (" + sql + ") temp ";
         pageSql = pageSql + " LIMIT ?,?";
