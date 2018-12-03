@@ -1,9 +1,6 @@
 package com.gysoft.jdbc.dao;
 
-import com.gysoft.jdbc.bean.Criteria;
-import com.gysoft.jdbc.bean.Page;
-import com.gysoft.jdbc.bean.PageResult;
-import com.gysoft.jdbc.bean.Result;
+import com.gysoft.jdbc.bean.*;
 import org.springframework.jdbc.core.ResultSetExtractor;
 
 import java.io.Serializable;
@@ -174,8 +171,9 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @param params 参数数组
 	 * @param <E> 结果泛型
 	 * @return Result 结果集
+	 * @throws Exception 异常
 	 */
-	<E>Result<E> useSql(Class<E> clss,String sql, Object... params);
+	<E>Result<E> useSql(Class<E> clss,String sql, Object... params)throws Exception;
 
 	/**
 	 * 使用自定义sql
@@ -183,6 +181,17 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @param params 参数数组
 	 * @param <E> 结果泛型
 	 * @return Result 结果集
+	 * @throws Exception 异常
 	 */
-	<E extends Map<String, Object>> Result<E> useSql(String sql, Object... params);
+	<E extends Map<String, Object>> Result<E> useSql(String sql, Object... params)throws Exception;
+
+	/**
+	 * 使用自定义sql
+	 * @param clss Class类型
+	 * @param iSqlParamMapProvider sql和paramMap策略类
+	 * @param <E> 结果泛型
+	 * @return Result 结果集
+	 * @throws Exception 异常
+	 */
+	<E> Result<E> useSql(Class<E> clss, ISqlParamMapProvider iSqlParamMapProvider)throws Exception;
 }

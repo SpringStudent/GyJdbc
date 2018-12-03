@@ -9,6 +9,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.*;
+import org.springframework.jdbc.core.namedparam.NamedParameterUtils;
 
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
@@ -253,12 +254,21 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public <E> Result<E> useSql(Class<E> clss, String sql, Object... params){
+    public <E> Result<E> useSql(Class<E> clss, String sql, Object... params)throws Exception{
         return new Result<>(clss, sql, params,jdbcTemplate);
     }
 
     @Override
-    public <E extends Map<String, Object>> Result<E> useSql(String sql, Object... params) {
+    public <E extends Map<String, Object>> Result<E> useSql(String sql, Object... params)throws Exception {
         return new Result<>(null, sql, params, jdbcTemplate);
+    }
+
+    @Override
+    public <E> Result<E> useSql(Class<E> clss, ISqlParamMapProvider iSqlParamMapProvider)throws Exception {
+        String sql = iSqlParamMapProvider.getSqlParamMap().getSql();
+        Map<String, Object> paramMap = iSqlParamMapProvider.getSqlParamMap().getParamMap();
+        Object[] args = NamedParameterUtils.buildValueArray(sql, paramMap);
+        sql = NamedParameterUtils.parseSqlStatementIntoString(sql);
+        return new Result<>(clss, sql, args, jdbcTemplate);
     }
 }

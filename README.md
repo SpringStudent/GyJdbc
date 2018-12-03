@@ -19,7 +19,7 @@ CREATE TABLE `tb_user` (
 <dependency>
     <groupId>io.github.springstudent</groupId>
     <artifactId>GyJdbc</artifactId>
-    <version>1.2.0</version>
+    <version>2.0.0</version>
 </dependency>
 ```
 
@@ -206,7 +206,23 @@ tbUserDao.updateWithCriteria(new Criteria().update(SimpleUser::getEmail,"33@qq.c
 ```
 Integer count = tbUserDao.useSql(Integer.class,"select count(*) from tb_user").queryObject();
 List<Map<String,Object>> mapList = tbUserDao.useSql("select name,email from tb_user").queryMaps();
-PageResult<SimpleUser> tbUserPageResult = tbUserDao
-.useSql(SimpleUser.class,"select name,email,birth from tb_user where name = ?","zhouning").pageQuery(new Page(1,1));
-List<SimpleUser> simpleUsers = tbUserDao.useSql(SimpleUser.class,"select name,email,birth from tb_user where name like ?","%zhou%").queryAll();
+PageResult<SimpleUser> tbUserPageResult = tbUserDao.useSql(SimpleUser.class,"select name,email,birth from tb_user where name = ?","zhouning").pageQuery(new Page(1,1));
+List<SimpleUser> simpleUsers = tbUserDao.useSql(SimpleUser.class,"select name,email,birth from tb_user where name like ?","%zhou%").queryList();
+QueryUserParam queryUserParam = QueryUserParam.builder().searchKey("z").birth(new Date()).build();
+
+List<SimpleUser> simpleUsers2 = tbUserDao.useSql(SimpleUser.class, () -> {
+    Map<String,Object> paramMap = new HashMap<>();
+    StringBuilder sql = new StringBuilder();
+    sql.append("select name,email,birth from tb_user where 1 = 1 ");
+    if(!StringUtils.isEmpty(queryUserParam.getSearchKey())){
+            sql.append("and name like :name ");
+            paramMap.put("name","%"+queryUserParam.getSearchKey()+"%");
+        }
+        if(queryUserParam.getBirth()!=null){
+            sql.append("and birth < :birth");
+            paramMap.put("birth",queryUserParam.getBirth());
+        }
+    return SqlParamMap.builder().sql(sql.toString()).paramMap(paramMap).build();
+    }).queryList();
+
 ```
