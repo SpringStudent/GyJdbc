@@ -19,7 +19,7 @@ CREATE TABLE `tb_user` (
 <dependency>
     <groupId>io.github.springstudent</groupId>
     <artifactId>GyJdbc</artifactId>
-    <version>2.0.0</version>
+    <version>3.0.0</version>
 </dependency>
 ```
 
@@ -225,4 +225,15 @@ List<SimpleUser> simpleUsers2 = tbUserDao.useSql(SimpleUser.class, () -> {
     return SqlParamMap.builder().sql(sql.toString()).paramMap(paramMap).build();
     }).queryList();
 
+```
+### V3.0
+支持join查询
+
+```
+Criteria criteria = new Criteria().select(fileds...).from(Pojo.class).as(表别名)
+.join(new Joins().with(JoinType,Pojo.class).as("表别名").on(filed1,field2).and(key,opt,val))
+.join(....)
+.where().and().orCriteria());
+xxxDao.joinQuery(clss,criteria).pageQuery(page);
+xxxDao.joinQuery(clss,criteria).query();
 ```

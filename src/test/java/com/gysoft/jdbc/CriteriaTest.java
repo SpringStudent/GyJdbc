@@ -46,5 +46,7 @@ public class CriteriaTest {
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
+
+
     }
 }
