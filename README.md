@@ -231,8 +231,8 @@ List<SimpleUser> simpleUsers2 = tbUserDao.useSql(SimpleUser.class, () -> {
 
 ```
 Criteria criteria = new Criteria().select(fileds...).from(Pojo.class).as(表别名)
-.join(new Joins().with(JoinType,Pojo.class).as("表别名").on(filed1,field2).and(key,opt,val))
-.join(....)
+.leftJoin(new Joins().with(JoinType,Pojo.class).as("表别名").on(filed1,field2).and(key,opt,val))
+.innerJoin(....)
 .where().and().orCriteria());
 xxxDao.joinQuery(clss,criteria).pageQuery(page);
 xxxDao.joinQuery(clss,criteria).query();
