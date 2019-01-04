@@ -1,5 +1,6 @@
 package com.gysoft.jdbc.bean;
 
+import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.collections.CollectionUtils;
 
@@ -94,6 +95,7 @@ public class Criteria {
         criteriaProxys = new ArrayList<>();
         groupFields = new LinkedHashSet<>();
         kvs = new ArrayList<>();
+        joins = new ArrayList<>();
     }
 
     public Criteria select(String... fields) {
@@ -291,4 +293,55 @@ public class Criteria {
         return this;
     }
 
+    /**
+     * 连接主表
+     */
+    private String pTable;
+    /**
+     * 别名
+     */
+    private String aliasName;
+
+    /**
+     * 开启连接查询的标识位
+     */
+    private boolean joinFlag;
+
+    private List<Joins.On> joins;
+
+    public boolean isJoinFlag() {
+        return joinFlag;
+    }
+
+    public Criteria as(String aliasName){
+        this.aliasName = aliasName;
+        return this;
+    }
+
+    public Criteria from(Class clss){
+        pTable =EntityTools.getTableName(clss);
+        return this;
+    }
+
+    public Criteria join(Joins.On join){
+        joinFlag = true;
+        joins.add(join);
+        return this;
+    }
+
+    public String getpTable() {
+        return pTable;
+    }
+
+    public String getAliasName() {
+        return aliasName;
+    }
+
+    public List<Joins.On> getJoins() {
+        return joins;
+    }
+
+    public void setJoins(List<Joins.On> joins) {
+        this.joins = joins;
+    }
 }

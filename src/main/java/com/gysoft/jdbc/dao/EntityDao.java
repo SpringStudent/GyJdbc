@@ -194,4 +194,14 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @throws Exception 异常
 	 */
 	<E> Result<E> useSql(Class<E> clss, ISqlParamMapProvider iSqlParamMapProvider)throws Exception;
+
+	/**
+	 * 多表连接查询
+	 * @param clss clss Class类型
+	 * @param criteria 查询条件
+	 * @param <E> 结果泛型
+	 * @return Result
+	 * @throws Exception
+	 */
+	<E> Result<E> joinQuery(Class<E> clss, Criteria criteria)throws Exception;
 }

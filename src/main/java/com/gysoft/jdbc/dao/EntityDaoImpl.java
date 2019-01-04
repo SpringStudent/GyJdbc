@@ -271,4 +271,10 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         sql = NamedParameterUtils.parseSqlStatementIntoString(sql);
         return new Result<>(clss, sql, args, jdbcTemplate);
     }
+
+    @Override
+    public <E> Result<E> joinQuery(Class<E> clss, Criteria criteria) throws Exception {
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, null);
+        return new Result<>(clss, pair.getFirst(), pair.getSecond(), jdbcTemplate);
+    }
 }

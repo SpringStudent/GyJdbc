@@ -1,11 +1,11 @@
 package com.gysoft.jdbc.tools;
 
 
-
 import com.gysoft.jdbc.bean.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
+import sun.invoke.empty.Empty;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import static com.gysoft.jdbc.dao.EntityDao.*;
 
@@ -24,13 +25,14 @@ public class SqlMakeTools {
 
     /**
      * 组装SQL
-     * @param clazz 类型
-     * @param tbName 表名
+     *
+     * @param clazz   类型
+     * @param tbName  表名
      * @param sqlFlag sql标识
-     * @param <E> 泛型
+     * @param <E>     泛型
      * @return String 创建的sql
      */
-	public static <E> String makeSql(Class clazz, String tbName, String sqlFlag) {
+    public static <E> String makeSql(Class clazz, String tbName, String sqlFlag) {
         StringBuffer sql = new StringBuffer();
         Field[] fields = clazz.getDeclaredFields();
         if (sqlFlag.equals(SQL_INSERT)) {
@@ -79,9 +81,10 @@ public class SqlMakeTools {
 
     /**
      * 设置参数
-     * @param entity 实体
+     *
+     * @param entity  实体
      * @param sqlFlag sql标识
-     * @param <E> 泛型
+     * @param <E>     泛型
      * @return Object[] 参数数组
      */
     public static <E> Object[] setArgs(E entity, String sqlFlag) {
@@ -144,9 +147,10 @@ public class SqlMakeTools {
 
     /**
      * 设置参数类型(缺少的用到了再添加)
-     * @param entity 实体
+     *
+     * @param entity  实体
      * @param sqlFlag sql标识
-     * @param <E> 泛型
+     * @param <E>     泛型
      * @return int[] 参数类型数组
      */
     public static <E> int[] setArgTypes(E entity, String sqlFlag) {
@@ -219,13 +223,35 @@ public class SqlMakeTools {
 
     /**
      * 创建条件查询sql和入参
+     *
      * @param criteria 查询条件
-     * @param sql sql语句
+     * @param sql      sql语句
      * @return Pair sql与sql入参对
      */
-	public static Pair<String, Object[]> doCriteria(Criteria criteria, StringBuilder sql) {
+    public static Pair<String, Object[]> doCriteria(Criteria criteria, StringBuilder sql) {
+        boolean joinFlag = criteria.isJoinFlag();
         Pair<String, Object[]> result = new Pair<>();
         Object[] params = {};
+        if (joinFlag) {
+            //重新生成sql
+            StringBuilder overrideSql = new StringBuilder();
+            Set<String> selectFields = criteria.getSelectFields();
+            if(!CollectionUtils.isEmpty(selectFields)){
+                overrideSql.append("SELECT ");
+                criteria.getSelectFields().forEach(selectField -> overrideSql.append(selectField + ", "));
+                overrideSql.setLength(sql.length() - 2);
+                overrideSql.append(" FROM " + criteria.getpTable() + " AS " + criteria.getAliasName());
+            }else{
+                sql.append("SELECT * FROM " + criteria.getpTable() + " AS " + criteria.getAliasName());
+            }
+            List<Joins.On> joins = criteria.getJoins();
+            for (Joins.On join : joins) {
+                overrideSql.append(join.getJoinSql());
+                List<CriteriaProxy> criteriaProxies = join.getCriteriaProxys();
+                params = doCriteriaProxy(criteriaProxies, -2, overrideSql, params);
+            }
+            sql = overrideSql;
+        }
         if (null != criteria) {
             if (CollectionUtils.isNotEmpty(criteria.getWhereParams())) {
                 //where 条件参数拼接
@@ -235,19 +261,19 @@ public class SqlMakeTools {
                 if (null != criteria && CollectionUtils.isNotEmpty(whereParams)) {
                     sql.append(" WHERE ");
                     for (WhereParam whereParam : whereParams) {
-                        params = doCriteriaProxy(criteriaProxys,whereParamIndex,sql,params);
+                        params = doCriteriaProxy(criteriaProxys, whereParamIndex, sql, params);
                         whereParamIndex += 1;
-                        if(StringUtils.isEmpty(whereParam.getKey())){
+                        if (StringUtils.isEmpty(whereParam.getKey())) {
                             continue;
                         }
                         String key = whereParam.getKey();
                         String opt = whereParam.getOpt();
                         Object value = whereParam.getValue();
                         sql.append(key).append(SPACE);
-                        if (SQL_IN.equals(opt.toUpperCase())||SQL_NOT_IN.equals(opt.toUpperCase())) {
+                        if (SQL_IN.equals(opt.toUpperCase()) || SQL_NOT_IN.equals(opt.toUpperCase())) {
                             sql.append(opt).append(IN_START);
                             if (value instanceof Collection) {
-                                if(CollectionUtils.isNotEmpty(((Collection) value))){
+                                if (CollectionUtils.isNotEmpty(((Collection) value))) {
                                     Iterator iterator = ((Collection) value).iterator();
                                     while (iterator.hasNext()) {
                                         params = ArrayUtils.add(params, iterator.next());
@@ -268,7 +294,7 @@ public class SqlMakeTools {
                         }
                         sql.append(" AND ");
                     }
-                    params = doCriteriaProxy(criteriaProxys,whereParamIndex,sql,params);
+                    params = doCriteriaProxy(criteriaProxys, whereParamIndex, sql, params);
                     sql.setLength(sql.length() - 5);
                 }
             }
@@ -299,26 +325,30 @@ public class SqlMakeTools {
 
     /**
      * 组装更复杂的sql
-     * @author 周宁
+     *
      * @param criteriaProxys
      * @param whereParamIndex
      * @param params
      * @param sql
-     * @throws
-     * @version 1.0
      * @return Object[]
+     * @throws
+     * @author 周宁
+     * @version 1.0
      */
-    private static Object[] doCriteriaProxy(List<CriteriaProxy> criteriaProxys, int whereParamIndex, StringBuilder sql, Object[] params){
+    private static Object[] doCriteriaProxy(List<CriteriaProxy> criteriaProxys, int whereParamIndex, StringBuilder sql, Object[] params) {
         if (CollectionUtils.isNotEmpty(criteriaProxys)) {
             for (CriteriaProxy criteriaProxy : criteriaProxys) {
                 if (criteriaProxy.getWhereParamsIndex() - 1 == whereParamIndex) {
                     String criteriaType = criteriaProxy.getCriteriaType();
-                    if(criteriaType.equals("AND")){
-                        sql.append(IN_START).append(criteriaProxy.getSql()).append(IN_END).append(" AND ");
-                    }else{
+                    if (criteriaType.equals("AND")) {
+                        if(criteriaProxy.getWhereParamsIndex()==-1){
+                            sql.append(" AND ").append(criteriaProxy.getSql());
+                        }else{
+                            sql.append(IN_START).append(criteriaProxy.getSql()).append(IN_END).append(" AND ");
+                        }
+                    } else {
                         sql.append(SPACE).append(criteriaType).append(IN_START).append(criteriaProxy.getSql()).append(IN_END).append(" AND ");
                     }
-
                     params = ArrayUtils.addAll(params, criteriaProxy.getParams());
                 }
             }
