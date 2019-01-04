@@ -242,8 +242,8 @@ public class SqlMakeTools {
             }else{
                 sql.append("SELECT * FROM " + criteria.getpTable() + " AS " + criteria.getAliasName());
             }
-            List<Joins.On> joins = criteria.getJoins();
-            for (Joins.On join : joins) {
+            List<Joins.BaseJoin> joins = criteria.getJoins();
+            for (Joins.BaseJoin join : joins) {
                 overrideSql.append(join.getJoinSql());
                 List<CriteriaProxy> criteriaProxies = join.getCriteriaProxys();
                 params = doCriteriaProxy(criteriaProxies, -2, overrideSql, params);

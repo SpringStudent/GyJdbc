@@ -7,7 +7,7 @@ public enum JoinType {
     LeftJoin("LEFT JOIN"),
     RightJoin("RIGHT JOIN"),
     InnerJoin("INNER JOIN"),
-    NatureJoin(" , ");
+    NatureJoin(",");
 
     private final String type;
 

@@ -20,8 +20,8 @@ public class Joins {
         this.criteriaProxys = new ArrayList<>();
     }
 
-    public With with(JoinType joinType, Class clss) {
-        joinSql.append(" " + joinType.getType() + " " + EntityTools.getTableName(clss));
+    public With with(Class clss) {
+        joinSql.append(" %s " + EntityTools.getTableName(clss));
         return getWith();
     }
 
@@ -29,28 +29,27 @@ public class Joins {
         return joinSql;
     }
 
-    public class With {
+    public class With extends BaseJoin {
         public As as(String aliasName) {
             joinSql.append(" AS " + aliasName + " ");
             return getAs();
         }
-
     }
 
-    public class As {
+    public class As extends BaseJoin {
         public On on(String field, String field2) {
             joinSql.append(" ON " + field + " = " + field2 + " ");
             return getOn();
         }
     }
 
-    public class On {
+    public class On extends BaseJoin {
         public On on(String field, String field2) {
             joinSql.append(" AND " + field + " = " + field2 + " ");
             return this;
         }
 
-        public On and(String key,String opt,Object value){
+        public On and(String key, String opt, Object value) {
             CriteriaProxy criteriaProxy = new CriteriaProxy();
             Pair<String, Object[]> pair = SqlMakeTools.doCriteria(new Criteria().where(key, opt, value), new StringBuilder());
             criteriaProxy.setSql(new StringBuilder(pair.getFirst().replace("WHERE", "").trim()));
@@ -60,15 +59,6 @@ public class Joins {
             criteriaProxys.add(criteriaProxy);
             return this;
         }
-
-        public StringBuilder getJoinSql() {
-            return joinSql;
-        }
-
-        public List<CriteriaProxy> getCriteriaProxys(){
-            return criteriaProxys;
-        }
-
     }
 
     private With getWith() {
@@ -83,4 +73,18 @@ public class Joins {
         return new On();
     }
 
+    public abstract class BaseJoin {
+
+        public void setJoinType(JoinType joinType) {
+            joinSql = new StringBuilder(String.format(joinSql.toString(), joinType.getType()));
+        }
+
+        public StringBuilder getJoinSql() {
+            return joinSql;
+        }
+
+        public List<CriteriaProxy> getCriteriaProxys() {
+            return criteriaProxys;
+        }
+    }
 }

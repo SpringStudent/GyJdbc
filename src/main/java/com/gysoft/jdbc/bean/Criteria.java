@@ -301,13 +301,12 @@ public class Criteria {
      * 别名
      */
     private String aliasName;
-
     /**
      * 开启连接查询的标识位
      */
     private boolean joinFlag;
 
-    private List<Joins.On> joins;
+    private List<Joins.BaseJoin> joins;
 
     public boolean isJoinFlag() {
         return joinFlag;
@@ -323,7 +322,29 @@ public class Criteria {
         return this;
     }
 
-    public Criteria join(Joins.On join){
+    public Criteria leftJoin(Joins.On on){
+        on.setJoinType(JoinType.LeftJoin);
+        return join(on);
+    }
+
+    public Criteria rightJoin(Joins.On on){
+        on.setJoinType(JoinType.RightJoin);
+        return join(on);
+    }
+
+    public Criteria innerJoin(Joins.On on){
+        on.setJoinType(JoinType.InnerJoin);
+        return join(on);
+    }
+
+    public Criteria natureJoin(Joins.BaseJoin as){
+        joinFlag = true;
+        as.setJoinType(JoinType.NatureJoin);
+        joins.add(as);
+        return this;
+    }
+
+    private Criteria join(Joins.On join){
         joinFlag = true;
         joins.add(join);
         return this;
@@ -337,11 +358,8 @@ public class Criteria {
         return aliasName;
     }
 
-    public List<Joins.On> getJoins() {
+    public List<Joins.BaseJoin> getJoins() {
         return joins;
     }
 
-    public void setJoins(List<Joins.On> joins) {
-        this.joins = joins;
-    }
 }
