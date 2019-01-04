@@ -239,7 +239,7 @@ public class SqlMakeTools {
             if(!CollectionUtils.isEmpty(selectFields)){
                 overrideSql.append("SELECT ");
                 criteria.getSelectFields().forEach(selectField -> overrideSql.append(selectField + ", "));
-                overrideSql.setLength(sql.length() - 2);
+                overrideSql.setLength(overrideSql.length() - 2);
                 overrideSql.append(" FROM " + criteria.getpTable() + " AS " + criteria.getAliasName());
             }else{
                 sql.append("SELECT * FROM " + criteria.getpTable() + " AS " + criteria.getAliasName());
