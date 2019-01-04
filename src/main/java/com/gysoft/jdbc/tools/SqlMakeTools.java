@@ -5,7 +5,6 @@ import com.gysoft.jdbc.bean.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
-import sun.invoke.empty.Empty;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -14,7 +13,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import static com.gysoft.jdbc.dao.EntityDao.*;
 
