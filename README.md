@@ -230,10 +230,17 @@ List<SimpleUser> simpleUsers2 = tbUserDao.useSql(SimpleUser.class, () -> {
 支持join查询
 
 ```
-Criteria criteria = new Criteria().select(fileds...).from(Pojo.class).as(表别名)
-.leftJoin(new Joins().with(JoinType,Pojo.class).as("表别名").on(filed1,field2).and(key,opt,val))
-.innerJoin(....)
-.where().and().orCriteria());
-xxxDao.joinQuery(clss,criteria).pageQuery(page);
-xxxDao.joinQuery(clss,criteria).query();
+Criteria criteria = new Criteria().select("t1.name","t2.username").from(Book.class).as("t1")
+                .rightJoin(new Joins().with(Book.class).as("t2").on("fds","1sg2"))
+                .leftJoin(new Joins().with(Book.class).as("t3").on("pwd","pwd")
+                .and("dx","in", Arrays.asList(1,2,3,4,5)).on("fd13","fdf")
+                .and("mmp",">=","sd").and("sd",">=","ssdfgh"))
+                .innerJoin(new Joins().with(Book.class).as("t4").on("t4.f","t1.f"))
+                .andCriteria(new Criteria().where("k1","v1").or("k2","v2")).or("k3","k5");
+Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, null);
+System.out.println(pair.getFirst());
+System.out.println(org.apache.commons.lang.ArrayUtils.toString(pair.getSecond()));
+
+SELECT t1.name, t2.username FROM tb_book AS t1 RIGHT JOIN tb_book AS t2  ON fds = 1sg2  LEFT JOIN tb_book AS t3  ON pwd = pwd  AND fd13 = fdf  AND dx in(?,?,?,?,?) AND mmp >= ? AND sd >= ? INNER JOIN tb_book AS t4  ON t4.f = t1.f  WHERE (k1 = ? OR k2 = ?) OR k3 = ?
+{1,2,3,4,5,sd,ssdfgh,v1,v2,k5}
 ```
