@@ -244,3 +244,10 @@ System.out.println(org.apache.commons.lang.ArrayUtils.toString(pair.getSecond())
 SELECT t1.name, t2.username FROM tb_book AS t1 RIGHT JOIN tb_book AS t2  ON fds = 1sg2  LEFT JOIN tb_book AS t3  ON pwd = pwd  AND fd13 = fdf  AND dx in(?,?,?,?,?) AND mmp >= ? AND sd >= ? INNER JOIN tb_book AS t4  ON t4.f = t1.f  WHERE (k1 = ? OR k2 = ?) OR k3 = ?
 {1,2,3,4,5,sd,ssdfgh,v1,v2,k5}
 ```
+### V3.1
+支持lambda条件判断
+
+```
+ if(EmptyUtils.isEmpty(searchKey)){criteria.and(User::getName,searchkey)}->criteria.andIfAbsent(User::getName,searchkey)
+ 
+```

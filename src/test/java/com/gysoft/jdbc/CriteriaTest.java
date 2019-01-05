@@ -39,13 +39,13 @@ public class CriteriaTest {
 
     @Test
     public void testJoinWithCriteria(){
+        String sd = null;
         Criteria criteria = new Criteria().select("t1.name","t2.username").from(Book.class).as("t1")
                 .natureJoin(new Joins().with(Token.class).as("t2"))
-                .in("t1.password", Arrays.asList("1234567890", "111111"));
+                .in("t1.password", Arrays.asList("1234567890", "111111"))
+                .andIfAbsent("k1",sd);
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());
         System.out.println(org.apache.commons.lang.ArrayUtils.toString(pair.getSecond()));
-
-
     }
 }

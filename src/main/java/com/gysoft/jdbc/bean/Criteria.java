@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
  *
  * @author 周宁
  */
-public class Criteria {
+public class Criteria implements AuxiliaryOperation{
     /**
      * 被查询的字段
      */
@@ -34,7 +34,6 @@ public class Criteria {
      * 分组字段
      */
     private Set<String> groupFields;
-
     /**
      * 更新
      */
@@ -124,45 +123,55 @@ public class Criteria {
     public <T, R> Criteria where(TypeFunction<T, R> function, String opt, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), opt, value);
     }
-
+    @Override
     public Criteria like(String key, Object value) {
         return this.where(key, "LIKE", "%" + value + "%");
     }
 
+    @Override
     public <T, R> Criteria like(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), "LIKE", "%" + value + "%");
     }
-
+    @Override
     public Criteria gt(String key, Object value) {
         return this.where(key, ">", value);
     }
 
+    @Override
     public <T, R> Criteria gt(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), ">", value);
     }
-
+    @Override
     public Criteria gte(String key, Object value) {
         return this.where(key, ">=", value);
     }
 
+    @Override
     public <T, R> Criteria gte(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), ">=", value);
     }
-
+    @Override
     public Criteria lt(String key, Object value) {
         return this.where(key, "<", value);
     }
 
+    @Override
     public <T, R> Criteria lt(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), "<", value);
     }
-
+    @Override
     public Criteria let(String key, Object value) {
         return this.where(key, "<=", value);
     }
 
+    @Override
     public <T, R> Criteria let(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), "<=", value);
+    }
+
+    @Override
+    public Criteria doNothing() {
+        return this;
     }
 
     public Criteria notEqual(String key, Object value) {
@@ -188,11 +197,12 @@ public class Criteria {
     public <T, R> Criteria isNotNull(TypeFunction<T, R> function) {
         return this.where(TypeFunction.getLambdaColumnName(function), "IS", "NOT NULL");
     }
-
+    @Override
     public Criteria and(String key, Object value) {
         return this.where(key, value);
     }
 
+    @Override
     public <T, R> Criteria and(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), value);
     }
@@ -204,11 +214,12 @@ public class Criteria {
     public <T, R> Criteria and(TypeFunction<T, R> function, String opt, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), opt, value);
     }
-
+    @Override
     public Criteria or(String key, Object value) {
         return this.or(key, "=", value);
     }
 
+    @Override
     public <T, R> Criteria or(TypeFunction<T, R> function, Object value) {
         return this.or(TypeFunction.getLambdaColumnName(function), "=", value);
     }
@@ -223,20 +234,22 @@ public class Criteria {
     public <T, R> Criteria or(TypeFunction<T, R> function, String opt, Object value) {
         return this.or(TypeFunction.getLambdaColumnName(function), opt, value);
     }
-
-    public Criteria in(String key, List<?> args) {
+    @Override
+    public Criteria in(String key, Collection<?> args) {
         return this.where(key, "IN", args);
     }
 
-    public <T, R> Criteria in(TypeFunction<T, R> function, List<?> args) {
+    @Override
+    public <T, R> Criteria in(TypeFunction<T, R> function, Collection<?> args) {
         return this.where(TypeFunction.getLambdaColumnName(function), "IN", args);
     }
-
-    public Criteria notIn(String key, List<?> args) {
+    @Override
+    public Criteria notIn(String key, Collection<?> args) {
         return this.where(key, "NOT IN", args);
     }
 
-    public <T, R> Criteria notIn(TypeFunction<T, R> function, List<?> args) {
+    @Override
+    public <T, R> Criteria notIn(TypeFunction<T, R> function, Collection<?> args) {
         return this.where(TypeFunction.getLambdaColumnName(function), "NOT IN", args);
     }
 
@@ -278,8 +291,8 @@ public class Criteria {
         return this;
     }
 
-    public Criteria orderBy(Sort sort) {
-        sorts.add(sort);
+    public Criteria orderBy(Sort... sort) {
+        sorts.addAll(Arrays.asList(sort));
         return this;
     }
 
@@ -301,6 +314,7 @@ public class Criteria {
      * 别名
      */
     private String aliasName;
+
     /**
      * 开启连接查询的标识位
      */
