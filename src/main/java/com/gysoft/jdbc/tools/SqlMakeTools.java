@@ -231,6 +231,9 @@ public class SqlMakeTools {
         Pair<String, Object[]> result = new Pair<>();
         Object[] params = {};
         if (joinFlag) {
+            if(StringUtils.isEmpty(criteria.getpTable())){
+                throw new RuntimeException("primary table unspecified");
+            }
             //重新生成sql
             StringBuilder overrideSql = new StringBuilder();
             Set<String> selectFields = criteria.getSelectFields();
@@ -238,9 +241,12 @@ public class SqlMakeTools {
                 overrideSql.append("SELECT ");
                 criteria.getSelectFields().forEach(selectField -> overrideSql.append(selectField + ", "));
                 overrideSql.setLength(overrideSql.length() - 2);
-                overrideSql.append(" FROM " + criteria.getpTable() + " AS " + criteria.getAliasName());
+                overrideSql.append(" FROM " + criteria.getpTable());
             }else{
-                sql.append("SELECT * FROM " + criteria.getpTable() + " AS " + criteria.getAliasName());
+                overrideSql.append("SELECT * FROM " + criteria.getpTable());
+            }
+            if(StringUtils.isNotEmpty(criteria.getAliasName())){
+                overrideSql.append( " AS " + criteria.getAliasName());
             }
             List<Joins.BaseJoin> joins = criteria.getJoins();
             for (Joins.BaseJoin join : joins) {

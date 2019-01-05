@@ -362,4 +362,7 @@ public class Criteria {
         return joins;
     }
 
+    public void setpTable(String pTable) {
+        this.pTable = pTable;
+    }
 }
