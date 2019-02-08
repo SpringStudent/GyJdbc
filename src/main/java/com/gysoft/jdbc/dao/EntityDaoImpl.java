@@ -265,15 +265,6 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public <E> Result<E> useSql(Class<E> clss, ISqlParamMapProvider iSqlParamMapProvider)throws Exception {
-        String sql = iSqlParamMapProvider.getSqlParamMap().getSql();
-        Map<String, Object> paramMap = iSqlParamMapProvider.getSqlParamMap().getParamMap();
-        Object[] args = NamedParameterUtils.buildValueArray(sql, paramMap);
-        sql = NamedParameterUtils.parseSqlStatementIntoString(sql);
-        return new Result<>(clss, sql, args, jdbcTemplate);
-    }
-
-    @Override
     public <E> Result<E> joinQuery(Class<E> clss, Criteria criteria) throws Exception {
         //表名称为空，帮忙设置下主表
         if(StringUtils.isEmpty(criteria.getpTable())){
