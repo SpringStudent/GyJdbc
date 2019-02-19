@@ -370,10 +370,9 @@ public class SqlMakeTools {
     /**
      * 递归构造查询树
      *
-     * @param criteria
+     * @param criteria 查询条件
+     * @param deep 树深度
      * @param criteriaTree 待构造的查询树
-     * @return
-     * @throws
      * @author 周宁
      * @version 1.0
      */
@@ -390,10 +389,9 @@ public class SqlMakeTools {
     /**
      * 递归组装子查询sql
      *
-     * @param criteriaTree
-     * @param sql
+     * @param criteriaTree 查询条件树
+     * @param sql sql语句
      * @return String
-     * @throws
      * @author 周宁
      * @version 1.0
      */

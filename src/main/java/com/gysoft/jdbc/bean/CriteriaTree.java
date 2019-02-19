@@ -10,7 +10,6 @@ import java.util.List;
 /**
  * 查询条件节点抽象
  * @author 周宁
- * @Date 2019-02-16 18:00
  */
 @Data
 @Builder

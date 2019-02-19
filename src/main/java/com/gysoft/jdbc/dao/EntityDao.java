@@ -191,7 +191,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @param criteria 查询条件
 	 * @param <E> 结果泛型
 	 * @return Result
-	 * @throws Exception
+	 * @throws Exception 异常
 	 */
 	<E> Result<E> joinQuery(Class<E> clss, Criteria criteria)throws Exception;
 
@@ -201,7 +201,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @param criteria 查询条件
 	 * @param <E> 结果泛型
 	 * @return Result
-	 * @throws Exception
+	 * @throws Exception 异常
 	 */
 	<E> Result<E> subQuery(Class<E> clss, Criteria criteria)throws Exception;
 
