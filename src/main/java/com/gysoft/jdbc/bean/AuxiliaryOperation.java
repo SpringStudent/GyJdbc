@@ -236,6 +236,10 @@ public interface AuxiliaryOperation {
                     return true;
                 }
             }
+            if(value instanceof Number){
+                return true;
+            }
+
             if(value instanceof  Collection){
                 if(CollectionUtils.isNotEmpty((Collection) value)){
                     return true;
