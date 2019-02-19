@@ -95,6 +95,7 @@ public class Criteria implements AuxiliaryOperation{
         groupFields = new LinkedHashSet<>();
         kvs = new ArrayList<>();
         joins = new ArrayList<>();
+        criterias = new ArrayList<>();
     }
 
     public Criteria select(String... fields) {
@@ -378,5 +379,22 @@ public class Criteria implements AuxiliaryOperation{
 
     public void setpTable(String pTable) {
         this.pTable = pTable;
+    }
+
+    /**
+     * 子查询条件
+     */
+    private List<Criteria> criterias;
+
+    public Criteria from(Criteria... cc){
+        criterias.addAll(Arrays.asList(cc));
+        return this;
+    }
+    public List<Criteria> getCriterias() {
+        return criterias;
+    }
+
+    public void setCriterias(List<Criteria> criterias) {
+        this.criterias = criterias;
     }
 }

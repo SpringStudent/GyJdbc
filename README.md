@@ -251,3 +251,34 @@ SELECT t1.name, t2.username FROM tb_book AS t1 RIGHT JOIN tb_book AS t2  ON fds 
  if(EmptyUtils.isEmpty(searchKey)){criteria.and(User::getName,searchkey)}->criteria.andIfAbsent(User::getName,searchkey)
  
 ```
+
+### V3.2
+支持无限层级的子查询
+
+```
+public static void main(String[] args) {
+        Criteria criteria = new Criteria();
+        Criteria criteria1 = new Criteria().select("id,-1 as type,tagName as folderName,createTime,updateTime,createUser,updateUser")
+                .from(DataDocTag.class).where(DataDocTag::getProjectId, "p1").and(DataDocTag::getParentId, "f1")
+                .likeIfAbsent(DataDocTag::getTagName, "%sc%").gtIfAbsent(DataDocTag::getUpdateTime, "2018-11-02")
+                .letIfAbsent(DataDocTag::getUpdateTime, "2018-12-02");
+
+        Criteria criteria2 = new Criteria().select("id,type,fileName as folderName,createTime,updateTime,createUser,updateUser")
+                .from(DataDocument.class).where(DataDocument::getTagId, "f1").and(DataDocument::getProjectId, "p1")
+                .likeIfAbsent(DataDocument::getFileName, "%sc%").gtIfAbsent(DataDocument::getUpdateTime, "2018-11-02")
+                .letIfAbsent(DataDocument::getUpdateTime, "2018-12-02").and(DataDocument::getType, 1);
+        criteria.select("*").from(criteria1, criteria2).as("result").orderBy(new Sort("result.updateTime"));
+        CriteriaTree criteriaTree = new CriteriaTree();
+        Pair<String,Object[]> pair = SqlMakeTools.doCriteria(criteria,null);
+        criteriaTree.setId(IdGenerator.newShortId());
+        criteriaTree.setParams(pair.getSecond());
+        criteriaTree.setSql(pair.getFirst());
+        criteriaTree.setChildCriteriaTree(new ArrayList<>());
+        SqlMakeTools.buildCriteriaTree(criteria,1,criteriaTree);
+        System.out.println(SqlMakeTools.doSubCriteriaSql(criteriaTree,""));
+        System.out.println(Arrays.toString(SqlMakeTools.doSubCriteriaParam(criteriaTree,new Object[]{})));
+    }
+
+SELECT * FROM(SELECT id,-1 as type,tagName as folderName,createTime,updateTime,createUser,updateUser FROM data_doc_tag WHERE projectId = ? AND parentId = ? AND tagName LIKE ? AND updateTime > ? AND updateTime <= ? UNION ALL SELECT id,type,fileName as folderName,createTime,updateTime,createUser,updateUser FROM data_document WHERE tagId = ? AND projectId = ? AND fileName LIKE ? AND updateTime > ? AND updateTime <= ? AND type = ? )  AS result ORDER BY result.updateTime DESC
+[p1, f1, %%sc%%, 2018-11-02, 2018-12-02, f1, p1, %%sc%%, 2018-11-02, 2018-12-02, 1]
+```

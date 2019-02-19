@@ -6,8 +6,10 @@ import org.apache.commons.lang.ArrayUtils;
 import org.junit.Test;
 
 import java.awt.print.Book;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Unit test for simple App.
@@ -38,14 +40,34 @@ public class CriteriaTest {
     }
 
     @Test
-    public void testJoinWithCriteria(){
+    public void testJoinWithCriteria() {
         String sd = null;
-        Criteria criteria = new Criteria().select("t1.name","t2.username").from(Book.class).as("t1")
+        Criteria criteria = new Criteria().select("t1.name", "t2.username").from(Book.class).as("t1")
                 .natureJoin(new Joins().with(Token.class).as("t2"))
                 .in("t1.password", Arrays.asList("1234567890", "111111"))
-                .andIfAbsent("k1",sd);
+                .andIfAbsent("k1", sd);
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());
         System.out.println(org.apache.commons.lang.ArrayUtils.toString(pair.getSecond()));
+    }
+
+    @Test
+    public void testBuildCriteriaTree() {
+        Criteria sub1 = new Criteria().select("t1.a,t1.b").from(Token.class).as("t1").where("t1.tid", 1);
+        Criteria sub2 = new Criteria().select("t2.f1").from(new Criteria().select("*").from(Role.class).as("t2'").where("f1","v1")
+        .innerJoin(new Joins().with(Role.class).as("t2''").on("t2'.id","t2''.id"))).as("t2").where("t2.roleId", 2);
+        Criteria criteria = new Criteria().select("*").from(sub1, sub2).as("t3").rightJoin(new Joins()
+        .with(Token.class).as("t4").on("t4.f2","t3.f3")).where("t3.id","vv");
+        CriteriaTree criteriaTree = new CriteriaTree();
+        Pair<String,Object[]> pair = SqlMakeTools.doCriteria(criteria,null);
+        criteriaTree.setId("0");
+        criteriaTree.setParams(pair.getSecond());
+        criteriaTree.setSql(pair.getFirst());
+        criteriaTree.setChildCriteriaTree(new ArrayList<>());
+        SqlMakeTools.buildCriteriaTree(criteria,1,criteriaTree);
+        System.out.println(criteriaTree);
+        System.out.println(SqlMakeTools.doSubCriteriaSql(criteriaTree,""));
+        System.out.println(Arrays.toString(SqlMakeTools.doSubCriteriaParam(criteriaTree,new Object[]{})));
+
     }
 }

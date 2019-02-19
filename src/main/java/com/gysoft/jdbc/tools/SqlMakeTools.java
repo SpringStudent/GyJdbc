@@ -9,10 +9,8 @@ import org.apache.commons.lang.StringUtils;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Types;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Consumer;
 
 import static com.gysoft.jdbc.dao.EntityDao.*;
 
@@ -230,24 +228,12 @@ public class SqlMakeTools {
         boolean joinFlag = criteria.isJoinFlag();
         Pair<String, Object[]> result = new Pair<>();
         Object[] params = {};
+        if (sql == null) {
+            sql = doCriteriaSelect(criteria);
+        }
         if (joinFlag) {
-            if(StringUtils.isEmpty(criteria.getpTable())){
-                throw new RuntimeException("primary table unspecified");
-            }
+            StringBuilder overrideSql = doCriteriaSelect(criteria);
             //重新生成sql
-            StringBuilder overrideSql = new StringBuilder();
-            Set<String> selectFields = criteria.getSelectFields();
-            if(!CollectionUtils.isEmpty(selectFields)){
-                overrideSql.append("SELECT ");
-                criteria.getSelectFields().forEach(selectField -> overrideSql.append(selectField + ", "));
-                overrideSql.setLength(overrideSql.length() - 2);
-                overrideSql.append(" FROM " + criteria.getpTable());
-            }else{
-                overrideSql.append("SELECT * FROM " + criteria.getpTable());
-            }
-            if(StringUtils.isNotEmpty(criteria.getAliasName())){
-                overrideSql.append( " AS " + criteria.getAliasName());
-            }
             List<Joins.BaseJoin> joins = criteria.getJoins();
             for (Joins.BaseJoin join : joins) {
                 overrideSql.append(join.getJoinSql());
@@ -345,9 +331,9 @@ public class SqlMakeTools {
                 if (criteriaProxy.getWhereParamsIndex() - 1 == whereParamIndex) {
                     String criteriaType = criteriaProxy.getCriteriaType();
                     if (criteriaType.equals("AND")) {
-                        if(criteriaProxy.getWhereParamsIndex()==-1){
+                        if (criteriaProxy.getWhereParamsIndex() == -1) {
                             sql.append(" AND ").append(criteriaProxy.getSql());
-                        }else{
+                        } else {
                             sql.append(IN_START).append(criteriaProxy.getSql()).append(IN_END).append(" AND ");
                         }
                     } else {
@@ -360,4 +346,91 @@ public class SqlMakeTools {
         return params;
     }
 
+    private static StringBuilder doCriteriaSelect(Criteria criteria) {
+        //重新生成sql
+        StringBuilder overrideSql = new StringBuilder();
+        Set<String> selectFields = criteria.getSelectFields();
+        if (!CollectionUtils.isEmpty(selectFields)) {
+            overrideSql.append("SELECT ");
+            criteria.getSelectFields().forEach(selectField -> overrideSql.append(selectField + ", "));
+            overrideSql.setLength(overrideSql.length() - 2);
+            overrideSql.append(" FROM ");
+        } else {
+            overrideSql.append("SELECT * FROM ");
+        }
+        if (StringUtils.isNotEmpty(criteria.getpTable())) {
+            overrideSql.append(criteria.getpTable());
+        }
+        if (StringUtils.isNotEmpty(criteria.getAliasName())) {
+            overrideSql.append(" AS " + criteria.getAliasName());
+        }
+        return overrideSql;
+    }
+
+    /**
+     * 递归构造查询树
+     *
+     * @param criteria
+     * @param criteriaTree 待构造的查询树
+     * @return
+     * @throws
+     * @author 周宁
+     * @version 1.0
+     */
+    public static void buildCriteriaTree(Criteria criteria, int deep, CriteriaTree criteriaTree) {
+        List<Criteria> criterias = criteria.getCriterias();
+        for (int i = 0; i < criterias.size(); i++) {
+            Pair<String, Object[]> pair = doCriteria(criterias.get(i), doCriteriaSelect(criterias.get(i)));
+            CriteriaTree cTree = CriteriaTree.builder().id((UUID.randomUUID().toString())).sql(pair.getFirst()).params(pair.getSecond()).childCriteriaTree(new ArrayList<>()).build();
+            criteriaTree.getChildCriteriaTree().add(cTree);
+            buildCriteriaTree(criterias.get(i), deep += 1, cTree);
+        }
+    }
+
+    /**
+     * 递归组装子查询sql
+     *
+     * @param criteriaTree
+     * @param sql
+     * @return String
+     * @throws
+     * @author 周宁
+     * @version 1.0
+     */
+    public static String doSubCriteriaSql(CriteriaTree criteriaTree, String sql) {
+        List<CriteriaTree> childCriteriaNodes = criteriaTree.getChildCriteriaTree();
+        if (CollectionUtils.isNotEmpty(childCriteriaNodes)) {
+            String[] arr = criteriaTree.getSql().split("FROM");
+            sql += arr[0] + "FROM(";
+            for (CriteriaTree cnode : childCriteriaNodes) {
+                if (CollectionUtils.isNotEmpty(cnode.getChildCriteriaTree())) {
+                    sql = doSubCriteriaSql(cnode, sql);
+                } else {
+                    sql += cnode.getId() + " UNION ALL ";
+                    sql = sql.replace(cnode.getId(), cnode.getSql());
+                }
+            }
+            sql += ")" + arr[1];
+        } else {
+            sql.replace(criteriaTree.getId(), criteriaTree.getSql());
+        }
+        return sql.replace("UNION ALL )",")");
+    }
+
+    public static Object[] doSubCriteriaParam(CriteriaTree criteriaTree, Object[] param) {
+        List<CriteriaTree> childCriteriaNodes = criteriaTree.getChildCriteriaTree();
+        if (CollectionUtils.isNotEmpty(childCriteriaNodes)) {
+            for (CriteriaTree cnode : childCriteriaNodes) {
+                if (CollectionUtils.isNotEmpty(cnode.getChildCriteriaTree())) {
+                    param = doSubCriteriaParam(cnode, param);
+                } else {
+                    param = ArrayUtils.addAll(param,cnode.getParams());
+                }
+            }
+            param = ArrayUtils.addAll(param,criteriaTree.getParams());
+        }else{
+            param = ArrayUtils.addAll(param,criteriaTree.getParams());
+        }
+        return param;
+    }
 }

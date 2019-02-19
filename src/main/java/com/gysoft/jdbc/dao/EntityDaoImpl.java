@@ -10,7 +10,6 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.*;
-import org.springframework.jdbc.core.namedparam.NamedParameterUtils;
 
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
@@ -265,15 +264,6 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public <E> Result<E> useSql(Class<E> clss, ISqlParamMapProvider iSqlParamMapProvider)throws Exception {
-        String sql = iSqlParamMapProvider.getSqlParamMap().getSql();
-        Map<String, Object> paramMap = iSqlParamMapProvider.getSqlParamMap().getParamMap();
-        Object[] args = NamedParameterUtils.buildValueArray(sql, paramMap);
-        sql = NamedParameterUtils.parseSqlStatementIntoString(sql);
-        return new Result<>(clss, sql, args, jdbcTemplate);
-    }
-
-    @Override
     public <E> Result<E> joinQuery(Class<E> clss, Criteria criteria) throws Exception {
         //表名称为空，帮忙设置下主表
         if(StringUtils.isEmpty(criteria.getpTable())){
@@ -282,4 +272,17 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, null);
         return new Result<>(clss, pair.getFirst(), pair.getSecond(), jdbcTemplate);
     }
+
+    @Override
+    public <E> Result<E> subQuery(Class<E> clss, Criteria criteria) throws Exception {
+        CriteriaTree criteriaTree = new CriteriaTree();
+        Pair<String,Object[]> pair = SqlMakeTools.doCriteria(criteria,null);
+        criteriaTree.setId("0");
+        criteriaTree.setParams(pair.getSecond());
+        criteriaTree.setSql(pair.getFirst());
+        criteriaTree.setChildCriteriaTree(new ArrayList<>());
+        SqlMakeTools.buildCriteriaTree(criteria,1,criteriaTree);
+        return new Result<>(clss,SqlMakeTools.doSubCriteriaSql(criteriaTree,""), SqlMakeTools.doSubCriteriaParam(criteriaTree,new Object[]{}), jdbcTemplate);
+    }
+
 }
