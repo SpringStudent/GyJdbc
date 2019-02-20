@@ -401,11 +401,11 @@ public class SqlMakeTools {
             String[] arr = criteriaTree.getSql().split("FROM");
             sql += arr[0] + "FROM(";
             for (CriteriaTree cnode : childCriteriaNodes) {
+                sql += " UNION ALL ";
                 if (CollectionUtils.isNotEmpty(cnode.getChildCriteriaTree())) {
                     sql = doSubCriteriaSql(cnode, sql);
                 } else {
-                    sql += " UNION ALL "+cnode.getId()+" UNION ALL ";
-
+                    sql += cnode.getId();
                     sql = sql.replace(cnode.getId(), cnode.getSql());
                 }
             }
@@ -413,7 +413,7 @@ public class SqlMakeTools {
         } else {
             sql.replace(criteriaTree.getId(), criteriaTree.getSql());
         }
-        return sql.replace("( UNION ALL","(").replace("UNION ALL )",")");
+        return sql.replace("( UNION ALL","(");
     }
 
     public static Object[] doSubCriteriaParam(CriteriaTree criteriaTree, Object[] param) {
