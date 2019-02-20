@@ -371,18 +371,17 @@ public class SqlMakeTools {
      * 递归构造查询树
      *
      * @param criteria 查询条件
-     * @param deep 树深度
      * @param criteriaTree 待构造的查询树
      * @author 周宁
      * @version 1.0
      */
-    public static void buildCriteriaTree(Criteria criteria, int deep, CriteriaTree criteriaTree) {
+    public static void buildCriteriaTree(Criteria criteria, CriteriaTree criteriaTree) {
         List<Criteria> criterias = criteria.getCriterias();
         for (int i = 0; i < criterias.size(); i++) {
             Pair<String, Object[]> pair = doCriteria(criterias.get(i), doCriteriaSelect(criterias.get(i)));
             CriteriaTree cTree = CriteriaTree.builder().id((UUID.randomUUID().toString())).sql(pair.getFirst()).params(pair.getSecond()).childCriteriaTree(new ArrayList<>()).build();
             criteriaTree.getChildCriteriaTree().add(cTree);
-            buildCriteriaTree(criterias.get(i), deep += 1, cTree);
+            buildCriteriaTree(criterias.get(i), cTree);
         }
     }
 
