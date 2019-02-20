@@ -404,7 +404,8 @@ public class SqlMakeTools {
                 if (CollectionUtils.isNotEmpty(cnode.getChildCriteriaTree())) {
                     sql = doSubCriteriaSql(cnode, sql);
                 } else {
-                    sql += cnode.getId() + " UNION ALL ";
+                    sql += " UNION ALL "+cnode.getId()+" UNION ALL ";
+
                     sql = sql.replace(cnode.getId(), cnode.getSql());
                 }
             }
@@ -412,7 +413,7 @@ public class SqlMakeTools {
         } else {
             sql.replace(criteriaTree.getId(), criteriaTree.getSql());
         }
-        return sql.replace("UNION ALL )",")");
+        return sql.replace("( UNION ALL","(").replace("UNION ALL )",")");
     }
 
     public static Object[] doSubCriteriaParam(CriteriaTree criteriaTree, Object[] param) {
