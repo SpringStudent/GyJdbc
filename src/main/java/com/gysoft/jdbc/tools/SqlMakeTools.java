@@ -410,7 +410,7 @@ public class SqlMakeTools {
             }
             sql += ")" + arr[1];
         } else {
-            sql.replace(criteriaTree.getId(), criteriaTree.getSql());
+            sql += criteriaTree.getSql();
         }
         return sql.replace("( UNION ALL","(");
     }
