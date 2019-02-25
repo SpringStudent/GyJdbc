@@ -167,6 +167,16 @@ public interface EntityDao<T,Id extends Serializable>{
 	/**
 	 * 使用自定义sql
 	 * @param clss Class类型
+	 * @param criteria 条件封装
+	 * @param <E> 结果泛型
+	 * @return Result 结果集
+	 * @throws Exception 异常
+	 */
+	<E>Result<E> useCriteria(Class<E> clss,Criteria criteria)throws Exception;
+
+	/**
+	 * 使用自定义sql
+	 * @param clss Class类型
 	 * @param sql 自定义Sql
 	 * @param params 参数数组
 	 * @param <E> 结果泛型

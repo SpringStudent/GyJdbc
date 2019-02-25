@@ -56,7 +56,7 @@ public class CriteriaTest {
         Criteria sub1 = new Criteria().select("t1.a,t1.b").from(Token.class).as("t1").where("t1.tid", 1);
         Criteria sub2 = new Criteria().select("t2.f1").from(new Criteria().select("*").from(Role.class).as("t2'").where("f1","v1")
         .innerJoin(new Joins().with(Role.class).as("t2''").on("t2'.id","t2''.id"))).as("t2").where("t2.roleId", 2);
-        Criteria criteria = new Criteria().select("*").from(sub1, sub2).as("t3").rightJoin(new Joins()
+        Criteria criteria = new Criteria().select("*").from(sub2, sub1).as("t3").rightJoin(new Joins()
         .with(Token.class).as("t4").on("t4.f2","t3.f3")).where("t3.id","vv");
         CriteriaTree criteriaTree = new CriteriaTree();
         Pair<String,Object[]> pair = SqlMakeTools.doCriteria(criteria,null);

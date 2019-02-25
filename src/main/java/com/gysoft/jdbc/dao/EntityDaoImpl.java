@@ -254,6 +254,12 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
+    public <E> Result<E> useCriteria(Class<E> clss, Criteria criteria) throws Exception {
+        Pair<String,Object[]> pair = SqlMakeTools.doCriteria(criteria,null);
+        return new Result<>(clss, pair.getFirst(), pair.getSecond(),jdbcTemplate);
+    }
+
+    @Override
     public <E> Result<E> useSql(Class<E> clss, String sql, Object... params)throws Exception{
         return new Result<>(clss, sql, params,jdbcTemplate);
     }
