@@ -200,32 +200,6 @@ criteria.where("epid",1000)->criteria.where(UserBasicInfo::getEpid,1000);
 tbUserDao.updateWithCriteria(new Criteria().update(SimpleUser::getEmail,"33@qq.com").update(SimpleUser::getBirth,new Date()).where(SimpleUser::getName,"zhouning"));
 ```
 
-### V2.0
-支持自定义sql和实体对象查询
-
-```
-Integer count = tbUserDao.useSql(Integer.class,"select count(*) from tb_user").queryObject();
-List<Map<String,Object>> mapList = tbUserDao.useSql("select name,email from tb_user").queryMaps();
-PageResult<SimpleUser> tbUserPageResult = tbUserDao.useSql(SimpleUser.class,"select name,email,birth from tb_user where name = ?","zhouning").pageQuery(new Page(1,1));
-List<SimpleUser> simpleUsers = tbUserDao.useSql(SimpleUser.class,"select name,email,birth from tb_user where name like ?","%zhou%").queryList();
-QueryUserParam queryUserParam = QueryUserParam.builder().searchKey("z").birth(new Date()).build();
-
-List<SimpleUser> simpleUsers2 = tbUserDao.useSql(SimpleUser.class, () -> {
-    Map<String,Object> paramMap = new HashMap<>();
-    StringBuilder sql = new StringBuilder();
-    sql.append("select name,email,birth from tb_user where 1 = 1 ");
-    if(!StringUtils.isEmpty(queryUserParam.getSearchKey())){
-            sql.append("and name like :name ");
-            paramMap.put("name","%"+queryUserParam.getSearchKey()+"%");
-        }
-        if(queryUserParam.getBirth()!=null){
-            sql.append("and birth < :birth");
-            paramMap.put("birth",queryUserParam.getBirth());
-        }
-    return SqlParamMap.builder().sql(sql.toString()).paramMap(paramMap).build();
-    }).queryList();
-
-```
 ### V3.0
 支持join查询
 
@@ -253,32 +227,18 @@ SELECT t1.name, t2.username FROM tb_book AS t1 RIGHT JOIN tb_book AS t2  ON fds 
 ```
 
 ### V3.2
-支持无限层级的子查询
+支持子查询(同级子查询使用UNION ALL连接)
 
 ```
-public static void main(String[] args) {
-        Criteria criteria = new Criteria();
-        Criteria criteria1 = new Criteria().select("id,-1 as type,tagName as folderName,createTime,updateTime,createUser,updateUser")
-                .from(DataDocTag.class).where(DataDocTag::getProjectId, "p1").and(DataDocTag::getParentId, "f1")
-                .likeIfAbsent(DataDocTag::getTagName, "%sc%").gtIfAbsent(DataDocTag::getUpdateTime, "2018-11-02")
-                .letIfAbsent(DataDocTag::getUpdateTime, "2018-12-02");
-
-        Criteria criteria2 = new Criteria().select("id,type,fileName as folderName,createTime,updateTime,createUser,updateUser")
-                .from(DataDocument.class).where(DataDocument::getTagId, "f1").and(DataDocument::getProjectId, "p1")
-                .likeIfAbsent(DataDocument::getFileName, "%sc%").gtIfAbsent(DataDocument::getUpdateTime, "2018-11-02")
-                .letIfAbsent(DataDocument::getUpdateTime, "2018-12-02").and(DataDocument::getType, 1);
-        criteria.select("*").from(criteria1, criteria2).as("result").orderBy(new Sort("result.updateTime"));
-        CriteriaTree criteriaTree = new CriteriaTree();
-        Pair<String,Object[]> pair = SqlMakeTools.doCriteria(criteria,null);
-        criteriaTree.setId(IdGenerator.newShortId());
-        criteriaTree.setParams(pair.getSecond());
-        criteriaTree.setSql(pair.getFirst());
-        criteriaTree.setChildCriteriaTree(new ArrayList<>());
-        SqlMakeTools.buildCriteriaTree(criteria,1,criteriaTree);
-        System.out.println(SqlMakeTools.doSubCriteriaSql(criteriaTree,""));
-        System.out.println(Arrays.toString(SqlMakeTools.doSubCriteriaParam(criteriaTree,new Object[]{})));
-    }
-
-SELECT * FROM(SELECT id,-1 as type,tagName as folderName,createTime,updateTime,createUser,updateUser FROM data_doc_tag WHERE projectId = ? AND parentId = ? AND tagName LIKE ? AND updateTime > ? AND updateTime <= ? UNION ALL SELECT id,type,fileName as folderName,createTime,updateTime,createUser,updateUser FROM data_document WHERE tagId = ? AND projectId = ? AND fileName LIKE ? AND updateTime > ? AND updateTime <= ? AND type = ? )  AS result ORDER BY result.updateTime DESC
-[p1, f1, %%sc%%, 2018-11-02, 2018-12-02, f1, p1, %%sc%%, 2018-11-02, 2018-12-02, 1]
+Criteria criteria = new Criteria();
+Criteria criteria1 = new Criteria().select("id,-1 as type,tagName as folderName,createTime,updateTime,createUser,updateUser")
+.from(DataDocTag.class).where(DataDocTag::getProjectId, projectId).and(DataDocTag::getParentId, folderId)
+.likeIfAbsent(DataDocTag::getTagName, searchKey).gtIfAbsent(DataDocTag::getUpdateTime, startDate)
+.letIfAbsent(DataDocTag::getUpdateTime, endDate);
+Criteria criteria2 = new Criteria().select("id,type,fileName as folderName,createTime,updateTime,createUser,updateUser")
+        .from(DataDocument.class).where(DataDocument::getTagId, folderId).and(DataDocument::getProjectId, projectId)
+        .likeIfAbsent(DataDocument::getFileName, searchKey).gtIfAbsent(DataDocument::getUpdateTime, startDate)
+        .letIfAbsent(DataDocument::getUpdateTime, endDate).and(DataDocument::getType, type);
+criteria.select("*").from(criteria1, criteria2).as("result").orderBy(new Sort("result.updateTime"));
+return dataDocTagDao.subQuery(AppFolderInfo.class, criteria).pageQuery(page);
 ```
