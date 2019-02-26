@@ -19,7 +19,7 @@ CREATE TABLE `tb_user` (
 <dependency>
     <groupId>io.github.springstudent</groupId>
     <artifactId>GyJdbc</artifactId>
-    <version>3.1.0</version>
+    <version>最新RLEASE版本</version>
 </dependency>
 ```
 

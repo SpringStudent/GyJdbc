@@ -397,4 +397,5 @@ public class Criteria implements AuxiliaryOperation{
     public void setCriterias(List<Criteria> criterias) {
         this.criterias = criterias;
     }
+
 }
