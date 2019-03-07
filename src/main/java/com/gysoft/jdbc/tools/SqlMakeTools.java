@@ -228,7 +228,7 @@ public class SqlMakeTools {
         boolean joinFlag = criteria.isJoinFlag();
         Pair<String, Object[]> result = new Pair<>();
         Object[] params = {};
-        if (sql == null) {
+        if (sql == null||sql.length()==0) {
             sql = doCriteriaSelect(criteria);
         }
         if (joinFlag) {

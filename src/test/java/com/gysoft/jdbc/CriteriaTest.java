@@ -11,6 +11,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import static com.gysoft.jdbc.bean.FuncBuilder.*;
+
 /**
  * Unit test for simple App.
  */
@@ -69,5 +71,27 @@ public class CriteriaTest {
         System.out.println(SqlMakeTools.doSubCriteriaSql(criteriaTree,""));
         System.out.println(Arrays.toString(SqlMakeTools.doSubCriteriaParam(criteriaTree,new Object[]{})));
 
+    }
+
+    @Test
+    public void testFunc(){
+        //支持mysql函数拼接
+        //聚集函数
+        Criteria criteria = new Criteria().select(count("*"),avg(Token::getSize),max(Token::getSize),min(Token::getSize),sum(Token::getSize)).from(Token.class);
+        //字符串处理函数
+        Criteria criteria2 = new Criteria().select(concat(Token::getTk,Token::getSize),length(Token::getTk),charLength(Token::getTk),upper(Token::getTk),lower(Token::getTk)).from(Token.class);
+        //数值处理函数
+        Criteria criteria3 = new Criteria().select(abs(Token::getSize),ceil(Token::getSize),floor(Token::getSize)).from(Token.class);
+        //时间处理函数
+        Criteria criteria4 = new Criteria().select(curdate(),curtime(),now(),month(curdate()),week(curdate()),minute(curtime()));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder());
+        System.out.println(pair.getFirst());
+        Pair<String, Object[]> pair2 = SqlMakeTools.doCriteria(criteria2, new StringBuilder());
+        System.out.println(pair2.getFirst());
+        Pair<String, Object[]> pair3 = SqlMakeTools.doCriteria(criteria3, new StringBuilder());
+        System.out.println(pair3.getFirst());
+        Pair<String, Object[]> pair4 = SqlMakeTools.doCriteria(criteria4, new StringBuilder());
+        System.out.println(pair4.getFirst());
+        //...more 等着你完善和探索...
     }
 }

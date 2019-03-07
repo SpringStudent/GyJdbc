@@ -242,3 +242,33 @@ Criteria criteria2 = new Criteria().select("id,type,fileName as folderName,creat
 criteria.select("*").from(criteria1, criteria2).as("result").orderBy(new Sort("result.updateTime"));
 return dataDocTagDao.subQuery(AppFolderInfo.class, criteria).pageQuery(page);
 ```
+
+### V4.0
+支持函数拼接
+
+
+```
+//支持mysql函数拼接
+//聚集函数
+Criteria criteria = new Criteria().select(count("*"),avg(Token::getSize),max(Token::getSize),min(Token::getSize),sum(Token::getSize)).from(Token.class);
+//字符串处理函数
+Criteria criteria2 = new Criteria().select(concat(Token::getTk,Token::getSize),length(Token::getTk),charLength(Token::getTk),upper(Token::getTk),lower(Token::getTk)).from(Token.class);
+//数值处理函数
+Criteria criteria3 = new Criteria().select(abs(Token::getSize),ceil(Token::getSize),floor(Token::getSize)).from(Token.class);
+//时间处理函数
+Criteria criteria4 = new Criteria().select(curdate(),curtime(),now(),month(curdate()),week(curdate()),minute(curtime()));
+Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder());
+System.out.println(pair.getFirst());
+Pair<String, Object[]> pair2 = SqlMakeTools.doCriteria(criteria2, new StringBuilder());
+System.out.println(pair2.getFirst());
+Pair<String, Object[]> pair3 = SqlMakeTools.doCriteria(criteria3, new StringBuilder());
+System.out.println(pair3.getFirst());
+Pair<String, Object[]> pair4 = SqlMakeTools.doCriteria(criteria4, new StringBuilder());
+System.out.println(pair4.getFirst());
+//...more 等着你完善和探索...
+
+SELECT COUNT(*), AVG(size), MAX(size), MIN(size), SUM(size) FROM tb_token
+SELECT CONCAT(tk,size), LENGTH(tk), CHAR_LENGTH(tk), UPPER(tk), LOWER(tk) FROM tb_token
+SELECT ABS(size), CEIL(size), FLOOR(size) FROM tb_token
+SELECT CURDATE(), CURTIME(), NOW(), MONTH(CURDATE()), WEEK(CURDATE()), MINUTE(CURTIME()) FROM 
+```
