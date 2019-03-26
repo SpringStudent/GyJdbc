@@ -2,9 +2,8 @@
 像使用mongotemplate一样拼接sql。使用jdbcTemplate不想写sql?写XXXDao和XXXDaoImpl很麻烦?sql拼错查找问题浪费时间?通过使用GyJdbc这些问题将迎刃而解。
 
 #### 运行环境
-jdk1.8+
-
-mysql
+- jdk1.8+
+- mysql
 
 #### 如何使用
 
@@ -122,83 +121,16 @@ public class TbUserDaoImpl extends EntityDaoImpl<TbUser,Integer> implements TbUs
         //批量更新用户
         tbUserDao.batchUpdate(tbUsers);
 ```
-**更变态的sql还有?**
-
-```
-        Criteria criteria = new Criteria();
-        criteria.in("password", Arrays.asList("1234567890", "111111"));
-        criteria.andCriteria(new Criteria().and("realName", "like", "%" + "周宁" + "%").or("userName", "in", Arrays.asList("zhou", "he")));
-        criteria.orCriteria(new Criteria().where("ppid", "12305").and("special", "TJ"));
-        criteria.or("userName", "like", "%" + "zhouning" + "%")
-                .andCriteria(new Criteria().and("realName", "like", "%" + "周宁" + "%").or("userName", "in", Arrays.asList("zhou", "he")))
-                .notEqual("epid", 90001000).let("score", 60).isNotNull("constructId");
-        criteria.andCriteria(new Criteria().lt("createTime", new Date()).in("productId", Arrays.asList(1, 2, 3, 4, 5, 6)))
-                .andCriteria(new Criteria().lt("createTime", new Date()).or("createTime", new Date()).andCriteria(new Criteria().where("key", 12).in("name", Arrays.asList(1, 2, 3)))
-                        .orCriteria(new Criteria().where("iinnerji", "我CA")));
-        criteria.notIn("productNum", Arrays.asList("GY-008", "GY-009"));
-        criteria.orderBy(new Sort("userName"));
-        criteria.orderBy(new Sort("createTime", "ASC"));
-        criteria.groupBy("userName", "id");
-        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
-        System.out.println(pair.getFirst());
-        System.out.println(ArrayUtils.toString(pair.getSecond()));
-```
-**控制台输出:**
-
-```
-SELECT * FROM tb_test WHERE password IN(?,?) AND (realName like ? OR userName in(?,?)) OR(ppid = ? AND special = ?) OR userName like ? AND (realName like ? OR userName in(?,?)) AND epid <> ? AND score <= ? AND constructId IS NOT NULL AND (createTime < ? AND productId IN(?,?,?,?,?,?)) AND (createTime < ? OR createTime = ? AND (key = ? AND name IN(?,?,?)) OR(iinnerji = ?)) AND productNum NOT IN(?,?) GROUP BY userName,id ORDER BY userName DESC,createTime ASC
-{1234567890,111111,%周宁%,zhou,he,12305,TJ,%zhouning%,%周宁%,zhou,he,90001000,60,Tue Sep 25 20:11:40 CST 2018,1,2,3,4,5,6,Tue Sep 25 20:11:40 CST 2018,Tue Sep 25 20:11:40 CST 2018,12,1,2,3,我CA,GY-008,GY-009}
-```
-
-**使用案例**:https://github.com/SpringStudent/GyJdbcTest
-
-#### 项目中真实应用:
-
-
-```
-List<DocTag> docTags = docTagDao.queryWithCriteria(new Criteria().where("tagPath", "like", parentPath + "%").and("projectId", projectId)
-                .and("stageNum", stageNum).and("type", type).and("tagName", tagName)
-                .and("LENGTH(tagPath)", parentPath.length() == 0 ? PathUtils.PATH_LENGTH : parentPath.length() + PathUtils.PATH_LENGTH + 1));
-```
-
-```
-Criteria criteria = new Criteria().where("projectId",projectId).and("type",type).in("tagId",tagIds).and("deleteFlag",0);
-        //搜索条件不为空
-        if (EmptyUtils.isNotEmpty(searchkey)) {
-            searchkey = RegexUtils.replaceEspStr(searchkey);
-            criteria.like("fileName", searchkey);
-            if(EmptyUtils.isNotEmpty(likeTagIds)){
-                criteria.orCriteria(new Criteria().where("projectId",projectId).and("type",type).in("tagId",likeTagIds).and("deleteFlag",0));
-            }
-        }
-        criteria.orderBy(new Sort("updateTime")).orderBy(new Sort("id"));
-        PageResult<DataDocument> temp = dataDocumentDao.pageQueryWithCriteria(page,criteria);
-```
-
-
-```
-Map<String, Integer> result = new HashMap<>();
-        Map<String,Object> temp = dataDocumentDao.queryMapWithCriteria(new Criteria().select("tagId","count(1) as docNum")
-                .in("tagId",tagIds).and("deleteFlag",0).groupBy("tagId"),CustomResultSetExractorFactory.createDoubleColumnValueResultSetExractor());
-        tagIds.forEach(id -> {
-            if (!temp.containsKey(id)) {
-                result.put(id, 0);
-            }else{
-                result.put(id,Integer.parseInt(temp.get(id).toString()));
-            }
-        });
-```
-
 
 ## 版本更新
-### v1.1
+### v1.1.0
 支持使用Lambda表达式拼接sql
 
 ```
 criteria.where("epid",1000)->criteria.where(UserBasicInfo::getEpid,1000);
 ```
 
-### v1.2
+### v1.2.0
 支持按条件更新部分字段
 
 
@@ -206,25 +138,16 @@ criteria.where("epid",1000)->criteria.where(UserBasicInfo::getEpid,1000);
 tbUserDao.updateWithCriteria(new Criteria().update(SimpleUser::getEmail,"33@qq.com").update(SimpleUser::getBirth,new Date()).where(SimpleUser::getName,"zhouning"));
 ```
 
-### V3.0
+### V3.0.0
 支持join查询
 
-```
-Criteria criteria = new Criteria().select("t1.name","t2.username").from(Book.class).as("t1")
-                .rightJoin(new Joins().with(Book.class).as("t2").on("fds","1sg2"))
-                .leftJoin(new Joins().with(Book.class).as("t3").on("pwd","pwd")
-                .and("dx","in", Arrays.asList(1,2,3,4,5)).on("fd13","fdf")
-                .and("mmp",">=","sd").and("sd",">=","ssdfgh"))
-                .innerJoin(new Joins().with(Book.class).as("t4").on("t4.f","t1.f"))
-                .andCriteria(new Criteria().where("k1","v1").or("k2","v2")).or("k3","k5");
-Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, null);
-System.out.println(pair.getFirst());
-System.out.println(org.apache.commons.lang.ArrayUtils.toString(pair.getSecond()));
 
-SELECT t1.name, t2.username FROM tb_book AS t1 RIGHT JOIN tb_book AS t2  ON fds = 1sg2  LEFT JOIN tb_book AS t3  ON pwd = pwd  AND fd13 = fdf  AND dx in(?,?,?,?,?) AND mmp >= ? AND sd >= ? INNER JOIN tb_book AS t4  ON t4.f = t1.f  WHERE (k1 = ? OR k2 = ?) OR k3 = ?
-{1,2,3,4,5,sd,ssdfgh,v1,v2,k5}
 ```
-### V3.1
+unitDao.joinQuery(UnitInfoBrief.class, new Criteria().in("a.id", unitIds).select("a.id AS unitId,a.unitName,b.id AS unitAttrId,b.`name`").as("a").leftJoin(new Joins().with(UnitAttr.class).as("b")
+                .on("a.unitAttrId", "b.id"))).queryList()
+```
+
+### V3.1.0
 支持lambda条件判断
 
 ```
@@ -232,7 +155,7 @@ SELECT t1.name, t2.username FROM tb_book AS t1 RIGHT JOIN tb_book AS t2  ON fds 
  
 ```
 
-### V3.2
+### V3.2.0
 支持子查询(同级子查询使用UNION ALL连接)
 
 ```
@@ -249,7 +172,7 @@ criteria.select("*").from(criteria1, criteria2).as("result").orderBy(new Sort("r
 return dataDocTagDao.subQuery(AppFolderInfo.class, criteria).pageQuery(page);
 ```
 
-### V4.0
+### V4.0.0
 支持函数拼接
 
 
@@ -278,3 +201,6 @@ SELECT CONCAT(tk,size), LENGTH(tk), CHAR_LENGTH(tk), UPPER(tk), LOWER(tk) FROM t
 SELECT ABS(size), CEIL(size), FLOOR(size) FROM tb_token
 SELECT CURDATE(), CURTIME(), NOW(), MONTH(CURDATE()), WEEK(CURDATE()), MINUTE(CURTIME()) FROM 
 ```
+
+### V4.1.0
+支持函数拼接
