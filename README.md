@@ -203,4 +203,5 @@ SELECT CURDATE(), CURTIME(), NOW(), MONTH(CURDATE()), WEEK(CURDATE()), MINUTE(CU
 ```
 
 ### V4.1.0
-支持函数拼接
+- 修复了一些BUG
+- Result新增方法queryForList,查询基本类型的List列表
