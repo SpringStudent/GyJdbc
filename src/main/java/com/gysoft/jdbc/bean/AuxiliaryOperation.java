@@ -1,9 +1,11 @@
 package com.gysoft.jdbc.bean;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -231,21 +233,26 @@ public interface AuxiliaryOperation {
 
     default <T> Predicate<T> getDefaultPredicate(T value){
         return (t)->{
+            if(Objects.isNull(value)){
+                return false;
+            }
             if(value instanceof String){
-                if(StringUtils.isNotEmpty((String)value)){
-                    return true;
+                if(StringUtils.isEmpty((String)value)){
+                    return false;
                 }
             }
-            if(value instanceof Number){
-                return true;
-            }
-
             if(value instanceof  Collection){
-                if(CollectionUtils.isNotEmpty((Collection) value)){
-                    return true;
+                if(CollectionUtils.isEmpty((Collection) value)){
+                    return false;
                 }
             }
-            return false;
+            if(value.getClass().isArray()){
+                if(ArrayUtils.getLength(value)==0){
+                    return false;
+                }
+            }
+            return true;
         };
+
     }
 }
