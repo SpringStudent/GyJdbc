@@ -1,5 +1,11 @@
 ### GyJdbc是什么?
 像使用mongotemplate一样拼接sql。使用jdbcTemplate不想写sql?写XXXDao和XXXDaoImpl很麻烦?sql拼错查找问题浪费时间?通过使用GyJdbc这些问题将迎刃而解。
+
+#### 运行环境
+jdk1.8+
+
+mysql
+
 #### 如何使用
 
 下面以tb_user的增删改查进行演示

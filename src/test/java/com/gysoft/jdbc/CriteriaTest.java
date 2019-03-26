@@ -45,9 +45,10 @@ public class CriteriaTest {
     public void testJoinWithCriteria() {
         String sd = null;
         Criteria criteria = new Criteria().select("t1.name", "t2.username").from(Book.class).as("t1")
-                .natureJoin(new Joins().with(Token.class).as("t2"))
+                .leftJoin(new Joins().with(Token.class).as("t2").on("t1.name","t2.name").and("t2.name","like","asd").and("t1.name","=","qds"))
+                .rightJoin(new Joins().with(Book.class).as("t3").on("t3.id","t1.id").and("t3.id","in",Arrays.asList("id1","id2")))
                 .in("t1.password", Arrays.asList("1234567890", "111111"))
-                .andIfAbsent("k1", sd);
+                .andIfAbsent("k1", 1);
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());
         System.out.println(org.apache.commons.lang.ArrayUtils.toString(pair.getSecond()));
