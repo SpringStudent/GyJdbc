@@ -39,6 +39,10 @@ public class Result<E> {
         return jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(type), params);
     }
 
+    public List<E> queryForList()throws Exception{
+        return jdbcTemplate.queryForList(sql, type, params);
+    }
+
     public List<Map<String, Object>> queryMaps() throws Exception {
         return jdbcTemplate.query(sql, params, new ColumnMapRowMapper());
     }
