@@ -386,49 +386,36 @@ public class SqlMakeTools {
     }
 
     /**
-     * 递归组装子查询sql
-     *
-     * @param criteriaTree 查询条件树
-     * @param sql sql语句
-     * @return String
+     * 递归组装子查询参数和sql
      * @author 周宁
+     * @param criteriaTree 查询条件树
+     * @param pair sql和查询参数包装
      * @version 1.0
+     * @return Pair sql和查询参数包装
      */
-    public static String doSubCriteriaSql(CriteriaTree criteriaTree, String sql) {
+
+    public static Pair<String,Object[]> doSubCriteria(CriteriaTree criteriaTree, Pair<String,Object[]> pair) {
         List<CriteriaTree> childCriteriaNodes = criteriaTree.getChildCriteriaTree();
         if (CollectionUtils.isNotEmpty(childCriteriaNodes)) {
             String[] arr = criteriaTree.getSql().split("FROM");
-            sql += arr[0] + "FROM(";
+            pair.setFirst(pair.getFirst().concat(arr[0] + "FROM("));
             for (CriteriaTree cnode : childCriteriaNodes) {
-                sql += " UNION ALL ";
+                pair.setFirst(pair.getFirst().concat(" UNION ALL "));
                 if (CollectionUtils.isNotEmpty(cnode.getChildCriteriaTree())) {
-                    sql = doSubCriteriaSql(cnode, sql);
+                    pair = doSubCriteria(cnode, pair);
                 } else {
-                    sql += cnode.getId();
-                    sql = sql.replace(cnode.getId(), cnode.getSql());
+                    pair.setFirst(pair.getFirst().concat(cnode.getId()));
+                    pair.setFirst(pair.getFirst().replace(cnode.getId(), cnode.getSql()));
+                    pair.setSecond(ArrayUtils.addAll(pair.getSecond(), cnode.getParams()));
                 }
             }
-            sql += ")" + arr[1];
+            pair.setFirst(pair.getFirst().concat(")" + arr[1]));
+            pair.setSecond(ArrayUtils.addAll(pair.getSecond(), criteriaTree.getParams()));
         } else {
-            sql += criteriaTree.getSql();
+            pair.setFirst(pair.getFirst().concat(criteriaTree.getSql()));
+            pair.setSecond(ArrayUtils.addAll(pair.getSecond(), criteriaTree.getParams()));
         }
-        return sql.replace("( UNION ALL","(");
-    }
-
-    public static Object[] doSubCriteriaParam(CriteriaTree criteriaTree, Object[] param) {
-        List<CriteriaTree> childCriteriaNodes = criteriaTree.getChildCriteriaTree();
-        if (CollectionUtils.isNotEmpty(childCriteriaNodes)) {
-            for (CriteriaTree cnode : childCriteriaNodes) {
-                if (CollectionUtils.isNotEmpty(cnode.getChildCriteriaTree())) {
-                    param = doSubCriteriaParam(cnode, param);
-                } else {
-                    param = ArrayUtils.addAll(param,cnode.getParams());
-                }
-            }
-            param = ArrayUtils.addAll(param,criteriaTree.getParams());
-        }else{
-            param = ArrayUtils.addAll(param,criteriaTree.getParams());
-        }
-        return param;
+        pair.setFirst(pair.getFirst().replace("( UNION ALL", "("));
+        return pair;
     }
 }

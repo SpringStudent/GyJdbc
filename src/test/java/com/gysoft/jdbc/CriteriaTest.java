@@ -68,9 +68,9 @@ public class CriteriaTest {
         criteriaTree.setSql(pair.getFirst());
         criteriaTree.setChildCriteriaTree(new ArrayList<>());
         SqlMakeTools.buildCriteriaTree(criteria,criteriaTree);
-        System.out.println(criteriaTree);
-        System.out.println(SqlMakeTools.doSubCriteriaSql(criteriaTree,""));
-        System.out.println(Arrays.toString(SqlMakeTools.doSubCriteriaParam(criteriaTree,new Object[]{})));
+        Pair<String,Object[]> p = SqlMakeTools.doSubCriteria(criteriaTree,new Pair<>("",new Object[]{}));
+        System.out.println(p.getFirst());
+        System.out.println(Arrays.toString(p.getSecond()));
 
     }
 

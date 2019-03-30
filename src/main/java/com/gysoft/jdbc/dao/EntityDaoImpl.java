@@ -288,7 +288,8 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         criteriaTree.setSql(pair.getFirst());
         criteriaTree.setChildCriteriaTree(new ArrayList<>());
         SqlMakeTools.buildCriteriaTree(criteria,criteriaTree);
-        return new Result<>(clss,SqlMakeTools.doSubCriteriaSql(criteriaTree,""), SqlMakeTools.doSubCriteriaParam(criteriaTree,new Object[]{}), jdbcTemplate);
+        Pair<String, Object[]> sqlParamPair = SqlMakeTools.doSubCriteria(criteriaTree, new Pair<>("", new Object[]{}));
+        return new Result<>(clss, sqlParamPair.getFirst(), sqlParamPair.getSecond(), jdbcTemplate);
     }
 
 }
