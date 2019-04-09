@@ -254,6 +254,14 @@ public class Criteria implements AuxiliaryOperation{
         return this.where(TypeFunction.getLambdaColumnName(function), "NOT IN", args);
     }
 
+    public Criteria betweenAnd(String key, Object v1, Object v2) {
+        return this.where(key, "BETWEEN ? AND ?", new Pair<>(v1, v2));
+    }
+
+    public <T, R> Criteria betweenAnd(TypeFunction<T, R> function, Object v1, Object v2) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "BETWEEN ? AND ?", new Pair<>(v1, v2));
+    }
+
     public Criteria andCriteria(Criteria criteria) {
         return criteria(criteria, "AND");
     }

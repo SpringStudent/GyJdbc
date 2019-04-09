@@ -278,7 +278,12 @@ public class SqlMakeTools {
                             sql.append(IN_END);
                         } else if (SQL_IS.equals(opt.toUpperCase())) {
                             sql.append(opt).append(SPACE).append(value);
-                        } else {
+                        } else if(SQL_BETWEEN_AND.equals(opt.toUpperCase())){
+                            sql.append(opt).append(SPACE);
+                            Pair<Object,Object> pair = (Pair<Object, Object>) value;
+                            params = ArrayUtils.add(params, pair.getFirst());
+                            params = ArrayUtils.add(params,pair.getSecond());
+                        }else {
                             sql.append(opt).append(SPACE).append("?");
                             params = ArrayUtils.add(params, value);
                         }

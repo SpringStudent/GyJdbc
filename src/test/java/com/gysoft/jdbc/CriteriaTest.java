@@ -23,6 +23,7 @@ public class CriteriaTest {
     @Test
     public void testQueryWithCriteria() {
         Criteria criteria = new Criteria();
+        criteria.betweenAnd("time","2019-02-23","2019-12-22");
         criteria.in("password", Arrays.asList("1234567890", "111111"));
         criteria.andCriteria(new Criteria().and("realName", "like", "%" + "周宁" + "%").or("userName", "in", Arrays.asList("zhou", "he")));
         criteria.orCriteria(new Criteria().where("ppid", "12305").and("special", "TJ"));

@@ -25,6 +25,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	String SQL_IS = "IS";
 	String SQL_ORDER_BY = "ORDER BY";
 	String SQL_GROUP_BY = "GROUP BY";
+	String SQL_BETWEEN_AND = "BETWEEN ? AND ?";
 
 	/**
 	 * 插入指定的持久化对象
