@@ -235,6 +235,15 @@ public class Criteria implements AuxiliaryOperation{
     public <T, R> Criteria or(TypeFunction<T, R> function, String opt, Object value) {
         return this.or(TypeFunction.getLambdaColumnName(function), opt, value);
     }
+
+    public Criteria orBetweenAnd(String key, Object v1, Object v2){
+        return this.or(key,"BETWEEN ? AND ?",new Pair<>(v1,v2));
+    }
+
+    public <T,R> Criteria orBetweenAnd(TypeFunction<T, R> function, Object v1, Object v2){
+        return this.or(TypeFunction.getLambdaColumnName(function),"BETWEEN ? AND ?",new Pair<>(v1,v2));
+    }
+
     @Override
     public Criteria in(String key, Collection<?> args) {
         return this.where(key, "IN", args);
