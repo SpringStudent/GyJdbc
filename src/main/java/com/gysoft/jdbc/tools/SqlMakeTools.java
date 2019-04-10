@@ -301,6 +301,11 @@ public class SqlMakeTools {
                     sql.append(groupByFiled + ",");
                 }
                 sql.setLength(sql.length() - 1);
+                if(criteria.getHaving()!=null){
+                    Pair<String,Object[]> having = criteria.getHaving();
+                    sql.append(SPACE).append("HAVING").append(having.getFirst());
+                    params = ArrayUtils.addAll(params, having.getSecond());
+                }
             }
             //排序条件拼接
             if (CollectionUtils.isNotEmpty(criteria.getSorts())) {

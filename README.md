@@ -208,3 +208,9 @@ SELECT CURDATE(), CURTIME(), NOW(), MONTH(CURDATE()), WEEK(CURDATE()), MINUTE(CU
 
 ### V4.2.0
 - 子查询递归优化
+
+### v4.3.0
+- 添加having语句支持
+- 添加betweenAnd支持
+- 添加orBetweenAnd支持
+- 添加日期处理函数DATE_FORMAT、FORMAT函数支持

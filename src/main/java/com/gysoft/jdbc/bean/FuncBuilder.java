@@ -807,4 +807,50 @@ public class FuncBuilder {
             return funcSql + " AS " + as;
         }
     }
+
+    private static class DateFormatFuncBuilder extends AbstractFuncBuilder {
+
+        private DateFormatFuncBuilder(String field, String formatPattern) {
+            this.funcSql = "DATE_FORMAT(" + field + ",'" + formatPattern + "')";
+        }
+
+    }
+
+    public static AbstractFuncBuilder dateFormatAs(String field, String formatPattern) {
+        return new DateFormatFuncBuilder(field, formatPattern);
+    }
+
+    public static <T, R> AbstractFuncBuilder dateFormatAs(TypeFunction<T, R> function, String formatPattern) {
+        return dateFormatAs(TypeFunction.getLambdaColumnName(function), formatPattern);
+    }
+
+    public static String dateFormat(String field, String formatPattern) {
+        return "DATE_FORMAT(" + field + ",'" + formatPattern + "')";
+    }
+
+    public static <T, R> String dateFormat(TypeFunction<T, R> function, String formatPattern) {
+        return dateFormat(TypeFunction.getLambdaColumnName(function), formatPattern);
+    }
+
+    public static class FormatFuncBuilder extends AbstractFuncBuilder {
+        private FormatFuncBuilder(String field, String formatPattern) {
+            this.funcSql = "FORMAT(" + field + ",'" + formatPattern + "')";
+        }
+    }
+
+    public static AbstractFuncBuilder formatAs(String field, String formatPattern) {
+        return new FormatFuncBuilder(field, formatPattern);
+    }
+
+    public static <T, R> AbstractFuncBuilder formatAs(TypeFunction<T, R> function, String formatPattern) {
+        return formatAs(TypeFunction.getLambdaColumnName(function), formatPattern);
+    }
+
+    public static String format(String field, String formatPattern) {
+        return "FORMAT(" + field + ",'" + formatPattern + "')";
+    }
+
+    public static <T, R> String format(TypeFunction<T, R> function, String formatPattern) {
+        return format(TypeFunction.getLambdaColumnName(function), formatPattern);
+    }
 }

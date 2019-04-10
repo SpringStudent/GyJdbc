@@ -39,6 +39,11 @@ public class Criteria implements AuxiliaryOperation{
      */
     private List<Pair> kvs;
 
+    /**
+     * having子句
+     */
+    private Pair<String,Object[]> having;
+
     public Set<String> getGroupFields() {
         return groupFields;
     }
@@ -85,6 +90,14 @@ public class Criteria implements AuxiliaryOperation{
 
     public void setKvs(List<Pair> kvs) {
         this.kvs = kvs;
+    }
+
+    public Pair<String, Object[]> getHaving() {
+        return having;
+    }
+
+    public void setHaving(Pair<String, Object[]> having) {
+        this.having = having;
     }
 
     public Criteria() {
@@ -306,6 +319,12 @@ public class Criteria implements AuxiliaryOperation{
 
     public <T, R> Criteria groupBy(TypeFunction<T, R>... functions) {
         groupFields.addAll(Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()));
+        return this;
+    }
+
+    public Criteria having(String funcField,String opt,Object value){
+        having = SqlMakeTools.doCriteria(new Criteria().where(funcField, opt, value), new StringBuilder());
+        having.setFirst(having.getFirst().replace("WHERE ", ""));
         return this;
     }
 

@@ -34,9 +34,12 @@ public class CriteriaTest {
                 .andCriteria(new Criteria().lt("createTime", new Date()).or("createTime", new Date()).andCriteria(new Criteria().where("key", 12).in("name", Arrays.asList(1, 2, 3)))
                         .orCriteria(new Criteria().where("iinnerji", "我CA")));
         criteria.notIn("productNum", Arrays.asList("GY-008", "GY-009"));
+        criteria.betweenAnd("stdate","2019-01-02","2019-04-09").betweenAnd("eddate","2019-01-02","2020-01-02");
+        criteria.orBetweenAnd("sss","orsdsd","sda1231").orBetweenAnd("sedTime","2018-12-02","2019-11-22");
         criteria.orderBy(new Sort("userName"));
         criteria.orderBy(new Sort("createTime", "ASC"));
         criteria.groupBy("userName", "id");
+        criteria.having(count("asd"),"in",Arrays.asList(1,2,3));
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
@@ -86,6 +89,9 @@ public class CriteriaTest {
         Criteria criteria3 = new Criteria().select(abs(Token::getSize),ceil(Token::getSize),floor(Token::getSize)).from(Token.class);
         //时间处理函数
         Criteria criteria4 = new Criteria().select(curdate(),curtime(),now(),month(curdate()),week(curdate()),minute(curtime()));
+
+        Criteria criteria5 = new Criteria().select(formatAs("10000","2").as("a")).from(Book.class);
+
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder());
         System.out.println(pair.getFirst());
         Pair<String, Object[]> pair2 = SqlMakeTools.doCriteria(criteria2, new StringBuilder());
@@ -95,5 +101,7 @@ public class CriteriaTest {
         Pair<String, Object[]> pair4 = SqlMakeTools.doCriteria(criteria4, new StringBuilder());
         System.out.println(pair4.getFirst());
         //...more 等着你完善和探索...
+        Pair<String, Object[]> pair5 = SqlMakeTools.doCriteria(criteria5, null);
+        System.out.println(pair5.getFirst());
     }
 }
