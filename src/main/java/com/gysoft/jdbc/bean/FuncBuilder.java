@@ -853,4 +853,182 @@ public class FuncBuilder {
     public static <T, R> String format(TypeFunction<T, R> function, String formatPattern) {
         return format(TypeFunction.getLambdaColumnName(function), formatPattern);
     }
+
+    private static class DateSubFuncBuilder extends AbstractFuncBuilder {
+        private DateSubFuncBuilder(String field, String express) {
+            this.funcSql = "DATE_SUB(" + field + "," + express + ")";
+        }
+    }
+
+    public static AbstractFuncBuilder dateSubAs(String field, String express) {
+        return new DateSubFuncBuilder(field, express);
+    }
+
+    public static <T, R> AbstractFuncBuilder dateSubAs(TypeFunction<T, R> function, String express) {
+        return dateSubAs(TypeFunction.getLambdaColumnName(function), express);
+    }
+
+    public static String dateSub(String field, String express) {
+        return "DATE_SUB(" + field + "," + express + ")";
+    }
+
+    public static <T, R> String dateSub(TypeFunction<T, R> function, String express) {
+        return dateSub(TypeFunction.getLambdaColumnName(function), express);
+    }
+
+    private static class DateAddFuncBuilder extends AbstractFuncBuilder {
+        private DateAddFuncBuilder(String field, String express) {
+            this.funcSql = "DATE_ADD(" + field + "," + express + ")";
+        }
+    }
+
+    public static AbstractFuncBuilder dateAddAs(String field, String express) {
+        return new DateAddFuncBuilder(field, express);
+    }
+
+    public static <T, R> AbstractFuncBuilder dateAddAs(TypeFunction<T, R> function, String express) {
+        return dateAddAs(TypeFunction.getLambdaColumnName(function), express);
+    }
+
+    public static String dateAdd(String field, String express) {
+        return "DATE_ADD(" + field + "," + express + ")";
+    }
+
+    public static <T, R> String dateAdd(TypeFunction<T, R> function, String express) {
+        return dateAdd(TypeFunction.getLambdaColumnName(function), express);
+    }
+
+
+    private static class StrToDateFuncBuilder extends AbstractFuncBuilder {
+        private StrToDateFuncBuilder(String field, String formatPattern) {
+            this.funcSql = "STR_TO_DATE(" + field + ",'" + formatPattern + "')";
+        }
+    }
+
+    public static AbstractFuncBuilder strToDateAs(String field, String formatPattern) {
+        return new StrToDateFuncBuilder(field, formatPattern);
+    }
+
+    public static <T, R> AbstractFuncBuilder strToDateAs(TypeFunction<T, R> function, String formatPattern) {
+        return strToDateAs(TypeFunction.getLambdaColumnName(function), formatPattern);
+    }
+
+    public static String strToDate(String field, String formatPattern) {
+        return "STR_TO_DATE(" + field + ",'" + formatPattern + "')";
+    }
+
+    public static <T, R> String strToDate(TypeFunction<T, R> function, String formatPattern) {
+        return strToDate(TypeFunction.getLambdaColumnName(function), formatPattern);
+    }
+
+    private static class IfNullFuncBuilder extends AbstractFuncBuilder {
+        private IfNullFuncBuilder(String field, Object val) {
+            this.funcSql = "IFNULL(" + field + "," + val + ")";
+        }
+    }
+
+    public static AbstractFuncBuilder ifNullAs(String field, Object val) {
+        return new IfNullFuncBuilder(field, val);
+    }
+
+    public static <T, R> AbstractFuncBuilder ifNullAs(TypeFunction<T, R> function, Object val) {
+        return ifNullAs(TypeFunction.getLambdaColumnName(function), val);
+    }
+
+    public static String ifNull(String field, Object val) {
+        return "IFNULL(" + field + "," + val + ")";
+    }
+
+    public static <T, R> String ifNull(TypeFunction<T, R> function, Object val) {
+        return ifNull(TypeFunction.getLambdaColumnName(function), val);
+    }
+
+    private static class IfFuncBuilder extends AbstractFuncBuilder {
+        private IfFuncBuilder(String express, Object val1, Object val2) {
+            this.funcSql = "IF(" + express + "," + val1 + "," + val2 + ")";
+        }
+    }
+
+    public static AbstractFuncBuilder ifAs(String express, Object val1, Object val2) {
+        return new IfFuncBuilder(express, val1, val2);
+    }
+
+    public static <T, R> AbstractFuncBuilder ifAs(TypeFunction<T, R> function, Object val1, Object val2) {
+        return ifAs(TypeFunction.getLambdaColumnName(function), val1, val2);
+    }
+
+    public static String _if(String express, Object val1, Object val2) {
+        return "IF(" + express + "," + val1 + "," + val2 + ")";
+    }
+
+    public static <T, R> String _if(TypeFunction<T, R> function, Object val1, Object val2) {
+        return _if(TypeFunction.getLambdaColumnName(function), val1, val2);
+    }
+
+    private static class UnixTimeStampBuilder extends AbstractFuncBuilder {
+        private UnixTimeStampBuilder(String field) {
+            this.funcSql = "UNIX_TIMESTAMP(" + field + ")";
+        }
+    }
+
+    public static AbstractFuncBuilder unixTimeStampAs(String field) {
+        return new UnixTimeStampBuilder(field);
+    }
+
+    public static <T, R> AbstractFuncBuilder unixTimeStampAs(TypeFunction<T, R> function) {
+        return unixTimeStampAs(TypeFunction.getLambdaColumnName(function));
+    }
+
+    public static String unixTimeStamp(String field) {
+        return "UNIX_TIMESTAMP(" + field + ")";
+    }
+
+    public static <T, R> String unixTimeStamp(TypeFunction<T, R> function) {
+        return unixTimeStamp(TypeFunction.getLambdaColumnName(function));
+    }
+
+    private static class FromUnixTimeFuncBuilder extends AbstractFuncBuilder {
+        private FromUnixTimeFuncBuilder(String field, String formatPattern) {
+            this.funcSql = "FROM_UNIXTIME(" + field + ",'" + formatPattern + "')";
+        }
+    }
+
+    public static AbstractFuncBuilder fromUnixTimeAs(String field, String formatPattern) {
+        return new FromUnixTimeFuncBuilder(field, formatPattern);
+    }
+
+    public static <T, R> AbstractFuncBuilder fromUnixTimeAs(TypeFunction<T, R> function, String formatPattern) {
+        return fromUnixTimeAs(TypeFunction.getLambdaColumnName(function), formatPattern);
+    }
+
+    public static String fromUnixTime(String field, String formatPattern) {
+        return "FROM_UNIXTIME(" + field + ",'" + formatPattern + "')";
+    }
+
+    public static <T, R> String fromUnixTime(TypeFunction<T, R> function, String formatPattern) {
+        return fromUnixTime(TypeFunction.getLambdaColumnName(function), formatPattern);
+    }
+
+    private static class DateFuncBuilder extends AbstractFuncBuilder {
+        private DateFuncBuilder(String field) {
+            this.funcSql = "DATE(" + field + ")";
+        }
+    }
+
+    public static AbstractFuncBuilder dateAs(String field) {
+        return new DateFuncBuilder(field);
+    }
+
+    public static <T, R> AbstractFuncBuilder dateAs(TypeFunction<T, R> function) {
+        return dateAs(TypeFunction.getLambdaColumnName(function));
+    }
+
+    public static String date(String field) {
+        return "DATE(" + field + ")";
+    }
+
+    public static <T, R> String date(TypeFunction<T, R> function) {
+        return date(TypeFunction.getLambdaColumnName(function));
+    }
+
 }

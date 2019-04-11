@@ -214,3 +214,6 @@ SELECT CURDATE(), CURTIME(), NOW(), MONTH(CURDATE()), WEEK(CURDATE()), MINUTE(CU
 - 添加betweenAnd支持
 - 添加orBetweenAnd支持
 - 添加日期处理函数DATE_FORMAT、FORMAT函数支持
+
+### v4.4.0
+- 添加更多的常用函数支持
