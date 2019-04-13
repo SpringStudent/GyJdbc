@@ -198,13 +198,19 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public List<Map<String, Object>> queryMapsWithCriteria(Criteria criteria) throws Exception {
-        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, doCriteriaSelect(criteria));
+        Pair<String, Object[]> pair = criteria.getCriteriaPiepline().pieplineCriteria()?SqlMakeTools.doPielineCriteria(criteria, null):SqlMakeTools.doCriteria(criteria, doCriteriaSelect(criteria));
         return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), new ColumnMapRowMapper());
     }
 
     @Override
     public Map<String, Object> queryMapWithCriteria(Criteria criteria, ResultSetExtractor<Map<String, Object>> resultSetExtractor) throws Exception {
-        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, doCriteriaSelect(criteria));
+        Pair<String, Object[]> pair = criteria.getCriteriaPiepline().pieplineCriteria()?SqlMakeTools.doPielineCriteria(criteria, null):SqlMakeTools.doCriteria(criteria, doCriteriaSelect(criteria));
+        return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), resultSetExtractor);
+    }
+
+    @Override
+    public <K, V> Map<K, V> queryCustomMapWithCriteria(Criteria criteria, ResultSetExtractor<Map<K, V>> resultSetExtractor) throws Exception {
+        Pair<String, Object[]> pair = criteria.getCriteriaPiepline().pieplineCriteria() ? SqlMakeTools.doPielineCriteria(criteria, null) : SqlMakeTools.doCriteria(criteria, doCriteriaSelect(criteria));
         return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), resultSetExtractor);
     }
 

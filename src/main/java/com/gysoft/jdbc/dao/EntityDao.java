@@ -142,6 +142,14 @@ public interface EntityDao<T,Id extends Serializable>{
 	Map<String,Object> queryMapWithCriteria(Criteria criteria, ResultSetExtractor<Map<String, Object>> resultSetExtractor)throws Exception;
 
 	/**
+	 * 根据条件查询自定义键值对MAP
+	 * @param criteria 查询条件
+	 * @param resultSetExtractor 结果抽取器
+	 * @return Map 结果集
+	 * @throws Exception
+	 */
+	<K,V> Map<K,V> queryCustomMapWithCriteria(Criteria criteria, ResultSetExtractor<Map<K, V>> resultSetExtractor)throws Exception;
+	/**
 	 * 根据条件查询某个整数列值
 	 * @param criteria 查询条件
 	 * @return Integer int结果

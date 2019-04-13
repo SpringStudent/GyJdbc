@@ -12,18 +12,22 @@ public class CriteriaPiepline {
     private List<CriteriaNext> criteriaNextList = new ArrayList<>();
 
     public CriteriaPiepline(Criteria head) {
-        criteriaNextList.add(new CriteriaNext(head,null));
+        criteriaNextList.add(new CriteriaNext(head, null));
     }
 
-    public void add(Criteria criteria,String type){
-        criteriaNextList.add(new CriteriaNext(criteria,type));
+    public void add(Criteria criteria, String type) {
+        criteriaNextList.add(new CriteriaNext(criteria, type));
     }
 
     public List<CriteriaNext> getCriteriaNextList() {
         return criteriaNextList;
     }
 
-    public static class CriteriaNext{
+    public boolean pieplineCriteria() {
+        return criteriaNextList.size() > 1;
+    }
+
+    public static class CriteriaNext {
 
         private Criteria criteria;
 
