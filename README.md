@@ -229,4 +229,6 @@ SELECT CURDATE(), CURTIME(), NOW(), MONTH(CURDATE()), WEEK(CURDATE()), MINUTE(CU
                 .as("u31").on("u31.id","u3.id").and("u31.nmm","=","nmmm"));
  Criteria criteria1 = new Criteria().select("t1.*").from(Book.class).as("t1").andCriteria(new Criteria().in("t1.id", Arrays.asList(1, 2, 3)).like("t1.name", "name1")).leftJoin(new Joins().with(Book.class).as("j1").on("j1.id", "t1.id").and("j1.name", "=", "j1name"));
  Criteria subCriteria = new Criteria().select("res.*").from(criteria,criteria1).where("res.name", "book1").orderBy(new Sort("res.name"));
-```    
+```  
+### v5.0.1
+- 完善EntityDao的方法，避免可能出现的问题  
