@@ -214,8 +214,9 @@ public class SqlMakeTools {
             return Types.OTHER;
         }
 
-
     }
+
+
 
     /**
      * 创建条件查询sql和入参
@@ -388,7 +389,7 @@ public class SqlMakeTools {
     public static void buildCriteriaTree(Criteria criteria, CriteriaTree criteriaTree) {
         List<Criteria> criterias = criteria.getCriterias();
         for (int i = 0; i < criterias.size(); i++) {
-            Pair<String, Object[]> pair = doCriteria(criterias.get(i), doCriteriaSelect(criterias.get(i)));
+            Pair<String, Object[]> pair = doPielineCriteria(criterias.get(i), new StringBuilder(""));
             CriteriaTree cTree = CriteriaTree.builder().id((UUID.randomUUID().toString())).sql(pair.getFirst()).params(pair.getSecond()).childCriteriaTree(new ArrayList<>()).build();
             criteriaTree.getChildCriteriaTree().add(cTree);
             buildCriteriaTree(criterias.get(i), cTree);
@@ -427,5 +428,24 @@ public class SqlMakeTools {
         }
         pair.setFirst(pair.getFirst().replace("( UNION ALL", "("));
         return pair;
+    }
+
+    public static Pair<String,Object[]> doPielineCriteria(Criteria criteria,StringBuilder sql){
+        CriteriaPiepline piepline = criteria.getCriteriaPiepline();
+        Pair<String, Object[]> pair;
+        Object[] params = {};
+        if(sql==null){
+            sql = new StringBuilder();
+        }
+        List<CriteriaPiepline.CriteriaNext> criteriaNexts = piepline.getCriteriaNextList();
+        for (CriteriaPiepline.CriteriaNext criteriaNext : criteriaNexts){
+            pair = doCriteria(criteriaNext.getCriteria(),null);
+            if(StringUtils.isNotEmpty(criteriaNext.getUnionType())){
+                sql.append(SPACE).append(criteriaNext.getUnionType());
+            }
+            sql.append(SPACE).append(pair.getFirst());
+            params = ArrayUtils.addAll(params,pair.getSecond());
+        }
+        return new Pair<>(sql.toString().replaceFirst(" ",""),params);
     }
 }

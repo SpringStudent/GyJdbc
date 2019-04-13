@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
  *
  * @author 周宁
  */
-public class Criteria implements AuxiliaryOperation{
+public class Criteria implements AuxiliaryOperation {
     /**
      * 被查询的字段
      */
@@ -42,7 +42,7 @@ public class Criteria implements AuxiliaryOperation{
     /**
      * having子句
      */
-    private Pair<String,Object[]> having;
+    private Pair<String, Object[]> having;
 
     public Set<String> getGroupFields() {
         return groupFields;
@@ -137,6 +137,7 @@ public class Criteria implements AuxiliaryOperation{
     public <T, R> Criteria where(TypeFunction<T, R> function, String opt, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), opt, value);
     }
+
     @Override
     public Criteria like(String key, Object value) {
         return this.where(key, "LIKE", "%" + value + "%");
@@ -146,6 +147,7 @@ public class Criteria implements AuxiliaryOperation{
     public <T, R> Criteria like(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), "LIKE", "%" + value + "%");
     }
+
     @Override
     public Criteria gt(String key, Object value) {
         return this.where(key, ">", value);
@@ -155,6 +157,7 @@ public class Criteria implements AuxiliaryOperation{
     public <T, R> Criteria gt(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), ">", value);
     }
+
     @Override
     public Criteria gte(String key, Object value) {
         return this.where(key, ">=", value);
@@ -164,6 +167,7 @@ public class Criteria implements AuxiliaryOperation{
     public <T, R> Criteria gte(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), ">=", value);
     }
+
     @Override
     public Criteria lt(String key, Object value) {
         return this.where(key, "<", value);
@@ -173,6 +177,7 @@ public class Criteria implements AuxiliaryOperation{
     public <T, R> Criteria lt(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), "<", value);
     }
+
     @Override
     public Criteria let(String key, Object value) {
         return this.where(key, "<=", value);
@@ -211,6 +216,7 @@ public class Criteria implements AuxiliaryOperation{
     public <T, R> Criteria isNotNull(TypeFunction<T, R> function) {
         return this.where(TypeFunction.getLambdaColumnName(function), "IS", "NOT NULL");
     }
+
     @Override
     public Criteria and(String key, Object value) {
         return this.where(key, value);
@@ -228,6 +234,7 @@ public class Criteria implements AuxiliaryOperation{
     public <T, R> Criteria and(TypeFunction<T, R> function, String opt, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), opt, value);
     }
+
     @Override
     public Criteria or(String key, Object value) {
         return this.or(key, "=", value);
@@ -249,12 +256,12 @@ public class Criteria implements AuxiliaryOperation{
         return this.or(TypeFunction.getLambdaColumnName(function), opt, value);
     }
 
-    public Criteria orBetweenAnd(String key, Object v1, Object v2){
-        return this.or(key,"BETWEEN ? AND ?",new Pair<>(v1,v2));
+    public Criteria orBetweenAnd(String key, Object v1, Object v2) {
+        return this.or(key, "BETWEEN ? AND ?", new Pair<>(v1, v2));
     }
 
-    public <T,R> Criteria orBetweenAnd(TypeFunction<T, R> function, Object v1, Object v2){
-        return this.or(TypeFunction.getLambdaColumnName(function),"BETWEEN ? AND ?",new Pair<>(v1,v2));
+    public <T, R> Criteria orBetweenAnd(TypeFunction<T, R> function, Object v1, Object v2) {
+        return this.or(TypeFunction.getLambdaColumnName(function), "BETWEEN ? AND ?", new Pair<>(v1, v2));
     }
 
     @Override
@@ -266,6 +273,7 @@ public class Criteria implements AuxiliaryOperation{
     public <T, R> Criteria in(TypeFunction<T, R> function, Collection<?> args) {
         return this.where(TypeFunction.getLambdaColumnName(function), "IN", args);
     }
+
     @Override
     public Criteria notIn(String key, Collection<?> args) {
         return this.where(key, "NOT IN", args);
@@ -322,7 +330,7 @@ public class Criteria implements AuxiliaryOperation{
         return this;
     }
 
-    public Criteria having(String funcField,String opt,Object value){
+    public Criteria having(String funcField, String opt, Object value) {
         having = SqlMakeTools.doCriteria(new Criteria().where(funcField, opt, value), new StringBuilder());
         having.setFirst(having.getFirst().replace("WHERE ", ""));
         return this;
@@ -363,39 +371,39 @@ public class Criteria implements AuxiliaryOperation{
         return joinFlag;
     }
 
-    public Criteria as(String aliasName){
+    public Criteria as(String aliasName) {
         this.aliasName = aliasName;
         return this;
     }
 
-    public Criteria from(Class clss){
-        pTable =EntityTools.getTableName(clss);
+    public Criteria from(Class clss) {
+        pTable = EntityTools.getTableName(clss);
         return this;
     }
 
-    public Criteria leftJoin(Joins.On on){
+    public Criteria leftJoin(Joins.On on) {
         on.setJoinType(JoinType.LeftJoin);
         return join(on);
     }
 
-    public Criteria rightJoin(Joins.On on){
+    public Criteria rightJoin(Joins.On on) {
         on.setJoinType(JoinType.RightJoin);
         return join(on);
     }
 
-    public Criteria innerJoin(Joins.On on){
+    public Criteria innerJoin(Joins.On on) {
         on.setJoinType(JoinType.InnerJoin);
         return join(on);
     }
 
-    public Criteria natureJoin(Joins.BaseJoin as){
+    public Criteria natureJoin(Joins.BaseJoin as) {
         joinFlag = true;
         as.setJoinType(JoinType.NatureJoin);
         joins.add(as);
         return this;
     }
 
-    private Criteria join(Joins.On join){
+    private Criteria join(Joins.On join) {
         joinFlag = true;
         joins.add(join);
         return this;
@@ -422,10 +430,35 @@ public class Criteria implements AuxiliaryOperation{
      */
     private List<Criteria> criterias;
 
-    public Criteria from(Criteria... cc){
+    public Criteria from(Criteria... cc) {
         criterias.addAll(Arrays.asList(cc));
         return this;
     }
+
+    private CriteriaPiepline criteriaPiepline = new CriteriaPiepline(this);
+
+    public Criteria union(){
+        Criteria next = new Criteria();
+        criteriaPiepline.add(next,"UNION");
+        next.setCriteriaPiepline(criteriaPiepline);
+        return next;
+    }
+
+    public Criteria unionAll(){
+        Criteria next = new Criteria();
+        criteriaPiepline.add(next,"UNION ALL");
+        next.setCriteriaPiepline(criteriaPiepline);
+        return next;
+    }
+
+    public CriteriaPiepline getCriteriaPiepline() {
+        return criteriaPiepline;
+    }
+
+    public void setCriteriaPiepline(CriteriaPiepline criteriaPiepline) {
+        this.criteriaPiepline = criteriaPiepline;
+    }
+
     public List<Criteria> getCriterias() {
         return criterias;
     }

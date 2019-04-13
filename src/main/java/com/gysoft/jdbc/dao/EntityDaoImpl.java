@@ -255,8 +255,12 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public <E> Result<E> useCriteria(Class<E> clss, Criteria criteria) throws Exception {
-        Pair<String,Object[]> pair = SqlMakeTools.doCriteria(criteria,null);
-        return new Result<>(clss, pair.getFirst(), pair.getSecond(),jdbcTemplate);
+        //子查询不为空，执行子查询
+        if(CollectionUtils.isNotEmpty(criteria.getCriterias())){
+            return subQuery(clss, criteria);
+        }
+        Pair<String, Object[]> pair = SqlMakeTools.doPielineCriteria(criteria, null);
+        return this.useSql(clss, pair.getFirst(), pair.getSecond());
     }
 
     @Override
@@ -275,19 +279,19 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         if(StringUtils.isEmpty(criteria.getpTable())){
             criteria.setpTable(tableName);
         }
-        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, null);
+        Pair<String, Object[]> pair = SqlMakeTools.doPielineCriteria(criteria, null);
         return new Result<>(clss, pair.getFirst(), pair.getSecond(), jdbcTemplate);
     }
 
     @Override
     public <E> Result<E> subQuery(Class<E> clss, Criteria criteria) throws Exception {
         CriteriaTree criteriaTree = new CriteriaTree();
-        Pair<String,Object[]> pair = SqlMakeTools.doCriteria(criteria,null);
+        Pair<String, Object[]> pair = SqlMakeTools.doPielineCriteria(criteria, null);
         criteriaTree.setId("0");
         criteriaTree.setParams(pair.getSecond());
         criteriaTree.setSql(pair.getFirst());
         criteriaTree.setChildCriteriaTree(new ArrayList<>());
-        SqlMakeTools.buildCriteriaTree(criteria,criteriaTree);
+        SqlMakeTools.buildCriteriaTree(criteria, criteriaTree);
         Pair<String, Object[]> sqlParamPair = SqlMakeTools.doSubCriteria(criteriaTree, new Pair<>("", new Object[]{}));
         return new Result<>(clss, sqlParamPair.getFirst(), sqlParamPair.getSecond(), jdbcTemplate);
     }
