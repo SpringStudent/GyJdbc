@@ -145,3 +145,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         tbUserDao.batchDelete(tbUserDao.queryAll().stream().map(TbUser::getId).collect(Collectors.toList()));
     }
 ```
+
+### 当前版本10.0.0
