@@ -15,7 +15,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CriteriaTree {
+public class SQLTree {
     /**
      * 该criteria节点对应的sql
      */
@@ -25,11 +25,11 @@ public class CriteriaTree {
      */
     private Object[] params;
     /**
-     * 孩子查询条件节点
+     * 子sql
      */
-    private List<CriteriaTree> childCriteriaTree;
+    private List<SQLTree> childs;
     /**
-     * 树节点的id，树的深度*树在当前节点编号
+     * 树节点的id
      */
     private String id;
 

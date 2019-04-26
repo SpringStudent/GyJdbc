@@ -11,221 +11,240 @@ import java.util.function.Predicate;
 /**
  * @author DJZ-HXF
  */
-public interface AuxiliaryOperation {
+public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
 
-    Criteria like(String key, Object value);
-    <T, R> Criteria like(TypeFunction<T, R> function, Object value);
+    S like(String key, Object value);
 
-    Criteria and(String key, Object value);
-    <T, R> Criteria and(TypeFunction<T, R> function, Object value);
+    <T, R> S like(TypeFunction<T, R> function, Object value);
 
-    Criteria or(String key, Object value);
-    <T,R> Criteria or(TypeFunction<T,R> function,Object value);
+    S and(String key, Object value);
 
-    Criteria in(String key, Collection<?> args);
-    <T, R> Criteria in(TypeFunction<T, R> function, Collection<?> args);
+    <T, R> S and(TypeFunction<T, R> function, Object value);
 
-    Criteria notIn(String key, Collection<?> args);
-    <T, R> Criteria notIn(TypeFunction<T, R> function, Collection<?> args);
+    S or(String key, Object value);
 
-    Criteria gt(String key, Object value);
-    <T, R> Criteria gt(TypeFunction<T, R> function, Object value);
-    Criteria gte(String key, Object value);
-    <T, R> Criteria gte(TypeFunction<T, R> function, Object value);
+    <T, R> S or(TypeFunction<T, R> function, Object value);
 
-    Criteria lt(String key, Object value);
-    <T, R> Criteria lt(TypeFunction<T, R> function, Object value);
-    Criteria let(String key, Object value);
-    <T, R> Criteria let(TypeFunction<T, R> function, Object value);
+    S in(String key, Collection<?> args);
 
-    Criteria doNothing();
+    <T, R> S in(TypeFunction<T, R> function, Collection<?> args);
 
-    default Criteria likeIfAbsent(String key,Object value){
-        return likeIfAbsent(key,value,getDefaultPredicate(value));
+    S notIn(String key, Collection<?> args);
+
+    <T, R> S notIn(TypeFunction<T, R> function, Collection<?> args);
+
+    S gt(String key, Object value);
+
+    <T, R> S gt(TypeFunction<T, R> function, Object value);
+
+    S gte(String key, Object value);
+
+    <T, R> S gte(TypeFunction<T, R> function, Object value);
+
+    S lt(String key, Object value);
+
+    <T, R> S lt(TypeFunction<T, R> function, Object value);
+
+    S let(String key, Object value);
+
+    <T, R> S let(TypeFunction<T, R> function, Object value);
+
+    S doNothing();
+
+    default S likeIfAbsent(String key, Object value) {
+        return likeIfAbsent(key, value, getDefaultPredicate(value));
     }
 
-    default Criteria likeIfAbsent(String key, Object value, Predicate<Object> predicate){
-        if(predicate.test(value)){
-            return like(key,value);
+    default S likeIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return like(key, value);
         }
         return doNothing();
     }
 
-    default <T, R> Criteria likeIfAbsent(TypeFunction<T, R> function, Object value){
-        return likeIfAbsent(function,value,getDefaultPredicate(value));
+    default <T, R> S likeIfAbsent(TypeFunction<T, R> function, Object value) {
+        return likeIfAbsent(function, value, getDefaultPredicate(value));
     }
 
-    default <T,R> Criteria likeIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate){
-        if(predicate.test(value)){
-            return like(function,value);
+    default <T, R> S likeIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return like(function, value);
         }
         return doNothing();
     }
 
-    default  Criteria gtIfAbsent(String key, Object value) {
-        return gtIfAbsent(key,value,getDefaultPredicate(value));
+    default S gtIfAbsent(String key, Object value) {
+        return gtIfAbsent(key, value, getDefaultPredicate(value));
     }
 
-    default  Criteria gtIfAbsent(String key, Object value,Predicate<Object> predicate) {
-        if(predicate.test(value)){
-            return gt(key,value);
+    default S gtIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return gt(key, value);
         }
         return doNothing();
     }
 
-    default <T,R> Criteria gtIfAbsent(TypeFunction<T,R> function, Object value) {
-        return gtIfAbsent(function,value,getDefaultPredicate(value));
+    default <T, R> S gtIfAbsent(TypeFunction<T, R> function, Object value) {
+        return gtIfAbsent(function, value, getDefaultPredicate(value));
     }
 
-    default <T,R> Criteria gtIfAbsent(TypeFunction<T,R> function, Object value,Predicate<Object> predicate) {
-        if(predicate.test(value)){
-            return gt(function,value);
+    default <T, R> S gtIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return gt(function, value);
         }
         return doNothing();
     }
 
-    default  Criteria gteIfAbsent(String key, Object value) {
-        return gteIfAbsent(key,value,getDefaultPredicate(value));
+    default S gteIfAbsent(String key, Object value) {
+        return gteIfAbsent(key, value, getDefaultPredicate(value));
     }
 
-    default  Criteria gteIfAbsent(String key, Object value,Predicate<Object> predicate) {
-        if(predicate.test(value)){
-            return gte(key,value);
+    default S gteIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return gte(key, value);
         }
         return doNothing();
     }
 
-    default <T,R> Criteria gteIfAbsent(TypeFunction<T,R> function, Object value) {
-        return gteIfAbsent(function,value,getDefaultPredicate(value));
+    default <T, R> S gteIfAbsent(TypeFunction<T, R> function, Object value) {
+        return gteIfAbsent(function, value, getDefaultPredicate(value));
     }
 
-    default <T,R> Criteria gteIfAbsent(TypeFunction<T,R> function, Object value,Predicate<Object> predicate) {
-        if(predicate.test(value)){
-            return gte(function,value);
+    default <T, R> S gteIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return gte(function, value);
         }
         return doNothing();
     }
 
-    default  Criteria ltIfAbsent(String key, Object value) {
-        return ltIfAbsent(key,value,getDefaultPredicate(value));
+    default S ltIfAbsent(String key, Object value) {
+        return ltIfAbsent(key, value, getDefaultPredicate(value));
     }
 
-    default  Criteria ltIfAbsent(String key, Object value,Predicate<Object> predicate) {
-        if(predicate.test(value)){
-            return lt(key,value);
+    default S ltIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return lt(key, value);
         }
         return doNothing();
     }
 
-    default <T,R> Criteria ltIfAbsent(TypeFunction<T,R> function, Object value) {
-        return ltIfAbsent(function,value,getDefaultPredicate(value));
+    default <T, R> S ltIfAbsent(TypeFunction<T, R> function, Object value) {
+        return ltIfAbsent(function, value, getDefaultPredicate(value));
     }
 
-    default <T,R> Criteria ltIfAbsent(TypeFunction<T,R> function, Object value,Predicate<Object> predicate) {
-        if(predicate.test(value)){
-            return lt(function,value);
+    default <T, R> S ltIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return lt(function, value);
         }
         return doNothing();
     }
 
-    default  Criteria letIfAbsent(String key, Object value) {
-        return letIfAbsent(key,value,getDefaultPredicate(value));
+    default S letIfAbsent(String key, Object value) {
+        return letIfAbsent(key, value, getDefaultPredicate(value));
     }
 
-    default  Criteria letIfAbsent(String key, Object value,Predicate<Object> predicate) {
-        if(predicate.test(value)){
-            return let(key,value);
+    default S letIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return let(key, value);
         }
         return doNothing();
     }
 
-    default <T,R> Criteria letIfAbsent(TypeFunction<T,R> function, Object value) {
-        return letIfAbsent(function,value,getDefaultPredicate(value));
+    default <T, R> S letIfAbsent(TypeFunction<T, R> function, Object value) {
+        return letIfAbsent(function, value, getDefaultPredicate(value));
     }
 
-    default <T,R>  Criteria letIfAbsent(TypeFunction<T,R> function, Object value,Predicate<Object> predicate) {
-        if(predicate.test(value)){
-            return let(function,value);
+    default <T, R> S letIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return let(function, value);
         }
         return doNothing();
     }
 
 
-    default Criteria andIfAbsent(String key, Object value){
-        return andIfAbsent(key,value,getDefaultPredicate(value));
+    default S andIfAbsent(String key, Object value) {
+        return andIfAbsent(key, value, getDefaultPredicate(value));
     }
-    default Criteria andIfAbsent(String key, Object value,Predicate<Object> predicate){
-        if(predicate.test(value)){
+
+    default S andIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
             return and(key, value);
         }
         return doNothing();
     }
 
-    default <T, R> Criteria andIfAbsent(TypeFunction<T, R> function, Object value){
-        return andIfAbsent(function,value,getDefaultPredicate(value));
+    default <T, R> S andIfAbsent(TypeFunction<T, R> function, Object value) {
+        return andIfAbsent(function, value, getDefaultPredicate(value));
     }
-    default <T,R> Criteria andIfAbsent(TypeFunction<T, R> function, Object value,Predicate<Object> predicate){
-        if(predicate.test(value)){
+
+    default <T, R> S andIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
             return and(function, value);
         }
         return doNothing();
     }
 
-    default Criteria orIfAbsent(String key, Object value){
-        return orIfAbsent(key,value,getDefaultPredicate(value));
+    default S orIfAbsent(String key, Object value) {
+        return orIfAbsent(key, value, getDefaultPredicate(value));
     }
-    default Criteria orIfAbsent(String key, Object value,Predicate<Object> predicate){
-        if(predicate.test(value)){
+
+    default S orIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
             return or(key, value);
         }
         return doNothing();
     }
 
-    default <T,R> Criteria orIfAbsent(TypeFunction<T,R> function, Object value){
-        return orIfAbsent(function,value,getDefaultPredicate(value));
+    default <T, R> S orIfAbsent(TypeFunction<T, R> function, Object value) {
+        return orIfAbsent(function, value, getDefaultPredicate(value));
     }
-    default <T,R> Criteria orIfAbsent(TypeFunction<T,R> function, Object value,Predicate<Object> predicate){
-        if(predicate.test(value)){
+
+    default <T, R> S orIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
             return or(function, value);
         }
         return doNothing();
     }
 
-    default Criteria inIfAbsent(String key,  Collection<?> args){
-        return inIfAbsent(key,args,getDefaultPredicate(args));
+    default S inIfAbsent(String key, Collection<?> args) {
+        return inIfAbsent(key, args, getDefaultPredicate(args));
     }
-    default Criteria inIfAbsent(String key,  Collection<?> args,Predicate<Collection> predicate){
-        if(predicate.test(args)){
+
+    default S inIfAbsent(String key, Collection<?> args, Predicate<Collection> predicate) {
+        if (predicate.test(args)) {
             return in(key, args);
         }
         return doNothing();
     }
 
-    default <T,R> Criteria inIfAbsent(TypeFunction function,  Collection<?> args){
-        return inIfAbsent(function,args,getDefaultPredicate(args));
+    default <T, R> S inIfAbsent(TypeFunction<T, R> function, Collection<?> args) {
+        return inIfAbsent(function, args, getDefaultPredicate(args));
     }
-    default <T,R> Criteria inIfAbsent(TypeFunction<T,R> function,Collection<?> args,Predicate<Collection> predicate){
-        if(predicate.test(args)){
+
+    default <T, R> S inIfAbsent(TypeFunction<T, R> function, Collection<?> args, Predicate<Collection> predicate) {
+        if (predicate.test(args)) {
             return in(function, args);
         }
         return doNothing();
     }
 
-    default Criteria notInIfAbsent(String key,  Collection<?> args){
-        return notInIfAbsent(key,args,getDefaultPredicate(args));
+    default S notInIfAbsent(String key, Collection<?> args) {
+        return notInIfAbsent(key, args, getDefaultPredicate(args));
     }
-    default Criteria notInIfAbsent(String key,  Collection<?> args,Predicate<Collection> predicate){
-        if(predicate.test(args)){
+
+    default S notInIfAbsent(String key, Collection<?> args, Predicate<Collection> predicate) {
+        if (predicate.test(args)) {
             return notIn(key, args);
         }
         return doNothing();
     }
 
-    default <T,R> Criteria notInIfAbsent(TypeFunction<T,R> function,  Collection<?> args){
-        return notInIfAbsent(function,args,getDefaultPredicate(args));
+    default <T, R> S notInIfAbsent(TypeFunction<T, R> function, Collection<?> args) {
+        return notInIfAbsent(function, args, getDefaultPredicate(args));
     }
-    default <T,R> Criteria notInIfAbsent(TypeFunction<T,R> function,  Collection<?> args,Predicate<Collection> predicate){
-        if(predicate.test(args)){
+
+    default <T, R> S notInIfAbsent(TypeFunction<T, R> function, Collection<?> args, Predicate<Collection> predicate) {
+        if (predicate.test(args)) {
             return notIn(function, args);
         }
         return doNothing();
@@ -253,6 +272,5 @@ public interface AuxiliaryOperation {
             }
             return true;
         };
-
     }
 }

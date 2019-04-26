@@ -125,102 +125,44 @@ public interface EntityDao<T,Id extends Serializable>{
 	T queryOne(Criteria criteria)throws Exception;
 
 	/**
+	 * 根据sql查询
+	 * @param sql sql拼接器
+	 * @param <E> 查询结果类型
+	 * @throws Exception
+	 */
+	<E> Result<E> queryWithSql(Class<E> clss,SQL sql)throws Exception;
+
+	/**
+	 * 根据sql更新
+	 * @param sql sql拼接器
+	 * @return int 更新条目数量
+	 * @throws Exception
+	 */
+	int updateWithSql(SQL sql)throws Exception;
+	/**
+	 * 键值对查询
+	 * @param sql sql拼接器
+	 * @param resultSetExtractor 结果抽取器
+	 * @param <K> 键类型
+	 * @param <V> 值类型
+	 * @return Map 返回类型Map
+	 * @throws Exception
+	 */
+	<K,V> Map<K,V> queryMapWithSql(SQL sql,ResultSetExtractor<Map<K,V>> resultSetExtractor)throws Exception;
+
+	/**
 	 * 根据条件查询Map集合
-	 * @param criteria 查询条件
+	 * @param sql sql拼接器
 	 * @return List 结果集
 	 * @throws Exception sql错误抛出异常
 	 */
-	List<Map<String,Object>> queryMapsWithCriteria(Criteria criteria)throws Exception;
+	List<Map<String,Object>> queryMapsWithSql(SQL sql)throws Exception;
 
 	/**
-	 * 根据条件查询Map
-	 * @param criteria 查询条件
-	 * @param resultSetExtractor 结果抽取器
-	 * @return Map 结果集
-	 * @throws Exception sql错误抛出异常
-	 */
-	Map<String,Object> queryMapWithCriteria(Criteria criteria, ResultSetExtractor<Map<String, Object>> resultSetExtractor)throws Exception;
-
-	/**
-	 * 根据条件查询自定义键值对MAP
-	 * @param criteria 查询条件
-	 * @param resultSetExtractor 结果抽取器
-	 * @return Map 结果集
+	 * 根据sql查询一个int值
+	 * @param sql sql拼接器
+	 * @return Integer 结果类型，一般为查询数量
 	 * @throws Exception
 	 */
-	<K,V> Map<K,V> queryCustomMapWithCriteria(Criteria criteria, ResultSetExtractor<Map<K, V>> resultSetExtractor)throws Exception;
-	/**
-	 * 根据条件查询某个整数列值
-	 * @param criteria 查询条件
-	 * @return Integer int结果
-	 * @throws Exception sql错误抛出异常
-	 */
-	Integer queryIntegerWithCriteria(Criteria criteria)throws Exception;
-
-	/**
-	 * 根据条件查询某个字符列值
-	 * @param criteria 查询条件
-	 * @return String string类型的结果
-	 * @throws Exception sql错误抛出异常
-	 */
-	String queryStringWithCriteria(Criteria criteria)throws Exception;
-
-	/**
-	 * 根据条件更新
-	 * @param criteria 查询条件
-	 * @return int 更新条目数量
-	 * @throws Exception sql错误抛出异常
-	 */
-	int updateWithCriteria(Criteria criteria)throws Exception;
-
-	/**
-	 * 使用自定义sql
-	 * @param clss Class类型
-	 * @param criteria 条件封装
-	 * @param <E> 结果泛型
-	 * @return Result 结果集
-	 * @throws Exception 异常
-	 */
-	<E>Result<E> useCriteria(Class<E> clss,Criteria criteria)throws Exception;
-
-	/**
-	 * 使用自定义sql
-	 * @param clss Class类型
-	 * @param sql 自定义Sql
-	 * @param params 参数数组
-	 * @param <E> 结果泛型
-	 * @return Result 结果集
-	 * @throws Exception 异常
-	 */
-	<E>Result<E> useSql(Class<E> clss,String sql, Object... params)throws Exception;
-
-	/**
-	 * 使用自定义sql
-	 * @param sql 自定义sql
-	 * @param params 参数数组
-	 * @param <E> 结果泛型
-	 * @return Result 结果集
-	 * @throws Exception 异常
-	 */
-	<E extends Map<String, Object>> Result<E> useSql(String sql, Object... params)throws Exception;
-
-	/**
-	 * 多表连接查询
-	 * @param clss clss Class类型
-	 * @param criteria 查询条件
-	 * @param <E> 结果泛型
-	 * @return Result
-	 * @throws Exception 异常
-	 */
-	<E> Result<E> joinQuery(Class<E> clss, Criteria criteria)throws Exception;
-
-	/**
-	 * @param clss clss Class类型
-	 * @param criteria 查询条件
-	 * @param <E> 结果泛型
-	 * @return Result
-	 * @throws Exception 异常
-	 */
-	<E> Result<E> subQuery(Class<E> clss, Criteria criteria)throws Exception;
-
+	Integer queryIntegerWithSql(SQL sql)throws Exception;
 }

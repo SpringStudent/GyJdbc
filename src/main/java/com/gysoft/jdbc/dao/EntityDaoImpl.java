@@ -197,109 +197,45 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public List<Map<String, Object>> queryMapsWithCriteria(Criteria criteria) throws Exception {
-        Pair<String, Object[]> pair = criteria.getCriteriaPiepline().pieplineCriteria()?SqlMakeTools.doPielineCriteria(criteria, null):SqlMakeTools.doCriteria(criteria, doCriteriaSelect(criteria));
-        return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), new ColumnMapRowMapper());
+    public <E> Result<E> queryWithSql(Class<E> clss,SQL sql) throws Exception {
+        Pair<String,Object[]> pair = SqlMakeTools.useSql(sql);
+        return new Result<>(clss,pair.getFirst(),pair.getSecond(),jdbcTemplate);
     }
 
     @Override
-    public Map<String, Object> queryMapWithCriteria(Criteria criteria, ResultSetExtractor<Map<String, Object>> resultSetExtractor) throws Exception {
-        Pair<String, Object[]> pair = criteria.getCriteriaPiepline().pieplineCriteria()?SqlMakeTools.doPielineCriteria(criteria, null):SqlMakeTools.doCriteria(criteria, doCriteriaSelect(criteria));
-        return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), resultSetExtractor);
-    }
-
-    @Override
-    public <K, V> Map<K, V> queryCustomMapWithCriteria(Criteria criteria, ResultSetExtractor<Map<K, V>> resultSetExtractor) throws Exception {
-        Pair<String, Object[]> pair = criteria.getCriteriaPiepline().pieplineCriteria() ? SqlMakeTools.doPielineCriteria(criteria, null) : SqlMakeTools.doCriteria(criteria, doCriteriaSelect(criteria));
-        return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), resultSetExtractor);
-    }
-
-    private StringBuilder doCriteriaSelect(Criteria criteria) {
-        StringBuilder sql = new StringBuilder();
-        Set<String> selectFields = criteria.getSelectFields();
-        if (CollectionUtils.isEmpty(selectFields)) {
-            sql.append("SELECT * FROM " + tableName);
-        } else {
-            sql.append("SELECT ");
-            selectFields.forEach(selectField -> sql.append(selectField + ", "));
-            sql.setLength(sql.length() - 2);
-            sql.append(" FROM " + tableName);
-        }
-        return sql;
-    }
-
-    @Override
-    public Integer queryIntegerWithCriteria(Criteria criteria) throws Exception {
-        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, doCriteriaSelect(criteria));
-        return jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), Integer.class);
-    }
-
-    @Override
-    public String queryStringWithCriteria(Criteria criteria) throws Exception {
-        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, doCriteriaSelect(criteria));
-        return jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), String.class);
-    }
-
-    @Override
-    public int updateWithCriteria(Criteria criteria) throws Exception {
-        List<Pair> kvs = criteria.getKvs();
+    public int updateWithSql(SQL sql) throws Exception {
+        List<Pair> kvs = sql.getKvs();
         if (!CollectionUtils.isEmpty(kvs)) {
             Object[] params = {};
-            StringBuilder sql = new StringBuilder();
-            sql.append(SQL_UPDATE + SPACE + tableName + SPACE + "SET" + SPACE);
+            StringBuilder updateSql = new StringBuilder();
+            updateSql.append(SQL_UPDATE + SPACE + tableName + SPACE + "SET" + SPACE);
             for (int i = 0; i < kvs.size(); i++) {
                 Pair pair = kvs.get(i);
-                sql.append(pair.getFirst() + " = ?, ");
+                updateSql.append(pair.getFirst() + " = ?, ");
                 params = ArrayUtils.add(params, pair.getSecond());
             }
-            sql.setLength(sql.length() - 2);
-            Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
+            updateSql.setLength(updateSql.length() - 2);
+            Pair<String, Object[]> pair = SqlMakeTools.doCriteria(sql, new StringBuilder(updateSql));
             return jdbcTemplate.update(pair.getFirst(), ArrayUtils.addAll(params, pair.getSecond()));
         }
         return 0;
     }
 
     @Override
-    public <E> Result<E> useCriteria(Class<E> clss, Criteria criteria) throws Exception {
-        //子查询不为空，执行子查询
-        if(CollectionUtils.isNotEmpty(criteria.getCriterias())){
-            return subQuery(clss, criteria);
-        }
-        Pair<String, Object[]> pair = SqlMakeTools.doPielineCriteria(criteria, null);
-        return this.useSql(clss, pair.getFirst(), pair.getSecond());
+    public <K, V> Map<K, V> queryMapWithSql(SQL sql, ResultSetExtractor<Map<K, V>> resultSetExtractor) throws Exception {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), resultSetExtractor);
     }
 
     @Override
-    public <E> Result<E> useSql(Class<E> clss, String sql, Object... params)throws Exception{
-        return new Result<>(clss, sql, params,jdbcTemplate);
+    public List<Map<String, Object>> queryMapsWithSql(SQL sql) throws Exception {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), new ColumnMapRowMapper());
     }
 
     @Override
-    public <E extends Map<String, Object>> Result<E> useSql(String sql, Object... params)throws Exception {
-        return new Result<>(null, sql, params, jdbcTemplate);
+    public Integer queryIntegerWithSql(SQL sql) throws Exception {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        return jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), Integer.class);
     }
-
-    @Override
-    public <E> Result<E> joinQuery(Class<E> clss, Criteria criteria) throws Exception {
-        //表名称为空，帮忙设置下主表
-        if(StringUtils.isEmpty(criteria.getpTable())){
-            criteria.setpTable(tableName);
-        }
-        Pair<String, Object[]> pair = SqlMakeTools.doPielineCriteria(criteria, null);
-        return new Result<>(clss, pair.getFirst(), pair.getSecond(), jdbcTemplate);
-    }
-
-    @Override
-    public <E> Result<E> subQuery(Class<E> clss, Criteria criteria) throws Exception {
-        CriteriaTree criteriaTree = new CriteriaTree();
-        Pair<String, Object[]> pair = SqlMakeTools.doPielineCriteria(criteria, null);
-        criteriaTree.setId("0");
-        criteriaTree.setParams(pair.getSecond());
-        criteriaTree.setSql(pair.getFirst());
-        criteriaTree.setChildCriteriaTree(new ArrayList<>());
-        SqlMakeTools.buildCriteriaTree(criteria, criteriaTree);
-        Pair<String, Object[]> sqlParamPair = SqlMakeTools.doSubCriteria(criteriaTree, new Pair<>("", new Object[]{}));
-        return new Result<>(clss, sqlParamPair.getFirst(), sqlParamPair.getSecond(), jdbcTemplate);
-    }
-
 }

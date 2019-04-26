@@ -213,10 +213,7 @@ public class SqlMakeTools {
         } else {
             return Types.OTHER;
         }
-
     }
-
-
 
     /**
      * 创建条件查询sql和入参
@@ -226,23 +223,8 @@ public class SqlMakeTools {
      * @return Pair sql与sql入参对
      */
     public static Pair<String, Object[]> doCriteria(Criteria criteria, StringBuilder sql) {
-        boolean joinFlag = criteria.isJoinFlag();
         Pair<String, Object[]> result = new Pair<>();
         Object[] params = {};
-        if (sql == null) {
-            sql = doCriteriaSelect(criteria);
-        }
-        if (joinFlag) {
-            StringBuilder overrideSql = doCriteriaSelect(criteria);
-            //重新生成sql
-            List<Joins.BaseJoin> joins = criteria.getJoins();
-            for (Joins.BaseJoin join : joins) {
-                overrideSql.append(join.getJoinSql());
-                List<CriteriaProxy> criteriaProxies = join.getCriteriaProxys();
-                params = doCriteriaProxy(criteriaProxies, -2, overrideSql, params);
-            }
-            sql = overrideSql;
-        }
         if (null != criteria) {
             if (CollectionUtils.isNotEmpty(criteria.getWhereParams())) {
                 //where 条件参数拼接
@@ -279,12 +261,12 @@ public class SqlMakeTools {
                             sql.append(IN_END);
                         } else if (SQL_IS.equals(opt.toUpperCase())) {
                             sql.append(opt).append(SPACE).append(value);
-                        } else if(SQL_BETWEEN_AND.equals(opt.toUpperCase())){
+                        } else if (SQL_BETWEEN_AND.equals(opt.toUpperCase())) {
                             sql.append(opt).append(SPACE);
-                            Pair<Object,Object> pair = (Pair<Object, Object>) value;
+                            Pair<Object, Object> pair = (Pair<Object, Object>) value;
                             params = ArrayUtils.add(params, pair.getFirst());
-                            params = ArrayUtils.add(params,pair.getSecond());
-                        }else {
+                            params = ArrayUtils.add(params, pair.getSecond());
+                        } else {
                             sql.append(opt).append(SPACE).append("?");
                             params = ArrayUtils.add(params, value);
                         }
@@ -302,8 +284,8 @@ public class SqlMakeTools {
                     sql.append(groupByFiled + ",");
                 }
                 sql.setLength(sql.length() - 1);
-                if(criteria.getHaving()!=null){
-                    Pair<String,Object[]> having = criteria.getHaving();
+                if (criteria.getHaving() != null) {
+                    Pair<String, Object[]> having = criteria.getHaving();
                     sql.append(SPACE).append("HAVING").append(having.getFirst());
                     params = ArrayUtils.addAll(params, having.getSecond());
                 }
@@ -325,14 +307,7 @@ public class SqlMakeTools {
     }
 
     /**
-     * 组装更复杂的sql
-     *
-     * @param criteriaProxys
-     * @param whereParamIndex
-     * @param params
-     * @param sql
-     * @return Object[]
-     * @throws
+     * 更复杂的条件组装
      * @author 周宁
      * @version 1.0
      */
@@ -357,63 +332,103 @@ public class SqlMakeTools {
         return params;
     }
 
-    private static StringBuilder doCriteriaSelect(Criteria criteria) {
-        //重新生成sql
-        StringBuilder overrideSql = new StringBuilder();
-        Set<String> selectFields = criteria.getSelectFields();
-        if (!CollectionUtils.isEmpty(selectFields)) {
-            overrideSql.append("SELECT ");
-            criteria.getSelectFields().forEach(selectField -> overrideSql.append(selectField + ", "));
-            overrideSql.setLength(overrideSql.length() - 2);
-            overrideSql.append(" FROM ");
-        } else {
-            overrideSql.append("SELECT * FROM ");
-        }
-        if (StringUtils.isNotEmpty(criteria.getpTable())) {
-            overrideSql.append(criteria.getpTable());
-        }
-        if (StringUtils.isNotEmpty(criteria.getAliasName())) {
-            overrideSql.append(" AS " + criteria.getAliasName());
-        }
-        return overrideSql;
+    /**
+     * 使用自定义sql
+     * @author 周宁
+     * @version 1.0
+     */
+    public static Pair<String, Object[]> useSql(SQL sql) {
+        SQLTree sqlTree = new SQLTree();
+        Pair<String, Object[]> pair = doSql(sql);
+        sqlTree.setId("0");
+        sqlTree.setParams(pair.getSecond());
+        sqlTree.setSql(pair.getFirst());
+        sqlTree.setChilds(new ArrayList<>());
+        buildSQLTree(sql, sqlTree);
+        return recurSql(sqlTree, new Pair<>("", new Object[]{}));
     }
 
     /**
      * 递归构造查询树
-     *
-     * @param criteria 查询条件
-     * @param criteriaTree 待构造的查询树
+     * @param sql sql拼接器
+     * @param sqlTree 待构造的查询树
      * @author 周宁
      * @version 1.0
      */
-    public static void buildCriteriaTree(Criteria criteria, CriteriaTree criteriaTree) {
-        List<Criteria> criterias = criteria.getCriterias();
-        for (int i = 0; i < criterias.size(); i++) {
-            Pair<String, Object[]> pair = doPielineCriteria(criterias.get(i), new StringBuilder(""));
-            CriteriaTree cTree = CriteriaTree.builder().id((UUID.randomUUID().toString())).sql(pair.getFirst()).params(pair.getSecond()).childCriteriaTree(new ArrayList<>()).build();
-            criteriaTree.getChildCriteriaTree().add(cTree);
-            buildCriteriaTree(criterias.get(i), cTree);
+    private static void buildSQLTree(SQL sql, SQLTree sqlTree) {
+        List<SQL> subSqls = sql.getSubSqls();
+        for (int i = 0; i < subSqls.size(); i++) {
+            Pair<String, Object[]> pair = doSql(subSqls.get(i));
+            SQLTree cTree = SQLTree.builder().id(UUID.randomUUID().toString().replace("-","")).sql(pair.getFirst()).params(pair.getSecond()).childs(new ArrayList<>()).build();
+            sqlTree.getChilds().add(cTree);
+            buildSQLTree(subSqls.get(i), cTree);
         }
     }
 
     /**
-     * 递归组装子查询参数和sql
+     * 组装sql
+     *
+     * @param ss sql拼接器
+     * @return Pair 第一个值为Sql,第二个为参数
+     * @throws Pair
      * @author 周宁
-     * @param criteriaTree 查询条件树
-     * @param pair sql和查询参数包装
      * @version 1.0
-     * @return Pair sql和查询参数包装
      */
+    private static Pair<String, Object[]> doSql(SQL ss) {
+        SQLPiepline piepline = ss.getSqlPiepline();
+        StringBuilder finalSql = new StringBuilder();
+        Pair<String, Object[]> pair;
+        Object[] params = {};
+        Set<String> selectFields;
+        List<SQLPiepline.SQLNext> sqlNexts = piepline.getSqlNexts();
+        for (SQLPiepline.SQLNext sqlNext : sqlNexts) {
+            SQL nextSql = sqlNext.getSql();
+            StringBuilder sql = new StringBuilder();
+            sql.append("SELECT ");
+            nextSql.getSelectFields().forEach(selectField -> sql.append(selectField + ", "));
+            sql.setLength(sql.length() - 2);
+            sql.append(" FROM ");
+            if(StringUtils.isNotEmpty(nextSql.getTbName())){
+                sql.append(nextSql.getTbName());
+            }
+            if (StringUtils.isNotEmpty(nextSql.getAliasName())) {
+                sql.append(" AS " + nextSql.getAliasName());
+            }
+            //连接查询sql组装
+            if (CollectionUtils.isNotEmpty(nextSql.getJoins())) {
+                List<Joins.BaseJoin> joins = nextSql.getJoins();
+                for (Joins.BaseJoin join : joins) {
+                    sql.append(join.getJoinSql());
+                    List<CriteriaProxy> criteriaProxies = join.getCriteriaProxys();
+                    params = doCriteriaProxy(criteriaProxies, -2, sql, params);
+                }
+            }
+            pair = doCriteria(nextSql, sql);
+            if (StringUtils.isNotEmpty(sqlNext.getUnionType())) {
+                finalSql.append(SPACE).append(sqlNext.getUnionType());
+            }
+            finalSql.append(SPACE).append(pair.getFirst());
+            params = ArrayUtils.addAll(params, pair.getSecond());
+        }
+        return new Pair<>(finalSql.toString().replaceFirst(" ", ""), params);
+    }
 
-    public static Pair<String,Object[]> doSubCriteria(CriteriaTree criteriaTree, Pair<String,Object[]> pair) {
-        List<CriteriaTree> childCriteriaNodes = criteriaTree.getChildCriteriaTree();
-        if (CollectionUtils.isNotEmpty(childCriteriaNodes)) {
-            String[] arr = criteriaTree.getSql().split("FROM");
+    /**
+     * 递归组装子查询参数和sql
+     *
+     * @param sqlTree 待构造的查询树
+     * @author 周宁
+     * @version 1.0
+     */
+    private static Pair<String, Object[]> recurSql(SQLTree sqlTree, Pair<String, Object[]> pair) {
+        List<SQLTree> childs = sqlTree.getChilds();
+        if (CollectionUtils.isNotEmpty(childs)) {
+            String[] arr = sqlTree.getSql().split("FROM");
             pair.setFirst(pair.getFirst().concat(arr[0] + "FROM("));
-            for (CriteriaTree cnode : childCriteriaNodes) {
+            for (SQLTree cnode : childs) {
                 pair.setFirst(pair.getFirst().concat(" UNION ALL "));
-                if (CollectionUtils.isNotEmpty(cnode.getChildCriteriaTree())) {
-                    pair = doSubCriteria(cnode, pair);
+                if (CollectionUtils.isNotEmpty(cnode.getChilds())) {
+                    pair = recurSql(cnode, pair);
                 } else {
                     pair.setFirst(pair.getFirst().concat(cnode.getId()));
                     pair.setFirst(pair.getFirst().replace(cnode.getId(), cnode.getSql()));
@@ -421,31 +436,12 @@ public class SqlMakeTools {
                 }
             }
             pair.setFirst(pair.getFirst().concat(")" + arr[1]));
-            pair.setSecond(ArrayUtils.addAll(pair.getSecond(), criteriaTree.getParams()));
+            pair.setSecond(ArrayUtils.addAll(pair.getSecond(), sqlTree.getParams()));
         } else {
-            pair.setFirst(pair.getFirst().concat(criteriaTree.getSql()));
-            pair.setSecond(ArrayUtils.addAll(pair.getSecond(), criteriaTree.getParams()));
+            pair.setFirst(pair.getFirst().concat(sqlTree.getSql()));
+            pair.setSecond(ArrayUtils.addAll(pair.getSecond(), sqlTree.getParams()));
         }
         pair.setFirst(pair.getFirst().replace("( UNION ALL", "("));
         return pair;
-    }
-
-    public static Pair<String,Object[]> doPielineCriteria(Criteria criteria,StringBuilder sql){
-        CriteriaPiepline piepline = criteria.getCriteriaPiepline();
-        Pair<String, Object[]> pair;
-        Object[] params = {};
-        if(sql==null){
-            sql = new StringBuilder();
-        }
-        List<CriteriaPiepline.CriteriaNext> criteriaNexts = piepline.getCriteriaNextList();
-        for (CriteriaPiepline.CriteriaNext criteriaNext : criteriaNexts){
-            pair = doCriteria(criteriaNext.getCriteria(),null);
-            if(StringUtils.isNotEmpty(criteriaNext.getUnionType())){
-                sql.append(SPACE).append(criteriaNext.getUnionType());
-            }
-            sql.append(SPACE).append(pair.getFirst());
-            params = ArrayUtils.addAll(params,pair.getSecond());
-        }
-        return new Pair<>(sql.toString().replaceFirst(" ",""),params);
     }
 }
