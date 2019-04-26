@@ -222,7 +222,7 @@ public class SqlMakeTools {
      * @param sql      sql语句
      * @return Pair sql与sql入参对
      */
-    public static Pair<String, Object[]> doCriteria(Criteria criteria, StringBuilder sql) {
+    public static Pair<String, Object[]> doCriteria(AbstractCriteria criteria, StringBuilder sql) {
         Pair<String, Object[]> result = new Pair<>();
         Object[] params = {};
         if (null != criteria) {

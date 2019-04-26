@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 /**
  * @author 周宁
  */
-public class SQL extends Criteria<SQL> {
+public class SQL extends AbstractCriteria<SQL> {
 
     /**
      * 被查询的字段

@@ -68,7 +68,6 @@ public class CriteriaTest {
                 new SQL().select("t2.*").from(Book.class).as("t2").where("t2.kd","ssd").groupBy("t2.uploader").having("t2.count1",">",123),
                 new SQL().select("t3.*").from(new SQL().select("t33.*").from(Book.class).as("t33").andIfAbsent("t33.name", "name33").orderBy(new Sort("t33.id")).union().select("t33U.*").from(Book.class).where("t33U",111111))
         ).as("res").rightJoin(new Joins().with(Book.class).as("t4").on("res.name", "t4.name")).where("res.name", "book1").orderBy(new Sort("res.name"));
-
         Pair<String,Object[]> p = SqlMakeTools.useSql(criteria);
         System.out.println(p.getFirst());
         System.out.println(Arrays.toString(p.getSecond()));
