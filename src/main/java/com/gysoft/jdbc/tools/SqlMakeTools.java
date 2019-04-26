@@ -379,7 +379,6 @@ public class SqlMakeTools {
         StringBuilder finalSql = new StringBuilder();
         Pair<String, Object[]> pair;
         Object[] params = {};
-        Set<String> selectFields;
         List<SQLPiepline.SQLNext> sqlNexts = piepline.getSqlNexts();
         for (SQLPiepline.SQLNext sqlNext : sqlNexts) {
             SQL nextSql = sqlNext.getSql();
