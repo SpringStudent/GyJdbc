@@ -29,7 +29,9 @@ public class SQL extends AbstractCriteria<SQL> {
      * 别名
      */
     private String aliasName;
-
+    /**
+     * 连接
+     */
     private List<Joins.BaseJoin> joins;
     /**
      * 子查询条件
