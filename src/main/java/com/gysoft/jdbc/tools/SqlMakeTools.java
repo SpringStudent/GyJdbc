@@ -380,6 +380,7 @@ public class SqlMakeTools {
         Pair<String, Object[]> pair;
         Object[] params = {};
         List<SQLPiepline.SQLNext> sqlNexts = piepline.getSqlNexts();
+        boolean needSurroundBrackets = sqlNexts.size()>1?true:false;
         for (SQLPiepline.SQLNext sqlNext : sqlNexts) {
             SQL nextSql = sqlNext.getSql();
             StringBuilder sql = new StringBuilder();
@@ -406,7 +407,11 @@ public class SqlMakeTools {
             if (StringUtils.isNotEmpty(sqlNext.getUnionType())) {
                 finalSql.append(SPACE).append(sqlNext.getUnionType());
             }
-            finalSql.append(SPACE).append(pair.getFirst());
+            if(needSurroundBrackets){
+                finalSql.append(SPACE).append(IN_START).append(pair.getFirst()).append(IN_END);
+            }else{
+                finalSql.append(SPACE).append(pair.getFirst());
+            }
             params = ArrayUtils.addAll(params, pair.getSecond());
         }
         return new Pair<>(finalSql.toString().replaceFirst(" ", ""), params);
@@ -425,7 +430,7 @@ public class SqlMakeTools {
             String[] arr = sqlTree.getSql().split("FROM");
             pair.setFirst(pair.getFirst().concat(arr[0] + "FROM("));
             for (SQLTree cnode : childs) {
-                pair.setFirst(pair.getFirst().concat(" UNION ALL "));
+                pair.setFirst(pair.getFirst().concat(" UNION ALL ("));
                 if (CollectionUtils.isNotEmpty(cnode.getChilds())) {
                     pair = recurSql(cnode, pair);
                 } else {
@@ -433,6 +438,7 @@ public class SqlMakeTools {
                     pair.setFirst(pair.getFirst().replace(cnode.getId(), cnode.getSql()));
                     pair.setSecond(ArrayUtils.addAll(pair.getSecond(), cnode.getParams()));
                 }
+                pair.setFirst(pair.getFirst().concat(")"));
             }
             pair.setFirst(pair.getFirst().concat(")" + arr[1]));
             pair.setSecond(ArrayUtils.addAll(pair.getSecond(), sqlTree.getParams()));

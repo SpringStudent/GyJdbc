@@ -145,5 +145,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         tbUserDao.batchDelete(tbUserDao.queryAll().stream().map(TbUser::getId).collect(Collectors.toList()));
     }
 ```
+### 版本更新
+- 10.1.0 修复union查询和子查询的sql无大括号导致报错bug
 
-### 当前版本10.0.0
+### 当前版本10.1.0
