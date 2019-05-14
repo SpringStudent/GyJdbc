@@ -385,8 +385,10 @@ public class SqlMakeTools {
             SQL nextSql = sqlNext.getSql();
             StringBuilder sql = new StringBuilder();
             sql.append("SELECT ");
-            nextSql.getSelectFields().forEach(selectField -> sql.append(selectField + ", "));
-            sql.setLength(sql.length() - 2);
+            if(CollectionUtils.isNotEmpty(nextSql.getSelectFields())){
+                nextSql.getSelectFields().forEach(selectField -> sql.append(selectField + ", "));
+                sql.setLength(sql.length() - 2);
+            }
             sql.append(" FROM ");
             if(StringUtils.isNotEmpty(nextSql.getTbName())){
                 sql.append(nextSql.getTbName());

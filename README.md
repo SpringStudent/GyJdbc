@@ -147,5 +147,6 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 ```
 ### 版本更新
 - 10.1.0 修复union查询和子查询的sql无大括号导致报错bug
+- 10.2.0 修复无selectFields sql拼接的一处BUG
 
 ### 当前版本10.1.0
