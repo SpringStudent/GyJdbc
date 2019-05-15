@@ -157,12 +157,16 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
                 .values(3, "ins3", "插入3", "123456", "567@qq.com", "12345678901", 27, new Date(), 1, "测试", 0);
         SQL sql2 = new SQL().insertInto(TbAccount.class, "userName", "realName")
                 .select("name", "realName").from(TbUser.class);
+        SQL sql3 = new SQL().insertInto(TbAccount.class, TbAccount::getUserName, TbAccount::getRealName)
+                        .select("name", "realName").from(TbUser.class);
         tbUserDao.insertWithSql(sql);
         tbUserDao.insertWithSql(sql2);
+        tbUserDao.insertWithSql(sql3);
     }
 ```
 ### 版本更新
 - 10.1.0 修复union查询和子查询的sql无大括号导致报错bug
 - 10.2.0 修复无selectFields sql拼接的一处BUG
 - 11.0.0 支持自定义sql插入
-### 当前版本11.0.0
+- 11.1.1 自定义sql支持lambda表达式
+### 当前版本11.1.1

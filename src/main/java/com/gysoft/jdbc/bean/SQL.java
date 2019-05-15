@@ -191,8 +191,16 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public SQL insertInto(String tbName, String... fields) {
-        pair.setFirst(new StringBuilder().append("INSERT INTO "+tbName+"("
+        pair.setFirst(new StringBuilder().append("INSERT INTO " + tbName + "("
                 + Arrays.stream(fields).collect(Collectors.joining(","))
+                + ") "));
+        pair.setSecond(new ArrayList<>());
+        return this;
+    }
+
+    public <T, R> SQL insertInto(String tbName, TypeFunction<T, R>... functions) {
+        pair.setFirst(new StringBuilder().append("INSERT INTO " + tbName + "("
+                + Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.joining(","))
                 + ") "));
         pair.setSecond(new ArrayList<>());
         return this;
@@ -200,6 +208,10 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public SQL insertInto(Class clss, String... fields) {
         return insertInto(EntityTools.getTableName(clss), fields);
+    }
+
+    public <T, R> SQL insertInto(Class clss, TypeFunction<T, R>... functions) {
+        return insertInto(EntityTools.getTableName(clss), functions);
     }
 
     public SQL values(Object... values) {
@@ -212,6 +224,6 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public static void main(String[] args) {
-        new SQL().insertInto("tb_user","id","name").values(1,"zhouning");
+        new SQL().insertInto("tb_user", "id", "name").values(1, "zhouning");
     }
 }
