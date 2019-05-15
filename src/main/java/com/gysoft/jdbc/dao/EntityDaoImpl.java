@@ -238,4 +238,33 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         return jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), Integer.class);
     }
+
+    @Override
+    public int insertWithSql(SQL sql) throws Exception {
+        //插入sql
+        StringBuilder insertSql = sql.getPair().getFirst();
+        //待插入数据
+        List<Object[]> params = sql.getPair().getSecond();
+        int res;
+        if (CollectionUtils.isNotEmpty(params)) {
+            List<Object> paramList = new ArrayList<>();
+            insertSql.append("VALUES ");
+            for (Object[] param : params) {
+                insertSql.append("(");
+                for (Object obj : param) {
+                    insertSql.append("?,");
+                    paramList.add(obj);
+                }
+                insertSql.setLength(insertSql.length() - 1);
+                insertSql.append("),");
+            }
+            insertSql.setLength(insertSql.length() - 1);
+            res = jdbcTemplate.update(insertSql.toString(), paramList.toArray());
+        } else {
+            Pair<String, Object[]> p = SqlMakeTools.useSql(sql);
+            insertSql.append(p.getFirst());
+            res = jdbcTemplate.update(insertSql.toString(), p.getSecond());
+        }
+        return res;
+    }
 }

@@ -40,11 +40,17 @@ public class SQL extends AbstractCriteria<SQL> {
 
     private SQLPiepline sqlPiepline = new SQLPiepline(this);
 
+    /**
+     * sql插入
+     */
+    private Pair<StringBuilder, List<Object[]>> pair;
+
     public SQL() {
         selectFields = new LinkedHashSet<>();
         kvs = new ArrayList<>();
         joins = new ArrayList<>();
         subSqls = new ArrayList<>();
+        pair = new Pair<>();
     }
 
     public SQL from(SQL... cc) {
@@ -182,5 +188,30 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public List<Joins.BaseJoin> getJoins() {
         return joins;
+    }
+
+    public SQL insertInto(String tbName, String... fields) {
+        pair.setFirst(new StringBuilder().append("INSERT INTO "+tbName+"("
+                + Arrays.stream(fields).collect(Collectors.joining(","))
+                + ") "));
+        pair.setSecond(new ArrayList<>());
+        return this;
+    }
+
+    public SQL insertInto(Class clss, String... fields) {
+        return insertInto(EntityTools.getTableName(clss), fields);
+    }
+
+    public SQL values(Object... values) {
+        pair.getSecond().add(values);
+        return this;
+    }
+
+    public Pair<StringBuilder, List<Object[]>> getPair() {
+        return pair;
+    }
+
+    public static void main(String[] args) {
+        new SQL().insertInto("tb_user","id","name").values(1,"zhouning");
     }
 }

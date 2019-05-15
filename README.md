@@ -145,8 +145,24 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         tbUserDao.batchDelete(tbUserDao.queryAll().stream().map(TbUser::getId).collect(Collectors.toList()));
     }
 ```
+
+```
+@Test
+    public void testInsertWithSql() throws Exception {
+        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+        TbUserDao tbUserDao = (TbUserDao) ac.getBean("tbUserDao");
+        SQL sql = new SQL().insertInto(TbUser.class, "id", "name", "realName", "pwd", "email", "mobile", "age", "birth", "roleId", "career", "isActive")
+                .values(1, "ins1", "插入1", "123456", "345@qq.com", "12345678901", 25, new Date(), 1, "测试", 1)
+                .values(2, "ins2", "插入2", "123456", "456@qq.com", "12345678901", 26, new Date(), 1, "测试", 1)
+                .values(3, "ins3", "插入3", "123456", "567@qq.com", "12345678901", 27, new Date(), 1, "测试", 0);
+        SQL sql2 = new SQL().insertInto(TbAccount.class, "userName", "realName")
+                .select("name", "realName").from(TbUser.class);
+        tbUserDao.insertWithSql(sql);
+        tbUserDao.insertWithSql(sql2);
+    }
+```
 ### 版本更新
 - 10.1.0 修复union查询和子查询的sql无大括号导致报错bug
 - 10.2.0 修复无selectFields sql拼接的一处BUG
-
-### 当前版本10.1.0
+- 11.0.0 支持自定义sql插入
+### 当前版本11.0.0

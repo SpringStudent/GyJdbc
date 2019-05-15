@@ -165,4 +165,12 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @throws Exception
 	 */
 	Integer queryIntegerWithSql(SQL sql)throws Exception;
+
+	/**
+	 * 根据sql插入数据
+	 * @param sql sql拼接器
+	 * @return int 更新条目数量
+	 * @throws Exception
+	 */
+	int insertWithSql(SQL sql)throws Exception;
 }
