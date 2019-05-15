@@ -223,7 +223,4 @@ public class SQL extends AbstractCriteria<SQL> {
         return pair;
     }
 
-    public static void main(String[] args) {
-        new SQL().insertInto("tb_user", "id", "name").values(1, "zhouning");
-    }
 }
