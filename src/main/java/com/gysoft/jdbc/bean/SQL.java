@@ -43,7 +43,7 @@ public class SQL extends AbstractCriteria<SQL> {
     /**
      * sql插入
      */
-    private Pair<StringBuilder, List<Object[]>> pair;
+    private Pair<String, List<Object[]>> pair;
 
     public SQL() {
         selectFields = new LinkedHashSet<>();
@@ -190,28 +190,20 @@ public class SQL extends AbstractCriteria<SQL> {
         return joins;
     }
 
-    public SQL insertInto(String tbName, String... fields) {
-        pair.setFirst(new StringBuilder().append("INSERT INTO " + tbName + "("
+    public SQL insert(String... fields) {
+        pair.setFirst(new String("INSERT INTO %s ("
                 + Arrays.stream(fields).collect(Collectors.joining(","))
                 + ") "));
         pair.setSecond(new ArrayList<>());
         return this;
     }
 
-    public <T, R> SQL insertInto(String tbName, TypeFunction<T, R>... functions) {
-        pair.setFirst(new StringBuilder().append("INSERT INTO " + tbName + "("
+    public <T, R> SQL insert(TypeFunction<T, R>... functions) {
+        pair.setFirst(new String("INSERT INTO %s ("
                 + Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.joining(","))
                 + ") "));
         pair.setSecond(new ArrayList<>());
         return this;
-    }
-
-    public SQL insertInto(Class clss, String... fields) {
-        return insertInto(EntityTools.getTableName(clss), fields);
-    }
-
-    public <T, R> SQL insertInto(Class clss, TypeFunction<T, R>... functions) {
-        return insertInto(EntityTools.getTableName(clss), functions);
     }
 
     public SQL values(Object... values) {
@@ -219,7 +211,7 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
-    public Pair<StringBuilder, List<Object[]>> getPair() {
+    public Pair<String, List<Object[]>> getPair() {
         return pair;
     }
 

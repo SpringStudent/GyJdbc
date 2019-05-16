@@ -242,7 +242,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @Override
     public int insertWithSql(SQL sql) throws Exception {
         //插入sql
-        StringBuilder insertSql = sql.getPair().getFirst();
+        StringBuilder insertSql = new StringBuilder(String.format(sql.getPair().getFirst(),tableName));
         //待插入数据
         List<Object[]> params = sql.getPair().getSecond();
         int res;
