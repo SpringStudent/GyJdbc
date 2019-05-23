@@ -177,4 +177,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 11.0.0 自定义sql插入语句支持
 - 11.1.1 自定义sql支持lambda表达式
 - 12.0.0 自定义sql插入语句支持调整
-### 当前版本12.0.0
+- 12.1.1 支持拼接limit
+### 当前版本12.1.1

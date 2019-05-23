@@ -31,6 +31,15 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
      */
     private Pair<String, Object[]> having;
 
+    /**
+     * 偏移量
+     */
+    private int offset;
+    /**
+     * 大小
+     */
+    private int size;
+
     public Set<String> getGroupFields() {
         return groupFields;
     }
@@ -69,6 +78,22 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     public void setHaving(Pair<String, Object[]> having) {
         this.having = having;
+    }
+
+    public int getOffset() {
+        return offset;
+    }
+
+    public void setOffset(int offset) {
+        this.offset = offset;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
     }
 
     public AbstractCriteria() {
@@ -300,6 +325,17 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     public S orderBy(Sort... sort) {
         sorts.addAll(Arrays.asList(sort));
+        return self();
+    }
+
+    public S limit(int offset,int size){
+        this.offset = offset;
+        this.size = size;
+        return self();
+    }
+
+    public S limit(int offset){
+        this.offset = offset;
         return self();
     }
 }

@@ -34,7 +34,7 @@ public class CriteriaTest {
         criteria.orBetweenAnd("sss","orsdsd","sda1231").orBetweenAnd("sedTime","2018-12-02","2019-11-22");
         criteria.orderBy(new Sort("userName"), new Sort("createTime", "ASC"));
         criteria.groupBy("userName", "id");
-        criteria.having(count("asd"),"in",Arrays.asList(1,2,3));
+        criteria.having(count("asd"),"in",Arrays.asList(1,2,3)).limit(1,33);
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));

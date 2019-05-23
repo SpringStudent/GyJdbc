@@ -299,6 +299,14 @@ public class SqlMakeTools {
                 }
                 sql.setLength(sql.length() - 1);
             }
+            if(criteria.getOffset()>0){
+                sql.append(" LIMIT ?");
+                params = ArrayUtils.add(params, criteria.getOffset());
+                if(criteria.getSize()>0){
+                    sql.append(", ?");
+                    params = ArrayUtils.add(params, criteria.getSize());
+                }
+            }
         }
         String realSql = sql.toString().replace(", WHERE", " WHERE").replace("AND  OR", "OR");
         result.setFirst(realSql);
