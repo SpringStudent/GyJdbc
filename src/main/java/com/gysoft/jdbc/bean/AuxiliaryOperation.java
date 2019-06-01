@@ -25,6 +25,10 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
 
     <T, R> S or(TypeFunction<T, R> function, Object value);
 
+    S orLike(String key, Object value);
+
+    <T, R> S orLike(TypeFunction<T, R> function, Object value);
+
     S in(String key, Collection<?> args);
 
     <T, R> S in(TypeFunction<T, R> function, Collection<?> args);
@@ -206,6 +210,29 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
         return doNothing();
     }
 
+    default S orLikeIfAbsent(String key, Object value) {
+        return orLikeIfAbsent(key, value, getDefaultPredicate(value));
+    }
+
+    default S orLikeIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return orLike(key, value);
+        }
+        return doNothing();
+    }
+
+
+    default <T, R> S orLikeIfAbsent(TypeFunction<T, R> function, Object value) {
+        return orLikeIfAbsent(function, value, getDefaultPredicate(value));
+    }
+
+    default <T, R> S orLikeIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return orLike(function, value);
+        }
+        return doNothing();
+    }
+
     default S inIfAbsent(String key, Collection<?> args) {
         return inIfAbsent(key, args, getDefaultPredicate(args));
     }
@@ -250,23 +277,23 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
         return doNothing();
     }
 
-    default <T> Predicate<T> getDefaultPredicate(T value){
-        return (t)->{
-            if(Objects.isNull(value)){
+    default <T> Predicate<T> getDefaultPredicate(T value) {
+        return (t) -> {
+            if (Objects.isNull(value)) {
                 return false;
             }
-            if(value instanceof String){
-                if(StringUtils.isEmpty((String)value)){
+            if (value instanceof String) {
+                if (StringUtils.isEmpty((String) value)) {
                     return false;
                 }
             }
-            if(value instanceof  Collection){
-                if(CollectionUtils.isEmpty((Collection) value)){
+            if (value instanceof Collection) {
+                if (CollectionUtils.isEmpty((Collection) value)) {
                     return false;
                 }
             }
-            if(value.getClass().isArray()){
-                if(ArrayUtils.getLength(value)==0){
+            if (value.getClass().isArray()) {
+                if (ArrayUtils.getLength(value) == 0) {
                     return false;
                 }
             }

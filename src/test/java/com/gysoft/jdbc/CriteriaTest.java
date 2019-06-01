@@ -19,10 +19,12 @@ public class CriteriaTest {
     @Test
     public void testCriteria() {
         Criteria criteria = new Criteria();
-//        criteria.in("set", new HashSet(Arrays.asList("1234567890","111111")));
-//        criteria.in("password", Arrays.asList("1234567890","111111"));
-        criteria.andCriteria(new Criteria().betweenAnd("stdate","2019-01-02","2019-04-09").and("realName", "like", "%" + "周宁" + "%").or("userName", "in", Arrays.asList("zhou", "he")));
-        criteria.orCriteria(new Criteria().where("ppid", "12305").orBetweenAnd("birt","2019-12-02","2020-12-11").and("special", "TJ").andCriteria(new Criteria().where("roleId", 123).and("pid", 1119).andCriteria(new Criteria().where("key", 123).orCriteria(new Criteria().where("hh", 3).or("mm", 4231)))));
+        criteria.in("set", new HashSet(Arrays.asList("1234567890", "111111")));
+        criteria.orLike("okd", "s123").orLike(Token::getTk, "sd");
+        criteria.orLikeIfAbsent("dsa", "").orLikeIfAbsent(Token::getTk, "111");
+        criteria.in("password", Arrays.asList("1234567890", "111111"));
+        criteria.andCriteria(new Criteria().betweenAnd("stdate", "2019-01-02", "2019-04-09").and("realName", "like", "%" + "周宁" + "%").or("userName", "in", Arrays.asList("zhou", "he")));
+        criteria.orCriteria(new Criteria().where("ppid", "12305").orBetweenAnd("birt", "2019-12-02", "2020-12-11").and("special", "TJ").andCriteria(new Criteria().where("roleId", 123).and("pid", 1119).andCriteria(new Criteria().where("key", 123).orCriteria(new Criteria().where("hh", 3).or("mm", 4231)))));
         criteria.or("userName", "like", "%" + "zhouning" + "%")
                 .andCriteria(new Criteria().and("realName", "like", "%" + "周宁" + "%").or("userName", "in", Arrays.asList("zhou", "he")))
                 .notEqual("epid", 90001000).let("score", 60).isNotNull("constructId");
@@ -30,11 +32,11 @@ public class CriteriaTest {
                 .andCriteria(new Criteria().lt("createTime", new Date()).or("createTime", new Date()).andCriteria(new Criteria().where("key", 12).in("name", Arrays.asList(1, 2, 3)))
                         .orCriteria(new Criteria().where("iinnerji", "我CA")));
         criteria.notIn("productNum", Arrays.asList("GY-008", "GY-009"));
-        criteria.betweenAnd("stdate","2019-01-02","2019-04-09").betweenAnd("eddate","2019-01-02","2020-01-02");
-        criteria.orBetweenAnd("sss","orsdsd","sda1231").orBetweenAnd("sedTime","2018-12-02","2019-11-22");
+        criteria.betweenAnd("stdate", "2019-01-02", "2019-04-09").betweenAnd("eddate", "2019-01-02", "2020-01-02");
+        criteria.orBetweenAnd("sss", "orsdsd", "sda1231").orBetweenAnd("sedTime", "2018-12-02", "2019-11-22");
         criteria.orderBy(new Sort("userName"), new Sort("createTime", "ASC"));
         criteria.groupBy("userName", "id");
-        criteria.having(count("asd"),"in",Arrays.asList(1,2,3)).limit(1,33);
+        criteria.having(count("asd"), "in", Arrays.asList(1, 2, 3)).limit(1);
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));

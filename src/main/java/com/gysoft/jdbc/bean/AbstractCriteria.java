@@ -13,7 +13,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     /**
      * 条件入参
      */
-    private Set<WhereParam> whereParams;
+    private List<WhereParam> whereParams;
     /**
      * 排序入参
      */
@@ -48,11 +48,11 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         this.groupFields = groupFields;
     }
 
-    public Set<WhereParam> getWhereParams() {
+    public List<WhereParam> getWhereParams() {
         return whereParams;
     }
 
-    public void setWhereParams(Set<WhereParam> whereParams) {
+    public void setWhereParams(List<WhereParam> whereParams) {
         this.whereParams = whereParams;
     }
 
@@ -97,7 +97,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public AbstractCriteria() {
-        whereParams = new LinkedHashSet<>();
+        whereParams = new ArrayList<>();
         sorts = new LinkedHashSet<>();
         criteriaProxys = new ArrayList<>();
         groupFields = new LinkedHashSet<>();
@@ -230,6 +230,16 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     @Override
     public <T, R> S or(TypeFunction<T, R> function, Object value) {
         return this.or(TypeFunction.getLambdaColumnName(function), "=", value);
+    }
+
+    @Override
+    public S orLike(String key, Object value) {
+        return this.or(key, "like", "%"+value+"%");
+    }
+
+    @Override
+    public <T, R> S orLike(TypeFunction<T, R> function, Object value) {
+        return this.or(TypeFunction.getLambdaColumnName(function), "like", "%"+value+"%");
     }
 
     public S or(String key, String opt, Object value) {

@@ -228,7 +228,7 @@ public class SqlMakeTools {
         if (null != criteria) {
             if (CollectionUtils.isNotEmpty(criteria.getWhereParams())) {
                 //where 条件参数拼接
-                Set<WhereParam> whereParams = criteria.getWhereParams();
+                List<WhereParam> whereParams = criteria.getWhereParams();
                 List<CriteriaProxy> criteriaProxys = criteria.getCriteriaProxys();
                 int whereParamIndex = 0;
                 if (null != criteria && CollectionUtils.isNotEmpty(whereParams)) {
