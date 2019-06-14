@@ -248,7 +248,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         StringBuilder insertSql = new StringBuilder(String.format(sql.getPair().getFirst(), tableName));
         //待插入数据
         List<Object[]> params = sql.getPair().getSecond();
-        int res;
+        int res=0;
         if (CollectionUtils.isNotEmpty(params)) {
             List<Object> paramList = new ArrayList<>();
             insertSql.append("VALUES ");
@@ -263,7 +263,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             }
             insertSql.setLength(insertSql.length() - 1);
             res = jdbcTemplate.update(insertSql.toString(), paramList.toArray());
-        } else {
+        } else if(CollectionUtils.isNotEmpty(sql.getSelectFields())){
             Pair<String, Object[]> p = SqlMakeTools.useSql(sql);
             insertSql.append(p.getFirst());
             res = jdbcTemplate.update(insertSql.toString(), p.getSecond());
