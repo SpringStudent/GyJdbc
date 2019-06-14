@@ -176,10 +176,12 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 ```
 @Test
     public void testCreate() throws Exception {
-        SQL sql = new SQL().createTable().temporary().name("tb_account2")
+        SQL sql = new SQL().createTable().name("tb_account2")
                 .addColumn().name("id").integer().notNull().autoIncrement().primary().comment("主键").commit()
                 .addColumn().name("userName").varchar(50).notNull().comment("账号").commit()
                 .addColumn().name("realName").varchar(50).notNull().comment("真实名称").commit()
+                .index().unique().name("ix_userName").column("userName").commit()
+                .index().name("ix_userName_realName").column("userName").column("realName").commit()
                 .engine(TableEngine.InnoDB).comment("账号表2").commit()
                 .values(0,"zhouning","周宁")
                 .values(0,"pengjiajia","彭佳佳");
