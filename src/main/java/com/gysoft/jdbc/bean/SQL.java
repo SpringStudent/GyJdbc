@@ -37,9 +37,14 @@ public class SQL extends AbstractCriteria<SQL> {
      * 子查询条件
      */
     private List<SQL> subSqls;
-
+    /**
+     * 保存sql union/union all查询的sql的管道
+     */
     private SQLPiepline sqlPiepline = new SQLPiepline(this);
-
+    /**
+     * 表元数据
+     */
+    private TableMeta tableMeta;
     /**
      * sql插入
      */
@@ -51,6 +56,7 @@ public class SQL extends AbstractCriteria<SQL> {
         joins = new ArrayList<>();
         subSqls = new ArrayList<>();
         pair = new Pair<>();
+        pair.setSecond(new ArrayList<>());
     }
 
     public SQL from(SQL... cc) {
@@ -194,7 +200,6 @@ public class SQL extends AbstractCriteria<SQL> {
         pair.setFirst(new String("INSERT INTO %s ("
                 + Arrays.stream(fields).collect(Collectors.joining(","))
                 + ") "));
-        pair.setSecond(new ArrayList<>());
         return this;
     }
 
@@ -211,8 +216,25 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
+    public SQL values(List<Object[]> values) {
+        pair.getSecond().addAll(values);
+        return this;
+    }
+
     public Pair<String, List<Object[]>> getPair() {
         return pair;
+    }
+
+    public Table createTable() {
+        return new Table(this);
+    }
+
+    public void setTableMeta(TableMeta tableMeta) {
+        this.tableMeta = tableMeta;
+    }
+
+    public TableMeta getTableMeta() {
+        return tableMeta;
     }
 
 }

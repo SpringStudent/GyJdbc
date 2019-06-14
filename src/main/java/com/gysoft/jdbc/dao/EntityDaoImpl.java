@@ -8,17 +8,19 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
+import java.sql.JDBCType;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * 支持注解，若实体没有注解，实体类名需要按照驼峰命名，属性与数据库字段一致不区分大小写
+ *
  * @author 彭佳佳
  */
 public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, Id> {
@@ -198,9 +200,9 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public <E> Result<E> queryWithSql(Class<E> clss,SQL sql) throws Exception {
-        Pair<String,Object[]> pair = SqlMakeTools.useSql(sql);
-        return new Result<>(clss,pair.getFirst(),pair.getSecond(),jdbcTemplate);
+    public <E> Result<E> queryWithSql(Class<E> clss, SQL sql) throws Exception {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        return new Result<>(clss, pair.getFirst(), pair.getSecond(), jdbcTemplate);
     }
 
     @Override
@@ -243,7 +245,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @Override
     public int insertWithSql(SQL sql) throws Exception {
         //插入sql
-        StringBuilder insertSql = new StringBuilder(String.format(sql.getPair().getFirst(),tableName));
+        StringBuilder insertSql = new StringBuilder(String.format(sql.getPair().getFirst(), tableName));
         //待插入数据
         List<Object[]> params = sql.getPair().getSecond();
         int res;
@@ -267,5 +269,81 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             res = jdbcTemplate.update(insertSql.toString(), p.getSecond());
         }
         return res;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String createWithSql(SQL sql) throws Exception {
+        TableMeta tableMeta = sql.getTableMeta();
+        StringBuilder createSql = new StringBuilder();
+        StringBuilder insertSql = new StringBuilder();
+        //创建表
+        String tbName = StringUtils.isEmpty(tableMeta.getName()) ? "tmp_" + UUID.randomUUID().toString().toLowerCase().replace("-", "") : tableMeta.getName();
+        List<ColumnMeta> columns = tableMeta.getColumns();
+
+        if (columns.isEmpty()) {
+            throw new IllegalArgumentException("未指定任何字段");
+        }
+        createSql.append("CREATE ");
+        insertSql.append("INSERT INTO ");
+        if (tableMeta.isTemporary()) {
+            createSql.append("TEMPORARY ");
+        }
+        createSql.append("TABLE ");
+        createSql.append(tbName);
+        insertSql.append(tbName);
+        createSql.append("(");
+        insertSql.append("(");
+        columns.forEach(columnMeta -> {
+            createSql.append("`");
+            createSql.append(columnMeta.getName());
+            insertSql.append(columnMeta.getName());
+            createSql.append("` ");
+            createSql.append(columnMeta.getDataType());
+            if (columnMeta.isNotNull()) {
+                createSql.append(" not null");
+            }
+            if (columnMeta.isPrimaryKey()) {
+                createSql.append(" primary key");
+                if(columnMeta.isAutoIncr()){
+                    createSql.append(" auto_increment");
+                }
+            }
+            if (columnMeta.getVal()!=null) {
+                if(columnMeta.getJdbcType().equals(JDBCType.TIMESTAMP)){
+                    createSql.append(String.format(" default %s",(columnMeta.getVal())));
+                }else{
+                    createSql.append(String.format(" default '%s'",(columnMeta.getVal())));
+                }
+            }
+            if (StringUtils.isNotEmpty(columnMeta.getComment())) {
+                createSql.append(String.format(" comment '%s'", columnMeta.getComment()));
+            }
+            createSql.append(",");
+            insertSql.append(",");
+        });
+        //索引
+        List<IndexMeta> indexMetas = tableMeta.getIndexs();
+        indexMetas.forEach(indexMeta -> {
+            createSql.append((indexMeta.isUnique() ? "unique" : "") + " key`" + indexMeta.getIndexName() + "`(");
+            indexMeta.getColumnNames().forEach(cc -> {
+                createSql.append("`"+cc+"`");
+                createSql.append(",");
+            });
+            createSql.setLength(createSql.length() - 1);
+            createSql.append("),");
+        });
+        insertSql.setLength(insertSql.length() - 1);
+        createSql.setLength(createSql.length()-1);
+        createSql.append(")ENGINE = " + tableMeta.getEngine() + " CHARACTER SET utf8 ");
+        if (StringUtils.isNotEmpty(tableMeta.getComment())) {
+            createSql.append("COMMENT=" + "'" + tableMeta.getComment() + "'");
+        }
+        insertSql.append(")");
+        jdbcTemplate.execute(createSql.toString());
+        //保存数据
+        sql.getPair().setFirst(insertSql.toString());
+        insertWithSql(sql);
+        return tbName;
     }
 }

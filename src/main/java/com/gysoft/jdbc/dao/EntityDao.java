@@ -173,4 +173,12 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @throws Exception
 	 */
 	int insertWithSql(SQL sql)throws Exception;
+
+	/**
+	 * 根据sql创建表;如果有指定数据将数据插入
+	 * @param sql sql拼接器
+	 * @return String 表名称
+	 * @throws Exception
+	 */
+	String createWithSql(SQL sql)throws Exception;
 }

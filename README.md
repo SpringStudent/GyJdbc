@@ -13,6 +13,7 @@
 Demo: https://github.com/SpringStudent/GyJdbcTest
 
 
+基本查询
 ```
 @Test
     public void testQuery() throws Exception {
@@ -25,7 +26,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 
-
+条件查询
 ```
 @Test
     public void testQueryWithCriteria() throws Exception {
@@ -57,7 +58,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 
-
+更新语句
 ```
  @Test
     public void testUpdate() throws Exception {
@@ -79,7 +80,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 
-
+自定义sql
 ```
  @Test
     public void testUseSQL() throws Exception {
@@ -135,7 +136,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 
-
+删除数据
 ```
 @After
     public void testDelete() throws Exception {
@@ -145,7 +146,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         tbUserDao.batchDelete(tbUserDao.queryAll().stream().map(TbUser::getId).collect(Collectors.toList()));
     }
 ```
-
+插入数据
 ```
 @Test
     public void testInsertWithSql() throws Exception {
@@ -171,6 +172,23 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         tbUserDao.insertWithSql(sql4);
     }
 ```
+创建表并插入数据
+```
+@Test
+    public void testCreate() throws Exception {
+        SQL sql = new SQL().createTable().temporary().name("tb_account2")
+                .addColumn().name("id").integer().notNull().autoIncrement().primary().comment("主键").commit()
+                .addColumn().name("userName").varchar(50).notNull().comment("账号").commit()
+                .addColumn().name("realName").varchar(50).notNull().comment("真实名称").commit()
+                .engine(TableEngine.InnoDB).comment("账号表2").commit()
+                .values(0,"zhouning","周宁")
+                .values(0,"pengjiajia","彭佳佳");
+//                .select("*").from(TbAccount.class);支持select语句的插入方法
+        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
+        tbAccountDao.createWithSql(sql);
+    }
+```
 ### 版本更新
 - 10.1.0 修复union查询和子查询的sql无大括号导致报错bug
 - 10.2.0 修复无selectFields sql拼接的一处BUG
@@ -179,4 +197,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 12.0.0 自定义sql插入语句支持调整
 - 12.1.1 支持拼接limit
 - 12.2.0 支持orLike拼接，修复相同WhereParam的条件丢失问题
+- 13.0.0 支持创建表并插入数据,配合临时表使用美滋滋
 ### 当前版本12.2.0

@@ -2,11 +2,15 @@ package com.gysoft.jdbc;
 
 import com.gysoft.jdbc.annotation.Table;
 import com.gysoft.jdbc.bean.*;
+import com.gysoft.jdbc.dao.EntityDao;
+import com.gysoft.jdbc.dao.EntityDaoImpl;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import lombok.Data;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 
+import java.sql.JDBCType;
 import java.util.*;
 
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
@@ -90,10 +94,18 @@ public class CriteriaTest {
     @Data
     @Table(name = "tb_book")
     private class Book {
+        private String id;
         private String name;
         private String num;
     }
 
+    private interface BookDao extends EntityDao<Book,String>{
+
+    }
+
+    private class BookDaoImpl extends EntityDaoImpl<Book,String> implements BookDao{
+
+    }
 
     @Test
     public void testFunc(){
@@ -121,4 +133,23 @@ public class CriteriaTest {
         Pair<String, Object[]> pair5 = SqlMakeTools.useSql(s5);
         System.out.println(pair5.getFirst());
     }
+
+    @Test
+    public void testCreate() throws Exception {
+        SQL sql = new SQL().createTable().name("halou").temporary()
+                .addColumn().name("id").integer().notNull().primary().autoIncrement().comment("主键").commit()
+                .addColumn().name("name").varchar(5).notNull().comment("名称").defaults("").commit()
+                .addColumn().name("age").tinyint().notNull().commit()
+                .addColumn().name("email").jdbcType(JDBCType.LONGVARCHAR).notNull().commit()
+                .addColumn().name("birthday").datetime().notNull().defaultCurrentTimestamp().commit()
+                .index().unique().column("name").column("age").name("ix_name_age").commit()
+                .index().name("ix_name").column("name").commit()
+                .engine(TableEngine.InnoDB).comment("用户").commit()
+                .values(1,"zhou",23)
+                .values(2,"peng",24)
+                .values(3,"wei",25);
+//        String tbName = new BookDaoImpl().createWithSql(sql);
+//        System.out.println(tbName);
+    }
+
 }
