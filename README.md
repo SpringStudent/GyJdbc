@@ -198,4 +198,4 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 12.1.1 支持拼接limit
 - 12.2.0 支持orLike拼接，修复相同WhereParam的条件丢失问题
 - 13.0.0 支持创建表并插入数据,配合临时表使用美滋滋
-### 当前版本12.2.0
+### 当前版本13.0.0
