@@ -310,7 +310,8 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
                 }
             }
             if (columnMeta.getVal()!=null) {
-                if(columnMeta.getJdbcType().equals(JDBCType.TIMESTAMP)){
+                if(columnMeta.getJdbcType().equals(JDBCType.TIMESTAMP)
+                ||columnMeta.getVal().toLowerCase().equals("null")){
                     createSql.append(String.format(" default %s",(columnMeta.getVal())));
                 }else{
                     createSql.append(String.format(" default '%s'",(columnMeta.getVal())));

@@ -37,7 +37,7 @@ public class ColumnMeta {
     /**
      * 默认值
      */
-    private Object val;
+    private String val;
     /**
      * 类型字符串
      */
@@ -103,11 +103,11 @@ public class ColumnMeta {
         this.name = name;
     }
 
-    public Object getVal() {
+    public String getVal() {
         return val;
     }
 
-    public void setVal(Object val) {
+    public void setVal(String val) {
         this.val = val;
     }
 

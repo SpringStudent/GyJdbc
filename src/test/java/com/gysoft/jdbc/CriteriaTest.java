@@ -140,7 +140,7 @@ public class CriteriaTest {
                 .addColumn().name("id").integer().notNull().primary().autoIncrement().comment("主键").commit()
                 .addColumn().name("name").varchar(5).notNull().comment("名称").defaults("").commit()
                 .addColumn().name("age").tinyint().notNull().commit()
-                .addColumn().name("email").jdbcType(JDBCType.LONGVARCHAR).notNull().commit()
+                .addColumn().name("email").jdbcType(JDBCType.LONGVARCHAR).defaultNull().commit()
                 .addColumn().name("birthday").datetime().notNull().defaultCurrentTimestamp().commit()
                 .index().unique().column("name").column("age").name("ix_name_age").commit()
                 .index().name("ix_name").column("name").commit()
@@ -148,8 +148,8 @@ public class CriteriaTest {
                 .values(1,"zhou",23)
                 .values(2,"peng",24)
                 .values(3,"wei",25);
-//        String tbName = new BookDaoImpl().createWithSql(sql);
-//        System.out.println(tbName);
+        String tbName = new BookDaoImpl().createWithSql(sql);
+        System.out.println(tbName);
     }
 
 }

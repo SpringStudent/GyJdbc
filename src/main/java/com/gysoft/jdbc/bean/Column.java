@@ -41,6 +41,10 @@ public class Column {
         return defaults("CURRENT_TIMESTAMP");
     }
 
+    public Column defaultNull() {
+        return defaults("NULL");
+    }
+
     public Column length(int length) {
         columnMeta.setLength(length);
         return this;
