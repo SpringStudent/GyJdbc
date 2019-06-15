@@ -191,6 +191,26 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         tbAccountDao.createWithSql(sql);
     }
 ```
+使用临时表进行查询
+```
+@Test
+    public void testUseTmpTableQuery() throws Exception {
+        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
+        SQL sql = new SQL().select("*").from(TbAccount.class).as("a")
+                .innerJoin(new Joins().with(tbAccountDao.createWithSql(
+                        new SQL().createTable().temporary()
+                                .addColumn().name("id").integer().primary().notNull().autoIncrement().commit()
+                                .addColumn().name("userName").varchar(50).notNull().commit()
+                                .index().name("ix_userName").column("userName").commit()
+                                .engine(TableEngine.MyISAM).comment("用户临时表").commit()
+                                .select("0", "name").from(TbUser.class)
+                )).as("b").on("a.userName", "b.userName"));
+        List<TbAccount> result = tbAccountDao.queryWithSql(TbAccount.class,sql).queryList();
+        System.out.println(result);
+        System.out.println(result.size());
+    }
+```
 ### 版本更新
 - 10.1.0 修复union查询和子查询的sql无大括号导致报错bug  细心
 - 10.2.0 修复无selectFields sql拼接的一处BUG  嘿嘿
