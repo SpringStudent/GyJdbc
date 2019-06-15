@@ -25,6 +25,11 @@ public class Joins {
         return getWith();
     }
 
+    public With with(String tb) {
+        joinSql.append(" %s " + tb);
+        return getWith();
+    }
+
     public StringBuilder getJoinSql() {
         return joinSql;
     }
