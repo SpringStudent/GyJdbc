@@ -299,7 +299,7 @@ public class SqlMakeTools {
                 }
                 sql.setLength(sql.length() - 1);
             }
-            if(criteria.getOffset()>0){
+            if(criteria.getOffset()>=0){
                 sql.append(" LIMIT ?");
                 params = ArrayUtils.add(params, criteria.getOffset());
                 if(criteria.getSize()>0){

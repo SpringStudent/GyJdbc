@@ -34,7 +34,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     /**
      * 偏移量
      */
-    private int offset;
+    private int offset = -1;
     /**
      * 大小
      */
@@ -117,7 +117,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return self();
     }
 
-    private S self(){
+    private S self() {
         return (S) this;
     }
 
@@ -234,12 +234,12 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     @Override
     public S orLike(String key, Object value) {
-        return this.or(key, "like", "%"+value+"%");
+        return this.or(key, "like", "%" + value + "%");
     }
 
     @Override
     public <T, R> S orLike(TypeFunction<T, R> function, Object value) {
-        return this.or(TypeFunction.getLambdaColumnName(function), "like", "%"+value+"%");
+        return this.or(TypeFunction.getLambdaColumnName(function), "like", "%" + value + "%");
     }
 
     public S or(String key, String opt, Object value) {
@@ -338,13 +338,13 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return self();
     }
 
-    public S limit(int offset,int size){
+    public S limit(int offset, int size) {
         this.offset = offset;
         this.size = size;
         return self();
     }
 
-    public S limit(int offset){
+    public S limit(int offset) {
         this.offset = offset;
         return self();
     }
