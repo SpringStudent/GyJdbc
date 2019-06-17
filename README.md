@@ -212,7 +212,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         System.out.println(result.size());
     }
 ```
-丰富的函数支持
+丰富的函数支持,参照FuncBuilder.java
 ```
 @Test
     public void testFunc(){
