@@ -68,7 +68,7 @@ public class CriteriaTest {
                 .natureJoin(new Joins().with(Book.class).as("t3"))
                 .leftJoin(new Joins().with(Book.class).as("t4").on("t4.id", "t2.id"))
                 .andCriteria(new Criteria().where("k1", "v1").or("k2", "v2")).or("k3", "k5")
-                .union().select("un.ke","un.ke2").from(Book.class).where("un.ke",1);
+                .union().select("un.ke","un.ke2").from(Book.class).where("un.ke",1).limit(0,20);
         SQL criteria = new SQL().select("*").from(criteria4,
                 new SQL().select("t1.*").from(Book.class).as("t1").andCriteria(new Criteria().in("t1.id", Arrays.asList(1, 2, 3)).like("t1.name", "name1")).leftJoin(new Joins().with(Book.class).as("j1").on("j1.id", "t1.id").and("j1.name", "=", "j1name")),
                 new SQL().select("t2.*").from(Book.class).as("t2").where("t2.kd","ssd").groupBy("t2.uploader").having("t2.count1",">",123),

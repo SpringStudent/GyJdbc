@@ -212,6 +212,35 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         System.out.println(result.size());
     }
 ```
+丰富的函数支持
+```
+@Test
+    public void testFunc(){
+        //支持mysql函数拼接
+        //聚集函数
+        SQL s = new SQL().select(count("*"),avg(Token::getSize),max(Token::getSize),min(Token::getSize),sum(Token::getSize)).from(Token.class);
+        //字符串处理函数
+        SQL s2 = new SQL().select(concat(Token::getTk,Token::getSize),length(Token::getTk),charLength(Token::getTk),upper(Token::getTk),lower(Token::getTk)).from(Token.class);
+        //数值处理函数
+        SQL s3 = new SQL().select(abs(Token::getSize),ceil(Token::getSize),floor(Token::getSize)).from(Token.class);
+        //时间处理函数
+        SQL s4 = new SQL().select(curdate(),curtime(),now(),month(curdate()),week(curdate()),minute(curtime()));
+
+        SQL s5 = new SQL().select(formatAs("10000","2").as("a")).from(Book.class);
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(s);
+        System.out.println(pair.getFirst());
+        Pair<String, Object[]> pair2 = SqlMakeTools.useSql(s2);
+        System.out.println(pair2.getFirst());
+        Pair<String, Object[]> pair3 = SqlMakeTools.useSql(s3);
+        System.out.println(pair3.getFirst());
+        Pair<String, Object[]> pair4 = SqlMakeTools.useSql(s4);
+        System.out.println(pair4.getFirst());
+        //...more 等着你完善和探索...
+        Pair<String, Object[]> pair5 = SqlMakeTools.useSql(s5);
+        System.out.println(pair5.getFirst());
+    }
+```
 ### 版本更新
 - 10.1.0 修复union查询和子查询的sql无大括号导致报错bug  细心
 - 10.2.0 修复无selectFields sql拼接的一处BUG  嘿嘿
