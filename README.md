@@ -254,4 +254,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 13.0.2 创建表添加defaultNull        晕了
 - 13.0.3 join查询忘了支持表名称字符串  捂脸
 - 13.0.4 修复limit查询的bug 好险
-### 当前版本13.0.4
+- 13.0.5 修复使用lambda表达式Mysql特殊字符未添加``导致的错误 好险
+### 当前版本13.0.5

@@ -124,7 +124,7 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public <T, R> SQL select(TypeFunction<T, R>... functions) {
-        selectFields.addAll(Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()));
+        selectFields.addAll(Arrays.stream(functions).map(function -> transfer(TypeFunction.getLambdaColumnName(function))).collect(Collectors.toList()));
         return this;
     }
 
@@ -134,7 +134,7 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public <T, R> SQL update(TypeFunction<T, R> function, Object value) {
-        kvs.add(new Pair(TypeFunction.getLambdaColumnName(function), value));
+        kvs.add(new Pair(transfer(TypeFunction.getLambdaColumnName(function)), value));
         return this;
     }
 
@@ -205,7 +205,7 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public <T, R> SQL insert(TypeFunction<T, R>... functions) {
         pair.setFirst(new String("INSERT INTO %s ("
-                + Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.joining(","))
+                + Arrays.stream(functions).map(f -> transfer(TypeFunction.getLambdaColumnName(f))).collect(Collectors.joining(","))
                 + ") "));
         pair.setSecond(new ArrayList<>());
         return this;
@@ -235,6 +235,10 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public TableMeta getTableMeta() {
         return tableMeta;
+    }
+
+    private String transfer(String field){
+        return "`"+field+"`";
     }
 
 }
