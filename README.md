@@ -242,17 +242,17 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 ### 版本更新
-- 10.1.0 修复union查询和子查询的sql无大括号导致报错bug  细心
-- 10.2.0 修复无selectFields sql拼接的一处BUG  嘿嘿
-- 11.0.0 自定义sql插入语句支持  创意
-- 11.1.1 自定义sql支持lambda表达式  偶吼吼
-- 12.0.0 自定义sql插入语句支持调整  统一
-- 12.1.1 支持拼接limit  强大
-- 12.2.0 支持orLike拼接，修复相同WhereParam的条件丢失问题  阴暗
-- 13.0.0 支持创建表并插入数据,配合临时表使用美滋滋   灵感
-- 13.0.1 修复createWithSql不插入数据的一处bug  傻了
-- 13.0.2 创建表添加defaultNull        晕了
-- 13.0.3 join查询忘了支持表名称字符串  捂脸
-- 13.0.4 修复limit查询的bug 好险
-- 13.0.5 修复使用lambda表达式Mysql特殊字符未添加``导致的错误 好险
+- 10.1.0 修复union查询和子查询的sql无大括号导致报错bug
+- 10.2.0 修复无selectFields sql拼接的一处BUG
+- 11.0.0 自定义sql插入语句支持
+- 11.1.1 自定义sql支持lambda表达式
+- 12.0.0 自定义sql插入语句支持调整
+- 12.1.1 支持拼接limit
+- 12.2.0 支持orLike拼接，修复相同WhereParam的条件丢失问题
+- 13.0.0 支持创建表并插入数据,配合临时表使用美滋滋
+- 13.0.1 修复createWithSql不插入数据的一处bug
+- 13.0.2 创建表添加defaultNull
+- 13.0.3 join查询忘了支持表名称字符串
+- 13.0.4 修复limit查询的bug
+- 13.0.5 修复使用lambda表达式Mysql特殊字符未添加``导致的错误
 ### 当前版本13.0.5
