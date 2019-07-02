@@ -296,9 +296,11 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         insertSql.append("(");
         columns.forEach(columnMeta -> {
             createSql.append("`");
+            insertSql.append("`");
             createSql.append(columnMeta.getName());
             insertSql.append(columnMeta.getName());
             createSql.append("` ");
+            insertSql.append("` ");
             createSql.append(columnMeta.getDataType());
             if (columnMeta.isNotNull()) {
                 createSql.append(" not null");
@@ -336,7 +338,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         });
         insertSql.setLength(insertSql.length() - 1);
         createSql.setLength(createSql.length()-1);
-        createSql.append(")ENGINE = " + tableMeta.getEngine() + " CHARACTER SET utf8 ");
+        createSql.append(")ENGINE = " + tableMeta.getEngine() + " CHARSET=utf8 ");
         if (StringUtils.isNotEmpty(tableMeta.getComment())) {
             createSql.append("COMMENT=" + "'" + tableMeta.getComment() + "'");
         }

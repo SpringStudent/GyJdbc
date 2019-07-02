@@ -290,4 +290,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 13.0.3 join查询忘了支持表名称字符串
 - 13.0.4 修复limit查询的bug
 - 13.0.5 修复使用lambda表达式Mysql特殊字符未添加``导致的错误
-### 当前版本13.0.5
+- 13.0.6 修复创建表并插入数据column为mysql特殊字符未添加``导致的报错
+### 当前版本13.0.6

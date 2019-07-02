@@ -148,7 +148,7 @@ public class CriteriaTest {
                 .values(1,"zhou",23)
                 .values(2,"peng",24)
                 .values(3,"wei",25);
-//        String tbName = new BookDaoImpl().createWithSql(sql);
+        String tbName = new BookDaoImpl().createWithSql(sql);
 //        System.out.println(tbName);
     }
 
