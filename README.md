@@ -241,6 +241,41 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         System.out.println(pair5.getFirst());
     }
 ```
+使用临时表优化in查询
+```
+//before
+@Override
+    public Map<String, String> getProjUserNameCareerMap(List<String> projIds, List<String> userNames) throws Exception {
+        List<Object[]> tmpValues = new ArrayList<>();
+        if (EmptyUtils.isEmpty(projIds) || EmptyUtils.isEmpty(userNames)) {
+            return new HashMap<>();
+        }
+        return projectUserDao.queryMapWithSql(
+                new SQL().select(concat("a.projectId", "a.userName"), "a.career").from(ProjectUser.class).as("a")
+                        .in("a.projectId", projIds).in("a.userName", userNames), CustomResultSetExractorFactory.createDoubleColumnValueResultSetExractor())
+    }
+//after
+@Override
+    public Map<String, String> getProjUserNameCareerMap(List<String> projIds, List<String> userNames) throws Exception {
+        List<Object[]> tmpValues = new ArrayList<>();
+        if(EmptyUtils.isEmpty(projIds)||EmptyUtils.isEmpty(userNames)){
+            return new HashMap<>();
+        }
+        projIds.forEach(pid -> userNames.forEach(unm -> tmpValues.add(new Object[]{0,pid,unm})));
+        return projectUserDao.queryMapWithSql(
+                new SQL().select(concat("a.projectId","a.userName"),"a.career").from(ProjectUser.class).as("a")
+                        .innerJoin(new Joins().with(
+                                projectUserDao.createWithSql(new SQL().createTable().temporary()
+                                        .addColumn().name("id").primary().integer().notNull().autoIncrement().commit()
+                                        .addColumn().name("projectId").varchar(32).notNull().commit()
+                                        .addColumn().name("userName").varchar(50).notNull().commit()
+                                        .engine(TableEngine.MyISAM).commit().values(tmpValues))
+                        ).as("b").on("a.projectId","b.projectId").on("a.userName","b.userName"))
+                        .groupBy("a.projectId","a.userName")
+                ,CustomResultSetExractorFactory.createDoubleColumnValueResultSetExractor()
+        );
+    }    
+```
 ### 版本更新
 - 10.1.0 修复union查询和子查询的sql无大括号导致报错bug  细心
 - 10.2.0 修复无selectFields sql拼接的一处BUG  嘿嘿
