@@ -185,7 +185,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
                 .index().name("ix_userName_realName").column("userName").column("realName").commit()
                 .engine(TableEngine.InnoDB).comment("账号表2").commit()
                 .values(0,"zhouning","周宁")
-                .values(0,"pengjiajia","彭佳佳");
+                .values(0,"pengjiajia","李明明");
 //                .select("*").from(TbAccount.class);支持select语句的插入方法
         ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
         TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
@@ -252,7 +252,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         }
         return projectUserDao.queryMapWithSql(
                 new SQL().select(concat("a.projectId", "a.userName"), "a.career").from(ProjectUser.class).as("a")
-                        .in("a.projectId", projIds).in("a.userName", userNames), CustomResultSetExractorFactory.createDoubleColumnValueResultSetExractor())
+                        .in("a.projectId", projIds).in("a.userName", userNames).groupBy("a.projectId","a.userName"), CustomResultSetExractorFactory.createDoubleColumnValueResultSetExractor())
     }
 //after
 @Override
