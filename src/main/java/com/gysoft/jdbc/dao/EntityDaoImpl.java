@@ -2,6 +2,7 @@ package com.gysoft.jdbc.dao;
 
 
 import com.gysoft.jdbc.bean.*;
+import com.gysoft.jdbc.tools.CollectionUtil;
 import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.collections.CollectionUtils;
@@ -248,22 +249,26 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         StringBuilder insertSql = new StringBuilder(String.format(sql.getPair().getFirst(), tableName));
         //待插入数据
         List<Object[]> params = sql.getPair().getSecond();
-        int res=0;
+        int res = 0;
         if (CollectionUtils.isNotEmpty(params)) {
-            List<Object> paramList = new ArrayList<>();
-            insertSql.append("VALUES ");
-            for (Object[] param : params) {
-                insertSql.append("(");
-                for (Object obj : param) {
-                    insertSql.append("?,");
-                    paramList.add(obj);
+            List<Object[]>[] batchs = CollectionUtil.slice(params, BATCH_PAGE_SIZE);
+            for (List<Object[]> batch : batchs) {
+                List<Object> paramList = new ArrayList<>();
+                StringBuilder tempInsertSql = new StringBuilder(insertSql);
+                tempInsertSql.append("VALUES ");
+                for (Object[] param : batch) {
+                    tempInsertSql.append("(");
+                    for (Object obj : param) {
+                        tempInsertSql.append("?,");
+                        paramList.add(obj);
+                    }
+                    tempInsertSql.setLength(tempInsertSql.length() - 1);
+                    tempInsertSql.append("),");
                 }
-                insertSql.setLength(insertSql.length() - 1);
-                insertSql.append("),");
+                tempInsertSql.setLength(tempInsertSql.length() - 1);
+                res += jdbcTemplate.update(tempInsertSql.toString(), paramList.toArray());
             }
-            insertSql.setLength(insertSql.length() - 1);
-            res = jdbcTemplate.update(insertSql.toString(), paramList.toArray());
-        } else if(CollectionUtils.isNotEmpty(sql.getSelectFields())){
+        } else if (CollectionUtils.isNotEmpty(sql.getSelectFields())) {
             Pair<String, Object[]> p = SqlMakeTools.useSql(sql);
             insertSql.append(p.getFirst());
             res = jdbcTemplate.update(insertSql.toString(), p.getSecond());
@@ -307,16 +312,16 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             }
             if (columnMeta.isPrimaryKey()) {
                 createSql.append(" primary key");
-                if(columnMeta.isAutoIncr()){
+                if (columnMeta.isAutoIncr()) {
                     createSql.append(" auto_increment");
                 }
             }
-            if (columnMeta.getVal()!=null) {
-                if(columnMeta.getJdbcType().equals(JDBCType.TIMESTAMP)
-                ||columnMeta.getVal().toLowerCase().equals("null")){
-                    createSql.append(String.format(" default %s",(columnMeta.getVal())));
-                }else{
-                    createSql.append(String.format(" default '%s'",(columnMeta.getVal())));
+            if (columnMeta.getVal() != null) {
+                if (columnMeta.getJdbcType().equals(JDBCType.TIMESTAMP)
+                        || columnMeta.getVal().toLowerCase().equals("null")) {
+                    createSql.append(String.format(" default %s", (columnMeta.getVal())));
+                } else {
+                    createSql.append(String.format(" default '%s'", (columnMeta.getVal())));
                 }
             }
             if (StringUtils.isNotEmpty(columnMeta.getComment())) {
@@ -330,14 +335,14 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         indexMetas.forEach(indexMeta -> {
             createSql.append((indexMeta.isUnique() ? "unique" : "") + " key`" + indexMeta.getIndexName() + "`(");
             indexMeta.getColumnNames().forEach(cc -> {
-                createSql.append("`"+cc+"`");
+                createSql.append("`" + cc + "`");
                 createSql.append(",");
             });
             createSql.setLength(createSql.length() - 1);
             createSql.append("),");
         });
         insertSql.setLength(insertSql.length() - 1);
-        createSql.setLength(createSql.length()-1);
+        createSql.setLength(createSql.length() - 1);
         createSql.append(")ENGINE = " + tableMeta.getEngine() + " CHARSET=utf8 ");
         if (StringUtils.isNotEmpty(tableMeta.getComment())) {
             createSql.append("COMMENT=" + "'" + tableMeta.getComment() + "'");
