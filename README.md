@@ -185,7 +185,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
                 .index().name("ix_userName_realName").column("userName").column("realName").commit()
                 .engine(TableEngine.InnoDB).comment("账号表2").commit()
                 .values(0,"zhouning","周宁")
-                .values(0,"pengjiajia","李明明");
+                .values(0,"limingming","李明明");
 //                .select("*").from(TbAccount.class);支持select语句的插入方法
         ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
         TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
