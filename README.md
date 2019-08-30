@@ -431,5 +431,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 13.0.5 修复使用lambda表达式Mysql特殊字符未添加``导致的错误
 - 13.0.6 修复创建表并插入数据column为mysql特殊字符未添加``导致的报错
 - 14.0.0 insertWithSql方法改为分页插入
-- 15.0.1 添加了切换数据源的支持,参照https://github.com/hope-for/GyJdbc/blob/master/README.md#%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2
+- 15.0.1 添加了切换数据源的支持
 ### 当前版本15.0.1
