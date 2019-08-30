@@ -369,24 +369,6 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     <bean id="dataSource" class="com.gysoft.jdbc.multi.GyJdbcRoutingDataSource">
         <property name="targetDataSources">
             <map>
-                <entry key="master" value-ref="sourceDs"/>
-                <entry key="slave" value-ref="targetDs"/>
-            </map>
-        </property>
-        
-    </bean>
-
-    <!-- 数据目标jdbcTEmplate -->
-    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
-        <property name="dataSource" ref="dataSource"/>
-    </bean>
-```
-这里值得注意的是
-
-```
-<bean id="dataSource" class="com.gysoft.jdbc.multi.GyJdbcRoutingDataSource">
-        <property name="targetDataSources">
-            <map>
                 //此处targetDataSources的entry key如果不是配置的master、
                 //slave那么在下文使用dao的bindMaster()、bindSlave()
                 //方法会获取不到数据源，这时候可以通过bindPoint(String ds)
@@ -397,6 +379,11 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         </property>
         //在没有调用tbAccountDao.bindxxx()方法时，指定一个默认的数据源的id
         <property name="defaultLookUpKey" value="slave"/>
+    </bean>
+
+    <!-- 数据目标jdbcTEmplate -->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource"/>
     </bean>
 ```
 2.在调用方法的时候指定数据源master、slave或者自定义如
