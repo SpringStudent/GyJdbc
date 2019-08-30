@@ -373,6 +373,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
                 <entry key="slave" value-ref="targetDs"/>
             </map>
         </property>
+        
     </bean>
 
     <!-- 数据目标jdbcTEmplate -->
@@ -386,14 +387,18 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 <bean id="dataSource" class="com.gysoft.jdbc.multi.GyJdbcRoutingDataSource">
         <property name="targetDataSources">
             <map>
+                //此处targetDataSources的entry key如果不是配置的master、
+                //slave那么在下文使用dao的bindMaster()、bindSlave()
+                //方法会获取不到数据源，这时候可以通过bindPoint(String ds)
+                //方法去获取配置的数据源
                 <entry key="master" value-ref="sourceDs"/>
                 <entry key="slave" value-ref="targetDs"/>
             </map>
         </property>
+        //在没有调用tbAccountDao.bindxxx()方法时，指定一个默认的数据源的id
+        <property name="defaultLookUpKey" value="slave"/>
     </bean>
 ```
-此处targetDataSources的entry key如果不是配置的master、slave那么在下文使用dao的bindMaster()、bindSlave()方法会获取不到数据源，这时候可以通过bindPoint(String ds)方法去获取配置的数据源
-
 2.在调用方法的时候指定数据源master、slave或者自定义如
 
 ```
@@ -408,7 +413,6 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         System.out.println("Slave query"+tbAccountDao.bindSlave().queryAll());
     }
 ```
-
 
 
 ### 版本更新
@@ -427,5 +431,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 13.0.5 修复使用lambda表达式Mysql特殊字符未添加``导致的错误
 - 13.0.6 修复创建表并插入数据column为mysql特殊字符未添加``导致的报错
 - 14.0.0 insertWithSql方法改为分页插入
-- 15.0.0 添加了切换数据源的支持,参照https://github.com/hope-for/GyJdbc/blob/master/README.md#%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2
-### 当前版本15.0.0
+- 15.0.1 添加了切换数据源的支持,参照https://github.com/hope-for/GyJdbc/blob/master/README.md#%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2
+### 当前版本15.0.1
