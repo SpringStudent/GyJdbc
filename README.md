@@ -380,7 +380,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         <property name="dataSource" ref="dataSource"/>
     </bean>
 ```
-==这里值得注意的是==
+这里值得注意的是
 
 ```
 <bean id="dataSource" class="com.gysoft.jdbc.multi.GyJdbcRoutingDataSource">
@@ -392,7 +392,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         </property>
     </bean>
 ```
-==此处targetDataSources的entry key如果不是配置的master、slave那么在下文使用dao的bindMaster()、bindSlave()方法会获取不到数据源，这时候可以通过bindPoint(String ds)方法去获取配置的数据源==
+此处targetDataSources的entry key如果不是配置的master、slave那么在下文使用dao的bindMaster()、bindSlave()方法会获取不到数据源，这时候可以通过bindPoint(String ds)方法去获取配置的数据源
 
 2.在调用方法的时候指定数据源master、slave或者自定义如
 
