@@ -188,19 +188,19 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @return EntityDao 当前的dao对象
 	 * @throws Exception
 	 */
-	EntityDao bindPoint(String ds)throws Exception;
+	EntityDao<T,Id> bindPoint(String ds)throws Exception;
 
 	/**
 	 * 绑定master的dataSource
 	 * @return EntityDao 当前的dao对象
 	 * @throws Exception
 	 */
-	EntityDao bindMaster()throws Exception;
+	EntityDao<T,Id> bindMaster()throws Exception;
 
 	/**
 	 * 绑定slave的dataSource
 	 * @return EntityDao 当前的dao对象
 	 * @throws Exception
 	 */
-	EntityDao bindSlave()throws Exception;
+	EntityDao<T,Id> bindSlave()throws Exception;
 }

@@ -357,20 +357,19 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public EntityDaoImpl bindPoint(String ds) throws Exception {
+    public EntityDaoImpl<T,Id> bindPoint(String ds) throws Exception {
         DataSourceIdHolder.setDataSource(ds);
         return this;
     }
 
     @Override
-    public EntityDaoImpl bindMaster() throws Exception {
+    public EntityDaoImpl<T,Id> bindMaster() throws Exception {
         DataSourceIdHolder.setDataSource(DataSourceIdHolder.MASTER);
-
         return this;
     }
 
     @Override
-    public EntityDaoImpl bindSlave() throws Exception {
+    public EntityDaoImpl<T,Id> bindSlave() throws Exception {
         DataSourceIdHolder.setDataSource(DataSourceIdHolder.SLAVE);
         return this;
     }
