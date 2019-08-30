@@ -20,6 +20,10 @@ public abstract class DataSourceIdHolder{
     }
 
     public static String getDataSource(){
-        return dataSourceIdHolder.get();
+        String dataSourceId = dataSourceIdHolder.get();
+        if(dataSourceId==null){
+            dataSourceId = MASTER;
+        }
+        return dataSourceId;
     }
 }
