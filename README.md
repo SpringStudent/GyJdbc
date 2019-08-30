@@ -286,41 +286,6 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         <property name="url" value="${source.mysql.url}"/>
         <property name="username" value="${source.mysql.username}"/>
         <property name="password" value="${source.mysql.password}"/>
-        <!-- 初始化连接数量 -->
-        <property name="initialSize" value="${druid.initialSize}"/>
-        <!-- 最大并发连接数 -->
-        <property name="maxActive" value="${druid.maxActive}"/>
-        <!-- 最大空闲连接数 -->
-        <property name="maxIdle" value="20"/>
-        <!-- 最小空闲连接数 -->
-        <property name="minIdle" value="${druid.minIdle}"/>
-        <!-- 配置获取连接等待超时的时间 -->
-        <property name="maxWait" value="${druid.maxWait}"/>
-        <!-- 超过时间限制是否回收 -->
-        <property name="removeAbandoned" value="${druid.removeAbandoned}"/>
-        <!-- 超过时间限制多长； -->
-        <property name="removeAbandonedTimeout" value="${druid.removeAbandonedTimeout}"/>
-        <!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
-        <property name="timeBetweenEvictionRunsMillis" value="${druid.timeBetweenEvictionRunsMillis}"/>
-        <!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
-        <property name="minEvictableIdleTimeMillis" value="${druid.minEvictableIdleTimeMillis}"/>
-        <!-- 用来检测连接是否有效的sql，要求是一个查询语句-->
-        <property name="validationQuery" value="${druid.validationQuery}"/>
-        <!-- 申请连接的时候检测 -->
-        <property name="testWhileIdle" value="${druid.testWhileIdle}"/>
-        <!-- 申请连接时执行validationQuery检测连接是否有效，配置为true会降低性能 -->
-        <property name="testOnBorrow" value="${druid.testOnBorrow}"/>
-        <!-- 归还连接时执行validationQuery检测连接是否有效，配置为true会降低性能  -->
-        <property name="testOnReturn" value="${druid.testOnReturn}"/>
-        <!-- 打开PSCache，并且指定每个连接上PSCache的大小 -->
-        <property name="poolPreparedStatements" value="${druid.poolPreparedStatements}"/>
-        <property name="maxPoolPreparedStatementPerConnectionSize"
-                  value="${druid.maxPoolPreparedStatementPerConnectionSize}"/>
-        <!--属性类型是字符串，通过别名的方式配置扩展插件，常用的插件有：                 
-                	监控统计用的filter:stat
-               	 	日志用的filter:log4j
-              	 	防御SQL注入的filter:wall -->
-        <property name="filters" value="${druid.filters}"/>
     </bean>
 
     <bean id="targetDs" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
@@ -329,43 +294,8 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         <property name="url" value="${target.mysql.url}"/>
         <property name="username" value="${target.mysql.username}"/>
         <property name="password" value="${target.mysql.password}"/>
-        <!-- 初始化连接数量 -->
-        <property name="initialSize" value="${druid.initialSize}"/>
-        <!-- 最大并发连接数 -->
-        <property name="maxActive" value="${druid.maxActive}"/>
-        <!-- 最大空闲连接数 -->
-        <property name="maxIdle" value="20"/>
-        <!-- 最小空闲连接数 -->
-        <property name="minIdle" value="${druid.minIdle}"/>
-        <!-- 配置获取连接等待超时的时间 -->
-        <property name="maxWait" value="${druid.maxWait}"/>
-        <!-- 超过时间限制是否回收 -->
-        <property name="removeAbandoned" value="${druid.removeAbandoned}"/>
-        <!-- 超过时间限制多长； -->
-        <property name="removeAbandonedTimeout" value="${druid.removeAbandonedTimeout}"/>
-        <!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
-        <property name="timeBetweenEvictionRunsMillis" value="${druid.timeBetweenEvictionRunsMillis}"/>
-        <!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
-        <property name="minEvictableIdleTimeMillis" value="${druid.minEvictableIdleTimeMillis}"/>
-        <!-- 用来检测连接是否有效的sql，要求是一个查询语句-->
-        <property name="validationQuery" value="${druid.validationQuery}"/>
-        <!-- 申请连接的时候检测 -->
-        <property name="testWhileIdle" value="${druid.testWhileIdle}"/>
-        <!-- 申请连接时执行validationQuery检测连接是否有效，配置为true会降低性能 -->
-        <property name="testOnBorrow" value="${druid.testOnBorrow}"/>
-        <!-- 归还连接时执行validationQuery检测连接是否有效，配置为true会降低性能  -->
-        <property name="testOnReturn" value="${druid.testOnReturn}"/>
-        <!-- 打开PSCache，并且指定每个连接上PSCache的大小 -->
-        <property name="poolPreparedStatements" value="${druid.poolPreparedStatements}"/>
-        <property name="maxPoolPreparedStatementPerConnectionSize"
-                  value="${druid.maxPoolPreparedStatementPerConnectionSize}"/>
-        <!--属性类型是字符串，通过别名的方式配置扩展插件，常用的插件有：
-                	监控统计用的filter:stat
-               	 	日志用的filter:log4j
-              	 	防御SQL注入的filter:wall -->
-        <property name="filters" value="${druid.filters}"/>
     </bean>
-
+    <!-- 配置多数据源的支持对象-->
     <bean id="dataSource" class="com.gysoft.jdbc.multi.GyJdbcRoutingDataSource">
         <property name="targetDataSources">
             <map>
@@ -381,7 +311,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         <property name="defaultLookUpKey" value="slave"/>
     </bean>
 
-    <!-- 数据目标jdbcTEmplate -->
+    <!-- 数据目标jdbcTemplate -->
     <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
         <property name="dataSource" ref="dataSource"/>
     </bean>
