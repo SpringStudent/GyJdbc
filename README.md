@@ -349,4 +349,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 13.0.6 修复创建表并插入数据column为mysql特殊字符未添加``导致的报错
 - 14.0.0 insertWithSql方法改为分页插入
 - 15.0.1 添加了切换数据源的支持
+- 15.0.2 解决多数据源方法类型转换丢失
 ### 当前版本15.0.1
