@@ -181,4 +181,26 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @throws Exception
 	 */
 	String createWithSql(SQL sql)throws Exception;
+
+	/**
+	 * 绑定指定的dataSource
+	 * @param ds 数据源dataSource的id
+	 * @return EntityDao 当前的dao对象
+	 * @throws Exception
+	 */
+	EntityDao bindPoint(String ds)throws Exception;
+
+	/**
+	 * 绑定master的dataSource
+	 * @return EntityDao 当前的dao对象
+	 * @throws Exception
+	 */
+	EntityDao bindMaster()throws Exception;
+
+	/**
+	 * 绑定slave的dataSource
+	 * @return EntityDao 当前的dao对象
+	 * @throws Exception
+	 */
+	EntityDao bindSlave()throws Exception;
 }

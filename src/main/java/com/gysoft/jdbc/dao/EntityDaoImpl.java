@@ -2,6 +2,7 @@ package com.gysoft.jdbc.dao;
 
 
 import com.gysoft.jdbc.bean.*;
+import com.gysoft.jdbc.multi.DataSourceIdHolder;
 import com.gysoft.jdbc.tools.CollectionUtil;
 import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
@@ -353,5 +354,24 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         sql.getPair().setFirst(insertSql.toString());
         insertWithSql(sql);
         return tbName;
+    }
+
+    @Override
+    public EntityDaoImpl bindPoint(String ds) throws Exception {
+        DataSourceIdHolder.setDataSource(ds);
+        return this;
+    }
+
+    @Override
+    public EntityDaoImpl bindMaster() throws Exception {
+        DataSourceIdHolder.setDataSource(DataSourceIdHolder.MASTER);
+
+        return this;
+    }
+
+    @Override
+    public EntityDaoImpl bindSlave() throws Exception {
+        DataSourceIdHolder.setDataSource(DataSourceIdHolder.SLAVE);
+        return this;
     }
 }

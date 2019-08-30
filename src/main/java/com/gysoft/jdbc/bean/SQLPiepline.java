@@ -14,10 +14,6 @@ public class SQLPiepline {
         sqlNexts.add(new SQLNext(head,null));
     }
 
-    public boolean pielineSql(){
-        return sqlNexts.size()>1;
-    }
-
     public void add(SQL sql, String type){
         sqlNexts.add(new SQLNext(sql,type));
     }
