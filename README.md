@@ -13,7 +13,7 @@
 Demo: https://github.com/SpringStudent/GyJdbcTest
 
 
-基本查询
+#### 基本查询
 ```
 @Test
     public void testQuery() throws Exception {
@@ -26,7 +26,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 
-条件查询
+#### 条件查询
 ```
 @Test
     public void testQueryWithCriteria() throws Exception {
@@ -58,7 +58,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 
-更新语句
+#### 更新语句
 ```
  @Test
     public void testUpdate() throws Exception {
@@ -80,7 +80,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 
-自定义sql
+#### 自定义sql
 ```
  @Test
     public void testUseSQL() throws Exception {
@@ -136,7 +136,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 
-删除数据
+#### 删除数据
 ```
 @After
     public void testDelete() throws Exception {
@@ -147,7 +147,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         tbUserDao.deleteWithCriteria(new Criteria().where(TbUser::getIsActive,0));
     }
 ```
-插入数据
+#### 插入数据
 ```
 @Test
     public void testInsertWithSql() throws Exception {
@@ -173,7 +173,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         tbUserDao.insertWithSql(sql4);
     }
 ```
-创建表并插入数据
+#### 创建表并插入数据
 ```
 @Test
     public void testCreate() throws Exception {
@@ -192,7 +192,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         tbAccountDao.createWithSql(sql);
     }
 ```
-使用临时表进行查询
+#### 使用临时表进行查询
 ```
 @Test
     public void testUseTmpTableQuery() throws Exception {
@@ -212,7 +212,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         System.out.println(result.size());
     }
 ```
-丰富的函数支持,参照FuncBuilder.java
+#### 丰富的函数支持,参照FuncBuilder.java
 ```
 @Test
     public void testFunc(){
@@ -241,7 +241,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         System.out.println(pair5.getFirst());
     }
 ```
-使用临时表优化in查询
+#### 使用临时表优化in查询
 ```
 //before
 @Override
