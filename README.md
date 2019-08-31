@@ -307,7 +307,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
                 <entry key="slave" value-ref="targetDs"/>
             </map>
         </property>
-        //在没有调用tbAccountDao.bindxxx()方法时，指定一个默认的数据源的id
+        //在没有调用tbAccountDao.bindxxx()方法时，指定一个默认的数据源的key比如master、slave
         <property name="defaultLookUpKey" value="slave"/>
     </bean>
 
