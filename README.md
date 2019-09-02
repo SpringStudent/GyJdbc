@@ -13,7 +13,7 @@
 Demo: https://github.com/SpringStudent/GyJdbcTest
 
 
-基本查询
+#### 基本查询
 ```
 @Test
     public void testQuery() throws Exception {
@@ -26,7 +26,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 
-条件查询
+#### 条件查询
 ```
 @Test
     public void testQueryWithCriteria() throws Exception {
@@ -58,7 +58,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 
-更新语句
+#### 更新语句
 ```
  @Test
     public void testUpdate() throws Exception {
@@ -80,7 +80,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 
-自定义sql
+#### 自定义sql
 ```
  @Test
     public void testUseSQL() throws Exception {
@@ -136,7 +136,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 
-删除数据
+#### 删除数据
 ```
 @After
     public void testDelete() throws Exception {
@@ -147,7 +147,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         tbUserDao.deleteWithCriteria(new Criteria().where(TbUser::getIsActive,0));
     }
 ```
-插入数据
+#### 插入数据
 ```
 @Test
     public void testInsertWithSql() throws Exception {
@@ -173,7 +173,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         tbUserDao.insertWithSql(sql4);
     }
 ```
-创建表并插入数据
+#### 创建表并插入数据
 ```
 @Test
     public void testCreate() throws Exception {
@@ -192,7 +192,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         tbAccountDao.createWithSql(sql);
     }
 ```
-使用临时表进行查询
+#### 使用临时表进行查询
 ```
 @Test
     public void testUseTmpTableQuery() throws Exception {
@@ -212,7 +212,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         System.out.println(result.size());
     }
 ```
-丰富的函数支持,参照FuncBuilder.java
+#### 丰富的函数支持,参照FuncBuilder.java
 ```
 @Test
     public void testFunc(){
@@ -241,7 +241,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         System.out.println(pair5.getFirst());
     }
 ```
-使用临时表优化in查询
+#### 使用临时表优化in查询
 ```
 //before
 @Override
@@ -297,6 +297,15 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         <property name="username" value="${target.mysql.username}"/>
         <property name="password" value="${target.mysql.password}"/>
     </bean>
+    
+    <bean id="thirdDs" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+        <!-- 数据库基本信息配置 -->
+        <property name="driverClassName" value="${mysql.driver}"/>
+        <property name="url" value="${third.mysql.url}"/>
+        <property name="username" value="${third.mysql.username}"/>
+        <property name="password" value="${third.mysql.password}"/>
+    </bean>
+    
     <!-- 配置多数据源的支持对象-->
     <bean id="dataSource" class="com.gysoft.jdbc.multi.GyJdbcRoutingDataSource">
         <property name="targetDataSources">
@@ -307,9 +316,10 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
                 //方法去获取配置的数据源
                 <entry key="master" value-ref="sourceDs"/>
                 <entry key="slave" value-ref="targetDs"/>
+                <entry key="slave2" value-ref="thirdDs"/>
             </map>
         </property>
-        //在没有调用tbAccountDao.bindxxx()方法时，指定一个默认的数据源的id
+        //在没有调用tbAccountDao.bindxxx()方法时，指定一个默认的数据源的key比如master、slave
         <property name="defaultLookUpKey" value="slave"/>
     </bean>
 
@@ -325,11 +335,16 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     public void testMasterSlave() throws Exception {
         ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
         TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
+        //没有调用bindxxx()方法数据源为defaultLookUpKey配置的slave
         System.out.println("common query"+tbAccountDao.queryAll());
-        System.out.println("bind query"+tbAccountDao.bindPoint("您的其他数据源配置id").queryAll());
-
+        //使用master数据源
         System.out.println("Master query"+tbAccountDao.bindMaster().queryAll());
+        //使用slave数据源
         System.out.println("Slave query"+tbAccountDao.bindSlave().queryAll());
+        //使用slave2数据源
+        System.out.println("Slave2 query"+tbAccountDao.bindPoint("slave2").queryAll());
+        //使用slave
+        System.out.println("common query"+tbAccountDao.queryAll());
     }
 ```
 
