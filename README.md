@@ -277,8 +277,10 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }    
 ```
 #### 动态数据源切换
-方法选择数据源的优先级
-##### entityDao.bindXXX()>@BindPoint()>GyJdbcRoutingDataSource.defaultLookUpKey
+#####使用须知 方法选择数据源的优先级
+```
+   entityDao.bindXXX()>@BindPoint()>GyJdbcRoutingDataSource.defaultLookUpKey
+```
 1. applicationContext的配置
 
 ```

@@ -10,7 +10,6 @@ import java.lang.reflect.Method;
 
 /**
  * @author 周宁
- * @Date 2019-09-02 8:34
  */
 @Aspect
 public class BindPointAspect {
