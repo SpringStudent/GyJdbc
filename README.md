@@ -277,7 +277,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }    
 ```
 #### 动态数据源切换
-#####使用须知 方法选择数据源的优先级
+##### 使用须知 方法选择数据源的优先级
 ```
    entityDao.bindXXX()>@BindPoint()>GyJdbcRoutingDataSource.defaultLookUpKey
 ```
@@ -321,7 +321,8 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
                 <entry key="slave2" value-ref="thirdDs"/>
             </map>
         </property>
-        //在没有调用tbAccountDao.bindxxx()方法时，指定一个默认的数据源的key比如master、slave
+        //在没有调用tbAccountDao.bindxxx()方法时并且对应的service类的方法
+        //上没有@BindPoint注解 此时指定一个默认的数据源的key
         <property name="defaultLookUpKey" value="slave"/>
     </bean>
 
