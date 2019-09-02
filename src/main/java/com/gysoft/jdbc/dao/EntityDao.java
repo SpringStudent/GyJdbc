@@ -184,11 +184,11 @@ public interface EntityDao<T,Id extends Serializable>{
 
 	/**
 	 * 绑定指定的dataSource
-	 * @param ds 数据源dataSource的id
+	 * @param bindKey 数据源dataSource
 	 * @return EntityDao 当前的dao对象
 	 * @throws Exception
 	 */
-	EntityDao<T,Id> bindPoint(String ds)throws Exception;
+	EntityDao<T,Id> bindPoint(String bindKey)throws Exception;
 
 	/**
 	 * 绑定master的dataSource

@@ -2,6 +2,7 @@ package com.gysoft.jdbc.dao;
 
 
 import com.gysoft.jdbc.bean.*;
+import com.gysoft.jdbc.multi.BindPointType;
 import com.gysoft.jdbc.multi.DataSourceIdHolder;
 import com.gysoft.jdbc.tools.CollectionUtil;
 import com.gysoft.jdbc.tools.EntityTools;
@@ -41,7 +42,6 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
      * 表名
      */
     private String tableName;
-
     /**
      * 主键
      */
@@ -357,20 +357,20 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public EntityDaoImpl<T,Id> bindPoint(String ds) throws Exception {
-        DataSourceIdHolder.setDataSource(ds);
+    public EntityDaoImpl<T,Id> bindPoint(String bindKey) throws Exception {
+        DataSourceIdHolder.setDataSource(bindKey,BindPointType.ByMethod);
         return this;
     }
 
     @Override
     public EntityDaoImpl<T,Id> bindMaster() throws Exception {
-        DataSourceIdHolder.setDataSource(DataSourceIdHolder.MASTER);
+        DataSourceIdHolder.setDataSource(DataSourceIdHolder.MASTER,BindPointType.ByMethod);
         return this;
     }
 
     @Override
     public EntityDaoImpl<T,Id> bindSlave() throws Exception {
-        DataSourceIdHolder.setDataSource(DataSourceIdHolder.SLAVE);
+        DataSourceIdHolder.setDataSource(DataSourceIdHolder.SLAVE,BindPointType.ByMethod);
         return this;
     }
 }

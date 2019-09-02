@@ -277,6 +277,8 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }    
 ```
 #### 动态数据源切换
+方法选择数据源的优先级
+##### entityDao.bindXXX()>@BindPoint()>GyJdbcRoutingDataSource.defaultLookUpKey
 1. applicationContext的配置
 
 ```
@@ -316,7 +318,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         <property name="dataSource" ref="dataSource"/>
     </bean>
 ```
-2.在调用方法的时候指定数据源master、slave或者自定义如
+2.sql级别的数据源切换：在调用方法的时候指定数据源master、slave
 
 ```
  @Test
@@ -328,6 +330,19 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 
         System.out.println("Master query"+tbAccountDao.bindMaster().queryAll());
         System.out.println("Slave query"+tbAccountDao.bindSlave().queryAll());
+    }
+```
+
+3.方法级别的数据源切换：通过使用@BindPoint注解
+```
+@Override
+    @BindPoint("master")
+    public void bindDataSource() throws Exception {
+        System.out.println("common query"+tbAccountDao.queryAll());
+        System.out.println("Master query"+tbAccountDao.bindMaster().queryAll());
+        System.out.println("Slave query"+tbAccountDao.bindSlave().queryAll());
+        System.out.println("Slave2 query"+tbAccountDao.bindPoint("slave2").queryAll());
+        System.out.println("common query"+tbAccountDao.queryAll());
     }
 ```
 
@@ -350,4 +365,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 14.0.0 insertWithSql方法改为分页插入
 - 15.0.1 添加了切换数据源的支持
 - 15.0.2 解决多数据源方法类型转换丢失
-### 当前版本15.0.2
+- 15.1.0 使用@BindPoint注解绑定数据源
+### 当前版本15.1.0
