@@ -1,13 +1,10 @@
 package com.gysoft.jdbc.bean;
 
-import lombok.Data;
-
 import java.io.Serializable;
 
 /**
  * @author 周宁
  */
-@Data
 public class Sort implements Serializable {
 
     /**
@@ -34,6 +31,22 @@ public class Sort implements Serializable {
 
     public <T, R> Sort(TypeFunction<T, R> function, String sortType) {
         this.sortField = TypeFunction.getLambdaColumnName(function);
+        this.sortType = sortType;
+    }
+
+    public String getSortField() {
+        return sortField;
+    }
+
+    public void setSortField(String sortField) {
+        this.sortField = sortField;
+    }
+
+    public String getSortType() {
+        return sortType;
+    }
+
+    public void setSortType(String sortType) {
         this.sortType = sortType;
     }
 }

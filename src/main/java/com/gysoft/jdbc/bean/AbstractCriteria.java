@@ -113,7 +113,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public S where(String key, String opt, Object value) {
-        this.whereParams.add(WhereParam.builder().key(key).opt(opt).value(value).build());
+        this.whereParams.add(new WhereParam(key,opt,value));
         return self();
     }
 

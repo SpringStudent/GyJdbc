@@ -7,7 +7,6 @@
 #### 运行环境
 - jdk1.8+
 - mysql
-- lombok
 
 ### 如何使用
 Demo: https://github.com/SpringStudent/GyJdbcTest
@@ -384,4 +383,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 15.0.1 添加了切换数据源的支持
 - 15.0.2 解决多数据源方法类型转换丢失
 - 15.1.0 使用@BindPoint注解绑定数据源
-### 当前版本15.1.0
+- 16.0.0 删除需要lombok的支持
+### 当前版本16.0.0

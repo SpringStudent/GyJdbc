@@ -1,6 +1,5 @@
 package com.gysoft.jdbc.bean;
 
-import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -12,7 +11,6 @@ import java.util.List;
  * @author 彭佳佳
  * @param <T> 結果類型
  */
-@Data
 public class PageResult<T> implements Serializable {
 	/**
 	 * 总数量 
@@ -42,4 +40,19 @@ public class PageResult<T> implements Serializable {
 	    return new PageResult(Collections.EMPTY_LIST,0);
     }
 
+	public Integer getTotal() {
+		return total;
+	}
+
+	public void setTotal(Integer total) {
+		this.total = total;
+	}
+
+	public List<T> getList() {
+		return list;
+	}
+
+	public void setList(List<T> list) {
+		this.list = list;
+	}
 }

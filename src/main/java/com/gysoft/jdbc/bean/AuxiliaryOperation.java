@@ -277,7 +277,7 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
         return doNothing();
     }
 
-    default <T> Predicate<T> getDefaultPredicate(T value) {
+    static  <T> Predicate<T> getDefaultPredicate(T value) {
         return (t) -> {
             if (Objects.isNull(value)) {
                 return false;
@@ -300,4 +300,5 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
             return true;
         };
     }
+
 }

@@ -1,13 +1,11 @@
 package com.gysoft.jdbc.bean;
 
-import lombok.Data;
 
 import java.io.Serializable;
 
 /**
  * @author 周宁
  */
-@Data
 public class Page implements Serializable {
     /**
      * 当前页
@@ -32,6 +30,22 @@ public class Page implements Serializable {
 
     public Page(int currentPage, int pageSize) {
         this.currentPage = currentPage;
+        this.pageSize = pageSize;
+    }
+
+    public int getCurrentPage() {
+        return currentPage;
+    }
+
+    public void setCurrentPage(int currentPage) {
+        this.currentPage = currentPage;
+    }
+
+    public int getPageSize() {
+        return pageSize;
+    }
+
+    public void setPageSize(int pageSize) {
         this.pageSize = pageSize;
     }
 }

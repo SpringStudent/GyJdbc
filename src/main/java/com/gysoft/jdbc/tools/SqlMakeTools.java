@@ -367,7 +367,7 @@ public class SqlMakeTools {
         List<SQL> subSqls = sql.getSubSqls();
         for (int i = 0; i < subSqls.size(); i++) {
             Pair<String, Object[]> pair = doSql(subSqls.get(i));
-            SQLTree cTree = SQLTree.builder().id(UUID.randomUUID().toString().replace("-","")).sql(pair.getFirst()).params(pair.getSecond()).childs(new ArrayList<>()).build();
+            SQLTree cTree = new SQLTree(pair.getFirst(),pair.getSecond(),new ArrayList<>(),UUID.randomUUID().toString().replace("-",""));
             sqlTree.getChilds().add(cTree);
             buildSQLTree(subSqls.get(i), cTree);
         }

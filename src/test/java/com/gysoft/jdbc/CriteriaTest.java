@@ -5,9 +5,7 @@ import com.gysoft.jdbc.bean.*;
 import com.gysoft.jdbc.dao.EntityDao;
 import com.gysoft.jdbc.dao.EntityDaoImpl;
 import com.gysoft.jdbc.tools.SqlMakeTools;
-import lombok.Data;
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 
 import java.sql.JDBCType;
@@ -23,7 +21,9 @@ public class CriteriaTest {
     @Test
     public void testCriteria() {
         Criteria criteria = new Criteria();
-        criteria.in("set", new HashSet(Arrays.asList("1234567890", "111111")));
+        criteria.in("sets", new HashSet(Arrays.asList("1234567890", "111111")));
+        criteria.orLike("likeKey","thisi s p lsa");
+        criteria.orBetweenAnd("btad",19920928,20190321);
         criteria.orLike("okd", "s123").orLike(Token::getTk, "sd");
         criteria.orLikeIfAbsent("dsa", "").orLikeIfAbsent(Token::getTk, "111");
         criteria.in("password", Arrays.asList("1234567890", "111111"));
@@ -52,9 +52,10 @@ public class CriteriaTest {
                 .natureJoin(new Joins().with(Book.class).as("t2"))
                 .and("sd", "in", Arrays.asList("sd1", "xg1")).gt("sdf", 12)
                 .natureJoin(new Joins().with(Book.class).as("t3"))
-                .leftJoin(new Joins().with(Book.class).as("t4").on("t4.id", "t2.id"))
+                .leftJoin(new Joins().with(Book.class).as("t4").on("t4.id", "t2.id").on("t4.name","t2.name").andIfAbsent("t4.andIfAbsent","=",""))
                 .andCriteria(new Criteria().where("k1", "v1").or("k2", "v2")).or("k3", "k5")
-                .union().select("un.ke","un.ke2").from(Book.class).where("un.ke",1);
+                .limit(12222, 100)
+                .union().select("un.ke", "un.ke2").from(Book.class).where("un.ke", 1);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(criteria);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
@@ -68,7 +69,7 @@ public class CriteriaTest {
                 .natureJoin(new Joins().with(Book.class).as("t3"))
                 .leftJoin(new Joins().with(Book.class).as("t4").on("t4.id", "t2.id"))
                 .andCriteria(new Criteria().where("k1", "v1").or("k2", "v2")).or("k3", "k5")
-                .union().select("un.ke","un.ke2").from(Book.class).where("un.ke",1).limit(0,20);
+                .union().select("un.ke","un.ke2").from(Book.class).where("un.ke",1);
         SQL criteria = new SQL().select("*").from(criteria4,
                 new SQL().select("t1.*").from(Book.class).as("t1").andCriteria(new Criteria().in("t1.id", Arrays.asList(1, 2, 3)).like("t1.name", "name1")).leftJoin(new Joins().with(Book.class).as("j1").on("j1.id", "t1.id").and("j1.name", "=", "j1name")),
                 new SQL().select("t2.*").from(Book.class).as("t2").where("t2.kd","ssd").groupBy("t2.uploader").having("t2.count1",">",123),
@@ -91,12 +92,35 @@ public class CriteriaTest {
         System.out.println(ArrayUtils.toString(sqlParamPair.getSecond()));
     }
 
-    @Data
     @Table(name = "tb_book")
     private class Book {
         private String id;
         private String name;
         private String num;
+
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getNum() {
+            return num;
+        }
+
+        public void setNum(String num) {
+            this.num = num;
+        }
     }
 
     private interface BookDao extends EntityDao<Book,String>{

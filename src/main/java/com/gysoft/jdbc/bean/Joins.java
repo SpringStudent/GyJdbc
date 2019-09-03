@@ -5,6 +5,7 @@ import com.gysoft.jdbc.tools.SqlMakeTools;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * @author 周宁
@@ -15,23 +16,19 @@ public class Joins {
 
     private List<CriteriaProxy> criteriaProxys;
 
-    public Joins() {
-        this.joinSql = new StringBuilder();
-        this.criteriaProxys = new ArrayList<>();
-    }
+    public abstract class BaseJoin {
 
-    public With with(Class clss) {
-        joinSql.append(" %s " + EntityTools.getTableName(clss));
-        return getWith();
-    }
+        public void setJoinType(JoinType joinType) {
+            joinSql = new StringBuilder(String.format(joinSql.toString(), joinType.getType()));
+        }
 
-    public With with(String tb) {
-        joinSql.append(" %s " + tb);
-        return getWith();
-    }
+        public StringBuilder getJoinSql() {
+            return joinSql;
+        }
 
-    public StringBuilder getJoinSql() {
-        return joinSql;
+        public List<CriteriaProxy> getCriteriaProxys() {
+            return criteriaProxys;
+        }
     }
 
     public class With extends BaseJoin {
@@ -64,6 +61,39 @@ public class Joins {
             criteriaProxys.add(criteriaProxy);
             return this;
         }
+
+        public On andIfAbsent(String key, String opt, Object value) {
+            if(AuxiliaryOperation.getDefaultPredicate(value).test(value)){
+                return and(key, opt, value);
+            }
+            return this;
+        }
+
+        public On andIfAbsent(String key, String opt, Object value, Predicate<Object> predicate) {
+            if(predicate.test(value)){
+                return and(key, opt, value);
+            }
+            return this;
+        }
+    }
+
+    public Joins() {
+        this.joinSql = new StringBuilder();
+        this.criteriaProxys = new ArrayList<>();
+    }
+
+    public With with(Class clss) {
+        joinSql.append(" %s " + EntityTools.getTableName(clss));
+        return getWith();
+    }
+
+    public With with(String tb) {
+        joinSql.append(" %s " + tb);
+        return getWith();
+    }
+
+    public StringBuilder getJoinSql() {
+        return joinSql;
     }
 
     private With getWith() {
@@ -76,20 +106,5 @@ public class Joins {
 
     private On getOn() {
         return new On();
-    }
-
-    public abstract class BaseJoin {
-
-        public void setJoinType(JoinType joinType) {
-            joinSql = new StringBuilder(String.format(joinSql.toString(), joinType.getType()));
-        }
-
-        public StringBuilder getJoinSql() {
-            return joinSql;
-        }
-
-        public List<CriteriaProxy> getCriteriaProxys() {
-            return criteriaProxys;
-        }
     }
 }
