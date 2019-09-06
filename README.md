@@ -250,6 +250,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
         tbAccountDao.delete(1);
         tbAccountDao.deleteWithCriteria(new Criteria().in("userName", Arrays.asList("test2")));
+        tbAccountDao.deleteWithSql(new SQL().delete().from(TbAccount.class).where("userName","Smith"));
         tbAccountDao.deleteWithSql(new SQL().delete("t1").from(TbAccount.class).innerJoin(
                 new Joins().with(TbUser.class).as("t2").on("t1.userName", "t2.name")
         ));
