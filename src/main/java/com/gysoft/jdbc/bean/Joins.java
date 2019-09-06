@@ -33,7 +33,7 @@ public class Joins {
 
     public class With extends BaseJoin {
         public As as(String aliasName) {
-            joinSql.append(" AS " + aliasName + " ");
+            joinSql.append(" " + aliasName + " ");
             return getAs();
         }
     }
@@ -63,14 +63,14 @@ public class Joins {
         }
 
         public On andIfAbsent(String key, String opt, Object value) {
-            if(AuxiliaryOperation.getDefaultPredicate(value).test(value)){
+            if (AuxiliaryOperation.getDefaultPredicate(value).test(value)) {
                 return and(key, opt, value);
             }
             return this;
         }
 
         public On andIfAbsent(String key, String opt, Object value, Predicate<Object> predicate) {
-            if(predicate.test(value)){
+            if (predicate.test(value)) {
                 return and(key, opt, value);
             }
             return this;

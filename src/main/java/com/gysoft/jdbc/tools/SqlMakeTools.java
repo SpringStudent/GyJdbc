@@ -2,6 +2,7 @@ package com.gysoft.jdbc.tools;
 
 
 import com.gysoft.jdbc.bean.*;
+import com.gysoft.jdbc.dao.EntityDao;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -10,7 +11,6 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Types;
 import java.util.*;
-import java.util.function.Consumer;
 
 import static com.gysoft.jdbc.dao.EntityDao.*;
 
@@ -299,10 +299,10 @@ public class SqlMakeTools {
                 }
                 sql.setLength(sql.length() - 1);
             }
-            if(criteria.getOffset()>=0){
+            if (criteria.getOffset() >= 0) {
                 sql.append(" LIMIT ?");
                 params = ArrayUtils.add(params, criteria.getOffset());
-                if(criteria.getSize()>0){
+                if (criteria.getSize() > 0) {
                     sql.append(", ?");
                     params = ArrayUtils.add(params, criteria.getSize());
                 }
@@ -316,6 +316,7 @@ public class SqlMakeTools {
 
     /**
      * 更复杂的条件组装
+     *
      * @author 周宁
      * @version 1.0
      */
@@ -342,6 +343,7 @@ public class SqlMakeTools {
 
     /**
      * 使用自定义sql
+     *
      * @author 周宁
      * @version 1.0
      */
@@ -358,7 +360,8 @@ public class SqlMakeTools {
 
     /**
      * 递归构造查询树
-     * @param sql sql拼接器
+     *
+     * @param sql     sql拼接器
      * @param sqlTree 待构造的查询树
      * @author 周宁
      * @version 1.0
@@ -367,7 +370,7 @@ public class SqlMakeTools {
         List<SQL> subSqls = sql.getSubSqls();
         for (int i = 0; i < subSqls.size(); i++) {
             Pair<String, Object[]> pair = doSql(subSqls.get(i));
-            SQLTree cTree = new SQLTree(pair.getFirst(),pair.getSecond(),new ArrayList<>(),UUID.randomUUID().toString().replace("-",""));
+            SQLTree cTree = new SQLTree(pair.getFirst(), pair.getSecond(), new ArrayList<>(), UUID.randomUUID().toString().replace("-", ""));
             sqlTree.getChilds().add(cTree);
             buildSQLTree(subSqls.get(i), cTree);
         }
@@ -388,21 +391,46 @@ public class SqlMakeTools {
         Pair<String, Object[]> pair;
         Object[] params = {};
         List<SQLPiepline.SQLNext> sqlNexts = piepline.getSqlNexts();
-        boolean needSurroundBrackets = sqlNexts.size()>1?true:false;
+        boolean needSurroundBrackets = sqlNexts.size() > 1 ? true : false;
         for (SQLPiepline.SQLNext sqlNext : sqlNexts) {
             SQL nextSql = sqlNext.getSql();
             StringBuilder sql = new StringBuilder();
-            sql.append("SELECT ");
-            if(CollectionUtils.isNotEmpty(nextSql.getSelectFields())){
-                nextSql.getSelectFields().forEach(selectField -> sql.append(selectField + ", "));
-                sql.setLength(sql.length() - 2);
-            }
-            sql.append(" FROM ");
-            if(StringUtils.isNotEmpty(nextSql.getTbName())){
-                sql.append(nextSql.getTbName());
-            }
-            if (StringUtils.isNotEmpty(nextSql.getAliasName())) {
-                sql.append(" AS " + nextSql.getAliasName());
+            if (nextSql.getSqlType().equals(EntityDao.SQL_SELECT)) {
+                sql.append("SELECT ");
+                if (CollectionUtils.isNotEmpty(nextSql.getSelectFields())) {
+                    nextSql.getSelectFields().forEach(selectField -> sql.append(selectField + ", "));
+                    sql.setLength(sql.length() - 2);
+                }
+                sql.append(" FROM ");
+                if (StringUtils.isNotEmpty(nextSql.getTbName())) {
+                    sql.append(nextSql.getTbName());
+                }
+                if (StringUtils.isNotEmpty(nextSql.getAliasName())) {
+                    sql.append(SPACE + nextSql.getAliasName());
+                }
+            } else if (nextSql.getSqlType().equals(EntityDao.SQL_DELETE)) {
+                sql.append("DELETE ");
+                if (StringUtils.isNotEmpty(nextSql.getAliasName())) {
+                    sql.append(nextSql.getAliasName());
+                    sql.append(SPACE);
+                }
+                sql.append("FROM ");
+                if (StringUtils.isNotEmpty(nextSql.getTbName())) {
+                    sql.append(nextSql.getTbName());
+                }
+                if (StringUtils.isNotEmpty(nextSql.getAliasName())) {
+                    sql.append(SPACE);
+                    sql.append(nextSql.getAliasName());
+                }
+            } else if (nextSql.getSqlType().equals(EntityDao.SQL_UPDATE)) {
+                sql.append("UPDATE ");
+                if (StringUtils.isNotEmpty(nextSql.getTbName())) {
+                    sql.append(nextSql.getTbName());
+                }
+                if (StringUtils.isNotEmpty(nextSql.getAliasName())) {
+                    sql.append(SPACE);
+                    sql.append(nextSql.getAliasName());
+                }
             }
             //连接查询sql组装
             if (CollectionUtils.isNotEmpty(nextSql.getJoins())) {
@@ -413,13 +441,29 @@ public class SqlMakeTools {
                     params = doCriteriaProxy(criteriaProxies, -2, sql, params);
                 }
             }
+            //update语句的拼接
+            if (nextSql.getSqlType().equals(EntityDao.SQL_UPDATE)) {
+                sql.append(" SET ");
+                List<Pair> kvs = nextSql.getKvs();
+                for (int i = 0; i < kvs.size(); i++) {
+                    Pair p = kvs.get(i);
+                    if (p.getSecond() instanceof FieldReference) {
+                        FieldReference fieldReference = (FieldReference) p.getSecond();
+                        sql.append(p.getFirst() + " = " + fieldReference.getField() + ", ");
+                    } else {
+                        sql.append(p.getFirst() + " = ?, ");
+                        params = ArrayUtils.add(params, p.getSecond());
+                    }
+                }
+                sql.setLength(sql.length() - 2);
+            }
             pair = doCriteria(nextSql, sql);
             if (StringUtils.isNotEmpty(sqlNext.getUnionType())) {
                 finalSql.append(SPACE).append(sqlNext.getUnionType());
             }
-            if(needSurroundBrackets){
+            if (needSurroundBrackets) {
                 finalSql.append(SPACE).append(IN_START).append(pair.getFirst()).append(IN_END);
-            }else{
+            } else {
                 finalSql.append(SPACE).append(pair.getFirst());
             }
             params = ArrayUtils.addAll(params, pair.getSecond());

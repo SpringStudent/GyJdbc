@@ -211,19 +211,16 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     public int updateWithSql(SQL sql) throws Exception {
         List<Pair> kvs = sql.getKvs();
         if (!CollectionUtils.isEmpty(kvs)) {
-            Object[] params = {};
-            StringBuilder updateSql = new StringBuilder();
-            updateSql.append(SQL_UPDATE + SPACE + tableName + SPACE + "SET" + SPACE);
-            for (int i = 0; i < kvs.size(); i++) {
-                Pair pair = kvs.get(i);
-                updateSql.append(pair.getFirst() + " = ?, ");
-                params = ArrayUtils.add(params, pair.getSecond());
-            }
-            updateSql.setLength(updateSql.length() - 2);
-            Pair<String, Object[]> pair = SqlMakeTools.doCriteria(sql, new StringBuilder(updateSql));
-            return jdbcTemplate.update(pair.getFirst(), ArrayUtils.addAll(params, pair.getSecond()));
+            Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+            return jdbcTemplate.update(pair.getFirst(), pair.getSecond());
         }
         return 0;
+    }
+
+    @Override
+    public int deleteWithSql(SQL sql) throws Exception {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        return jdbcTemplate.update(pair.getFirst(), pair.getSecond());
     }
 
     @Override
@@ -247,7 +244,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @Override
     public int insertWithSql(SQL sql) throws Exception {
         //插入sql
-        StringBuilder insertSql = new StringBuilder(String.format(sql.getPair().getFirst(), tableName));
+        StringBuilder insertSql = new StringBuilder(sql.getPair().getFirst());
         //待插入数据
         List<Object[]> params = sql.getPair().getSecond();
         int res = 0;
@@ -270,6 +267,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
                 res += jdbcTemplate.update(tempInsertSql.toString(), paramList.toArray());
             }
         } else if (CollectionUtils.isNotEmpty(sql.getSelectFields())) {
+            sql.setSqlType(EntityDao.SQL_SELECT);
             Pair<String, Object[]> p = SqlMakeTools.useSql(sql);
             insertSql.append(p.getFirst());
             res = jdbcTemplate.update(insertSql.toString(), p.getSecond());
@@ -286,7 +284,6 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         //创建表
         String tbName = StringUtils.isEmpty(tableMeta.getName()) ? "tmp_" + UUID.randomUUID().toString().toLowerCase().replace("-", "") : tableMeta.getName();
         List<ColumnMeta> columns = tableMeta.getColumns();
-
         if (columns.isEmpty()) {
             throw new IllegalArgumentException("未指定任何字段");
         }
@@ -357,20 +354,20 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public EntityDaoImpl<T,Id> bindPoint(String bindKey) throws Exception {
-        DataSourceIdHolder.setDataSource(bindKey,BindPointType.ByMethod);
+    public EntityDaoImpl<T, Id> bindPoint(String bindKey) throws Exception {
+        DataSourceIdHolder.setDataSource(bindKey, BindPointType.ByMethod);
         return this;
     }
 
     @Override
-    public EntityDaoImpl<T,Id> bindMaster() throws Exception {
-        DataSourceIdHolder.setDataSource(DataSourceIdHolder.MASTER,BindPointType.ByMethod);
+    public EntityDaoImpl<T, Id> bindMaster() throws Exception {
+        DataSourceIdHolder.setDataSource(DataSourceIdHolder.MASTER, BindPointType.ByMethod);
         return this;
     }
 
     @Override
-    public EntityDaoImpl<T,Id> bindSlave() throws Exception {
-        DataSourceIdHolder.setDataSource(DataSourceIdHolder.SLAVE,BindPointType.ByMethod);
+    public EntityDaoImpl<T, Id> bindSlave() throws Exception {
+        DataSourceIdHolder.setDataSource(DataSourceIdHolder.SLAVE, BindPointType.ByMethod);
         return this;
     }
 }

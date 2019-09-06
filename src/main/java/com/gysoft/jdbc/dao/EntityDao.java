@@ -14,6 +14,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	/**
 	 * 设置一些操作的常量
 	 */
+	String SQL_SELECT = "select";
 	String SQL_INSERT = "insert";
 	String SQL_UPDATE = "update";
 	String SQL_DELETE = "delete";
@@ -139,6 +140,15 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @throws Exception
 	 */
 	int updateWithSql(SQL sql)throws Exception;
+
+	/**
+	 * 根据sql删除
+	 * @param sql sql拼接器
+	 * @return int 删除条目数量
+	 * @throws Exception
+	 */
+	int deleteWithSql(SQL sql)throws Exception;
+
 	/**
 	 * 键值对查询
 	 * @param sql sql拼接器

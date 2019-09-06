@@ -1,6 +1,7 @@
 package com.gysoft.jdbc.bean;
 
 
+import com.gysoft.jdbc.dao.EntityDao;
 import com.gysoft.jdbc.tools.EntityTools;
 
 import java.util.*;
@@ -10,17 +11,10 @@ import java.util.stream.Collectors;
  * @author 周宁
  */
 public class SQL extends AbstractCriteria<SQL> {
-
     /**
-     * 被查询的字段
+     * sql类型
      */
-    private Set<String> selectFields;
-
-    /**
-     * 更新
-     */
-    private List<Pair> kvs;
-
+    private String sqlType;
     /**
      * 表名称
      */
@@ -38,7 +32,7 @@ public class SQL extends AbstractCriteria<SQL> {
      */
     private List<SQL> subSqls;
     /**
-     * 保存sql union/union all查询的sql的管道
+     * sql管道拼接
      */
     private SQLPiepline sqlPiepline = new SQLPiepline(this);
     /**
@@ -46,9 +40,17 @@ public class SQL extends AbstractCriteria<SQL> {
      */
     private TableMeta tableMeta;
     /**
+     * 被查询的字段
+     */
+    private Set<String> selectFields;
+    /**
      * sql插入
      */
     private Pair<String, List<Object[]>> pair;
+    /**
+     * 待更新的字段和相应的值
+     */
+    private List<Pair> kvs;
 
     public SQL() {
         selectFields = new LinkedHashSet<>();
@@ -120,20 +122,71 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public SQL select(String... fields) {
         selectFields.addAll(Arrays.asList(fields));
+        this.sqlType = EntityDao.SQL_SELECT;
         return this;
     }
 
     public <T, R> SQL select(TypeFunction<T, R>... functions) {
         selectFields.addAll(Arrays.stream(functions).map(function -> transfer(TypeFunction.getLambdaColumnName(function))).collect(Collectors.toList()));
+        this.sqlType = EntityDao.SQL_SELECT;
         return this;
     }
 
-    public SQL update(String key, Object value) {
+    public SQL update(String table) {
+        this.tbName = table;
+        this.sqlType = EntityDao.SQL_UPDATE;
+        return this;
+    }
+
+    public SQL update(Class clss) {
+        this.tbName = EntityTools.getTableName(clss);
+        this.sqlType = EntityDao.SQL_UPDATE;
+        return this;
+    }
+
+    public SQL delete(String aliasName) {
+        this.aliasName = aliasName;
+        this.sqlType = EntityDao.SQL_DELETE;
+        return this;
+    }
+
+    public SQL delete() {
+        this.sqlType = EntityDao.SQL_DELETE;
+        return this;
+    }
+
+    public SQL insert_into(String table, String... fields) {
+        pair.setFirst(new String("INSERT INTO `" + table + "` ("
+                + Arrays.stream(fields).collect(Collectors.joining(","))
+                + ") "));
+        this.sqlType = EntityDao.SQL_INSERT;
+        pair.setSecond(new ArrayList<>());
+        return this;
+    }
+
+    public <T, R> SQL insert_into(String table, TypeFunction<T, R>... functions) {
+        pair.setFirst(new String("INSERT INTO `" + table + "` ("
+                + Arrays.stream(functions).map(f -> transfer(TypeFunction.getLambdaColumnName(f))).collect(Collectors.joining(","))
+                + ") "));
+        this.sqlType = EntityDao.SQL_INSERT;
+        pair.setSecond(new ArrayList<>());
+        return this;
+    }
+
+    public <T, R> SQL insert_into(Class clss, String... fields) {
+        return insert_into(EntityTools.getTableName(clss), fields);
+    }
+
+    public <T, R> SQL insert_into(Class clss, TypeFunction<T, R>... functions) {
+        return insert_into(EntityTools.getTableName(clss), functions);
+    }
+
+    public SQL set(String key, Object value) {
         kvs.add(new Pair(key, value));
         return this;
     }
 
-    public <T, R> SQL update(TypeFunction<T, R> function, Object value) {
+    public <T, R> SQL set(TypeFunction<T, R> function, Object value) {
         kvs.add(new Pair(transfer(TypeFunction.getLambdaColumnName(function)), value));
         return this;
     }
@@ -196,21 +249,6 @@ public class SQL extends AbstractCriteria<SQL> {
         return joins;
     }
 
-    public SQL insert(String... fields) {
-        pair.setFirst(new String("INSERT INTO %s ("
-                + Arrays.stream(fields).collect(Collectors.joining(","))
-                + ") "));
-        return this;
-    }
-
-    public <T, R> SQL insert(TypeFunction<T, R>... functions) {
-        pair.setFirst(new String("INSERT INTO %s ("
-                + Arrays.stream(functions).map(f -> transfer(TypeFunction.getLambdaColumnName(f))).collect(Collectors.joining(","))
-                + ") "));
-        pair.setSecond(new ArrayList<>());
-        return this;
-    }
-
     public SQL values(Object... values) {
         pair.getSecond().add(values);
         return this;
@@ -237,8 +275,15 @@ public class SQL extends AbstractCriteria<SQL> {
         return tableMeta;
     }
 
-    private String transfer(String field){
-        return "`"+field+"`";
+    private String transfer(String field) {
+        return "`" + field + "`";
     }
 
+    public String getSqlType() {
+        return sqlType;
+    }
+
+    public void setSqlType(String sqlType) {
+        this.sqlType = sqlType;
+    }
 }

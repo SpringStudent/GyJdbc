@@ -51,7 +51,7 @@ public class Table {
         return new Index(this);
     }
 
-    public TableMeta getTableMeta() {
+    TableMeta getTableMeta() {
         return tableMeta;
     }
 }
