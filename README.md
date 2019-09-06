@@ -468,5 +468,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 15.0.2 解决多数据源方法类型转换丢失
 - 15.1.0 使用@BindPoint注解绑定数据源
 - 16.0.0 删除需要lombok的支持
-- 17.0.0 使用SQL插入、更新方法重构使其更加符合sql拼写习惯，实现了DELETE、UPDATE操作的连接拼接
+- 17.0.0 SQL插入、更新方法重构使其更加符合sql拼写习惯，实现了DELETE、UPDATE操作的连接拼接
 ### 当前版本17.0.0
