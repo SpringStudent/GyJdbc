@@ -86,10 +86,10 @@ public class CriteriaTest {
     @Test
     public void testUnionSql() {
         SQL s1 = new SQL().select("u1.*").from(Test.class).where("u1.id", 123).union().select("u2.*").from(Test.class)
-                .unionAll().select("u3.*").from(Book.class).as("u3").where("u3", 123).leftJoin(new Joins().with(Test.class)
-                        .as("u31").on("u31.id", "u3.id").and("u31.nmm", "=", "nmmm")).limit(0);
+                .unionAll().select("u3.*").from(Book.class).where("u3", 123).leftJoin(new Joins().with(Test.class)
+                        .as("u31").on("u31.id", "u3.id").and("u31.nmm", "=", "nmmm")).limit(10000);
         SQL s2 = new SQL().select("t1.*").from(Book.class).as("t1").andCriteria(new Criteria().in("t1.id", Arrays.asList(1, 2, 3)).like("t1.name", "name1")).leftJoin(new Joins().with(Book.class).as("j1").on("j1.id", "t1.id").and("j1.name", "=", "j1name"));
-        SQL s = new SQL().select("res.*").from(s1, s2).where("res.name", "book1").orderBy(new Sort("res.name")).groupBy("res.name").having("res.name", ">", 1);
+        SQL s = new SQL().select("res.*").from(s1, s2).where("res.name", "book1").orderBy(new Sort("res.name")).limit(100);
         Pair<String, Object[]> sqlParamPair = SqlMakeTools.useSql(s);
         System.out.println(sqlParamPair.getFirst());
         System.out.println(ArrayUtils.toString(sqlParamPair.getSecond()));
