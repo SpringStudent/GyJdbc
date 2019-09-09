@@ -240,6 +240,8 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+        //DELETE FROM orders,items
+        // WHERE orders.userid = items.userid  AND orders.orderid = items.orderid AND orders.date <= ?
         sql = new SQL().delete().from("orders,items")
                 .where("orders.userid",new FieldReference("items.userid "))
                 .and("orders.orderid",new FieldReference("items.orderid"))
