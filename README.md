@@ -363,7 +363,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 
 #### 其他sql的组装
 ```
-@Test
+    @Test
     public void testOtherSql() {
         //UPDATE test SET id = ?, name = ? WHERE pid = ?
         SQL sql = new SQL().update("test").set("id", 1).set("name", "asd").where("pid", 15);
@@ -398,6 +398,9 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+        //UPDATE test t1 INNER JOIN tb_test t2  ON t1.id = t2.id  AND t1.id = ?
+        //INNER JOIN
+        //test_tb t3  ON t1.id = t3.id  AND t1.id = ? SET t1.id = t2.pid, t1.id = t3.cid, t1.id = ? WHERE t1.id IN(?,?)
         sql = new SQL().update("test").as("t1")
                 .innerJoin(new Joins().with("tb_test").as("t2").on("t1.id", "t2.id").and("t1.id", "=", "id1"))
                 .innerJoin(new Joins().with("test_tb").as("t3").on("t1.id", "t3.id").and("t1.id", "=", "id1"))
@@ -405,11 +408,9 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        //UPDATE test t1 INNER JOIN tb_test t2  ON t1.id = t2.id  AND t1.id = ?
-        //INNER JOIN
-        //test_tb t3  ON t1.id = t3.id  AND t1.id = ? SET t1.id = t2.pid, t1.id = t3.cid, t1.id = ? WHERE t1.id IN(?,?)
+        //UPDATE student s , class c  SET s.class_name = ?, c.stu_name = ? WHERE s.class_id = c.id
         sql = new SQL().update("student").as("s")
-                .natureJoin(new Joins().with("class"))
+                .natureJoin(new Joins().with("class").as("c"))
                 .set("s.class_name","test00").set("c.stu_name","test00")
                 .where("s.class_id",new FieldReference("c.id"));
         pair = SqlMakeTools.useSql(sql);
@@ -424,7 +425,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        //DELETE FROM orders,items 
+        //DELETE FROM orders,items
         // WHERE orders.userid = items.userid  AND orders.orderid = items.orderid AND orders.date <= ?
         sql = new SQL().delete().from("orders,items")
                 .where("orders.userid",new FieldReference("items.userid "))
@@ -434,7 +435,6 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
     }
-    
 ```
 #### 动态数据源切换
 ##### 使用须知 方法选择数据源的优先级
