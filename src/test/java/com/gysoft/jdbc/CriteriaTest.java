@@ -180,27 +180,36 @@ public class CriteriaTest {
     }
 
     @Test
-    public void testSql() {
+    public void testOtherSql() {
+        //UPDATE test SET id = ?, name = ? WHERE pid = ?
         SQL sql = new SQL().update("test").set("id", 1).set("name", "asd").where("pid", 15);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+        //UPDATE test t1
+        // INNER JOIN
+        // tb_test t2  ON t1.id = t2.id  AND t1.id = ? SET t1.id = ?, t1.id = ? WHERE t1.id IN(?,?)
         sql = new SQL().update("test").as("t1").innerJoin(new Joins().with("tb_test").as("t2")
                 .on("t1.id", "t2.id").and("t1.id", "=", 123)).set("t1.id", "t2.pid")
                 .set("t1.id", 123).in("t1.id", Arrays.asList("id1", "id2"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+        //DELETE FROM test WHERE id = ?
         sql = new SQL().delete().from("test").where("id", 1);
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+        //DELETE t1 FROM tb_table t1
+        // INNER JOIN
+        //tmp_table t2  ON t2.moduletype  = t1.moduletype  AND t2.unitqdkey = t1.unitqdkey  WHERE t1.unid = ? AND t1.epid = ?
         sql = new SQL().delete("t1").from("tb_table")
                 .innerJoin(new Joins().with("tmp_table").as("t2").on("t2.moduletype ", "t1.moduletype")
                         .on("t2.unitqdkey", "t1.unitqdkey")).where("t1.unid", "iiods").and("t1.epid", 9192);
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+        //DELETE FROM test WHERE id = ?
         sql = new SQL().delete().from("test").where("id", 1);
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
@@ -209,6 +218,25 @@ public class CriteriaTest {
                 .innerJoin(new Joins().with("tb_test").as("t2").on("t1.id", "t2.id").and("t1.id", "=", "id1"))
                 .innerJoin(new Joins().with("test_tb").as("t3").on("t1.id", "t3.id").and("t1.id", "=", "id1"))
                 .set("t1.id", new FieldReference("t2.pid")).set("t1.id", new FieldReference("t3.cid")).set("t1.id", "id2").in("t1.id", Arrays.asList("id3", "id4"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        //UPDATE test t1 INNER JOIN tb_test t2  ON t1.id = t2.id  AND t1.id = ?
+        //INNER JOIN
+        //test_tb t3  ON t1.id = t3.id  AND t1.id = ? SET t1.id = t2.pid, t1.id = t3.cid, t1.id = ? WHERE t1.id IN(?,?)
+        sql = new SQL().update("student").as("s")
+                .natureJoin(new Joins().with("class"))
+                .set("s.class_name","test00").set("c.stu_name","test00")
+                .where("s.class_id",new FieldReference("c.id"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        //DELETE orders,items FROM orders,items
+        //WHERE orders.userid = items.userid  AND orders.orderid = items.orderid AND orders.date <= ?
+        sql = new SQL().delete("orders,items")
+                .where("orders.userid",new FieldReference("items.userid "))
+                .and("orders.orderid",new FieldReference("items.orderid"))
+                .let("orders.date","2000/03/01");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));

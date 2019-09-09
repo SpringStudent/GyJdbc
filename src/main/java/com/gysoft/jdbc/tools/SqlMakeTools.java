@@ -267,8 +267,13 @@ public class SqlMakeTools {
                             params = ArrayUtils.add(params, pair.getFirst());
                             params = ArrayUtils.add(params, pair.getSecond());
                         } else {
-                            sql.append(opt).append(SPACE).append("?");
-                            params = ArrayUtils.add(params, value);
+                            if (value instanceof FieldReference) {
+                                FieldReference fieldReference = (FieldReference) value;
+                                sql.append(opt).append(SPACE).append(fieldReference.getField());
+                            }else{
+                                sql.append(opt).append(SPACE).append("?");
+                                params = ArrayUtils.add(params, value);
+                            }
                         }
                         sql.append(" AND ");
                     }
@@ -414,8 +419,9 @@ public class SqlMakeTools {
                     sql.append(nextSql.getAliasName());
                     sql.append(SPACE);
                 }
-                sql.append("FROM ");
+                sql.append("FROM");
                 if (StringUtils.isNotEmpty(nextSql.getTbName())) {
+                    sql.append(SPACE);
                     sql.append(nextSql.getTbName());
                 }
                 if (StringUtils.isNotEmpty(nextSql.getAliasName())) {
