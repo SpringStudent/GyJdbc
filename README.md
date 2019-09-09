@@ -53,8 +53,8 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         tbUser3.setCareer("C++");
         tbUser3.setEmail("5556666@qq.com");
         tbUser3.setMobile("19988888888");
-        tbUser3.setName("yinhw");
-        tbUser3.setRealName("殷宏伟");
+        tbUser3.setName("daijiahao");
+        tbUser3.setRealName("戴嘉豪");
         tbUser3.setPwd("123456");
         tbUser3.setIsActive(1);
         tbUser3.setRoleId(2);
@@ -267,8 +267,8 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
                 .addColumn().name("realName").varchar(50).defaultNull().comment("真实名称").commit()
                 .engine(TableEngine.MyISAM).comment("账号表2").commit()
                 .values(0, "zhouning", "周宁")
-                .values(0, "pengjiajia", "彭佳佳")
-                .values(0, "chengyuanlin", "程元麟");
+                .values(0, "laoning", "老宁")
+                .values(0, "daning", "大宁");
 //                .select("0,userName,realName").from(TbAccount.class);//支持select语句的插入方法但是回合values的插入方法冲突
         ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
         TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
