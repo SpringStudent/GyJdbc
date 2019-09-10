@@ -19,7 +19,7 @@ public class CriteriaProxy {
      */
     private Object[] params;
     /**
-     * and或者or
+     * and或者or、
      */
     private String criteriaType;
 
