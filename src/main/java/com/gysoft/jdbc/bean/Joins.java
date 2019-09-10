@@ -92,6 +92,17 @@ public class Joins {
         return getWith();
     }
 
+    public With with(SQL sql){
+        Pair<String,Object[]> pair = SqlMakeTools.useSql(sql);
+        joinSql.append(" %s "+"("+pair.getFirst()+")");
+        CriteriaProxy criteriaProxy = new CriteriaProxy();
+        criteriaProxy.setWhereParamsIndex(-1);
+        criteriaProxy.setParams(pair.getSecond());
+        criteriaProxy.setCriteriaType("WITH");
+        criteriaProxys.add(criteriaProxy);
+        return getWith();
+    }
+
     public StringBuilder getJoinSql() {
         return joinSql;
     }

@@ -252,5 +252,15 @@ public class CriteriaTest {
         System.out.println(Arrays.toString(pair.getSecond()));
     }
 
+    @Test
+    public void testSqlWith(){
+        SQL sql = new SQL().select("m.status mkStatus").from("inspection").as("m")
+                .leftJoin(new Joins().with(new SQL().select("m.inspId,max(m.modelObjId)modelObjId").from("inspection_model").as("m")
+                        .and("m.projectId","pid").groupBy("m.projectId")).as("g1").on("g1.inspId","m.id"))
+                .inIfAbsent("m.status",Arrays.asList(1,2,3));
+        Pair<String,Object[]> pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+    }
 
 }

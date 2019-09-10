@@ -270,7 +270,7 @@ public class SqlMakeTools {
                             if (value instanceof FieldReference) {
                                 FieldReference fieldReference = (FieldReference) value;
                                 sql.append(opt).append(SPACE).append(fieldReference.getField());
-                            }else{
+                            } else {
                                 sql.append(opt).append(SPACE).append("?");
                                 params = ArrayUtils.add(params, value);
                             }
@@ -336,6 +336,7 @@ public class SqlMakeTools {
                         } else {
                             sql.append(IN_START).append(criteriaProxy.getSql()).append(IN_END).append(" AND ");
                         }
+                    } else if (criteriaType.equals("WITH")) {
                     } else {
                         sql.append(SPACE).append(criteriaType).append(IN_START).append(criteriaProxy.getSql()).append(IN_END).append(" AND ");
                     }
