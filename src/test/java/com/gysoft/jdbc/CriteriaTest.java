@@ -272,8 +272,16 @@ public class CriteriaTest {
                 .unionAll().select("*").from(new SQL().select("*").from("test2")
                         .unionAll().select("*").from("test3")).as("t2")).as("t3")
                 .union().select("*").from(new SQL().select("*").from("test3")
-                        .unionAll().select("*").from("test4")).as("t4");
+                        .unionAll().select("*").from(new SQL().select("*").from("test").as("t5")
+                                .leftJoin(new Joins().with("test").as("t6").on("t5.id","t6.id")
+                                        .andIfAbsent("t5.id",">",1))).as("t7")).as("t4");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from("test").as("t5")
+                .leftJoin(new Joins().with("test").as("t6").on("t5.id","t6.id")
+                .andIfAbsent("t5.id",">",1));
+        pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
     }
