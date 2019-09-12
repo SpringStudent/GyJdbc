@@ -353,15 +353,23 @@ public class SqlMakeTools {
      * @author 周宁
      * @version 1.0
      */
-    public static Pair<String, Object[]> useSql(SQL sql) {
+    public static Pair<String, Object[]> useSql(SQL sqlObj) {
+        boolean needSurroundBacket = sqlObj.getSqlPiepline().getSqlNexts().size() > 1;
+        SQL parentSQL = new SQL().select("*").from(sqlObj);
         SQLTree sqlTree = new SQLTree();
-        Pair<String, Object[]> pair = doSql(sql);
         sqlTree.setId("0");
-        sqlTree.setParams(pair.getSecond());
-        sqlTree.setSql(pair.getFirst());
+        sqlTree.setParams(new Object[]{});
+        sqlTree.setSql(" FROM ");
         sqlTree.setChilds(new ArrayList<>());
-        buildSQLTree(sql, sqlTree);
-        return recurSql(sqlTree, new Pair<>("", new Object[]{}));
+        buildSQLTree(parentSQL, sqlTree);
+        Pair<String, Object[]> pair = recurSql(sqlTree, new Pair<>("", new Object[]{}));
+        String fuckSql = pair.getFirst().trim();
+        fuckSql = fuckSql.substring(5, fuckSql.length() - 1).trim();
+        if (!needSurroundBacket) {
+            fuckSql = fuckSql.substring(1, fuckSql.length() - 1);
+        }
+        pair.setFirst(fuckSql);
+        return pair;
     }
 
     /**
@@ -376,7 +384,8 @@ public class SqlMakeTools {
         List<SQL> subSqls = sql.getSubSqls();
         for (int i = 0; i < subSqls.size(); i++) {
             Pair<String, Object[]> pair = doSql(subSqls.get(i));
-            SQLTree cTree = new SQLTree(pair.getFirst(), pair.getSecond(), new ArrayList<>(), UUID.randomUUID().toString().replace("-", ""));
+            SQLTree cTree = new SQLTree(pair.getFirst(), pair.getSecond(), new ArrayList<>(),
+                    UUID.randomUUID().toString().replace("-", ""), subSqls.get(i).getUnionType());
             sqlTree.getChilds().add(cTree);
             buildSQLTree(subSqls.get(i), cTree);
         }
@@ -385,97 +394,82 @@ public class SqlMakeTools {
     /**
      * 组装sql
      *
-     * @param ss sql拼接器
+     * @param sqlObj sql对象的封装
      * @return Pair 第一个值为Sql,第二个为参数
      * @throws Pair
      * @author 周宁
      * @version 1.0
      */
-    private static Pair<String, Object[]> doSql(SQL ss) {
-        SQLPiepline piepline = ss.getSqlPiepline();
-        StringBuilder finalSql = new StringBuilder();
+    private static Pair<String, Object[]> doSql(SQL sqlObj) {
         Pair<String, Object[]> pair;
         Object[] params = {};
-        List<SQLPiepline.SQLNext> sqlNexts = piepline.getSqlNexts();
-        boolean needSurroundBrackets = sqlNexts.size() > 1 ? true : false;
-        for (SQLPiepline.SQLNext sqlNext : sqlNexts) {
-            SQL nextSql = sqlNext.getSql();
-            StringBuilder sql = new StringBuilder();
-            if (nextSql.getSqlType().equals(EntityDao.SQL_SELECT)) {
-                sql.append("SELECT ");
-                if (CollectionUtils.isNotEmpty(nextSql.getSelectFields())) {
-                    nextSql.getSelectFields().forEach(selectField -> sql.append(selectField + ", "));
-                    sql.setLength(sql.length() - 2);
-                }
-                sql.append(" FROM ");
-                if (StringUtils.isNotEmpty(nextSql.getTbName())) {
-                    sql.append(nextSql.getTbName());
-                }
-                if (StringUtils.isNotEmpty(nextSql.getAliasName())) {
-                    sql.append(SPACE + nextSql.getAliasName());
-                }
-            } else if (nextSql.getSqlType().equals(EntityDao.SQL_DELETE)) {
-                sql.append("DELETE ");
-                if (StringUtils.isNotEmpty(nextSql.getAliasName())) {
-                    sql.append(nextSql.getAliasName());
-                    sql.append(SPACE);
-                }
-                sql.append("FROM");
-                if (StringUtils.isNotEmpty(nextSql.getTbName())) {
-                    sql.append(SPACE);
-                    sql.append(nextSql.getTbName());
-                }
-                if (StringUtils.isNotEmpty(nextSql.getAliasName())) {
-                    sql.append(SPACE);
-                    sql.append(nextSql.getAliasName());
-                }
-            } else if (nextSql.getSqlType().equals(EntityDao.SQL_UPDATE)) {
-                sql.append("UPDATE ");
-                if (StringUtils.isNotEmpty(nextSql.getTbName())) {
-                    sql.append(nextSql.getTbName());
-                }
-                if (StringUtils.isNotEmpty(nextSql.getAliasName())) {
-                    sql.append(SPACE);
-                    sql.append(nextSql.getAliasName());
-                }
-            }
-            //连接查询sql组装
-            if (CollectionUtils.isNotEmpty(nextSql.getJoins())) {
-                List<Joins.BaseJoin> joins = nextSql.getJoins();
-                for (Joins.BaseJoin join : joins) {
-                    sql.append(join.getJoinSql());
-                    List<CriteriaProxy> criteriaProxies = join.getCriteriaProxys();
-                    params = doCriteriaProxy(criteriaProxies, -2, sql, params);
-                }
-            }
-            //update语句的拼接
-            if (nextSql.getSqlType().equals(EntityDao.SQL_UPDATE)) {
-                sql.append(" SET ");
-                List<Pair> kvs = nextSql.getKvs();
-                for (int i = 0; i < kvs.size(); i++) {
-                    Pair p = kvs.get(i);
-                    if (p.getSecond() instanceof FieldReference) {
-                        FieldReference fieldReference = (FieldReference) p.getSecond();
-                        sql.append(p.getFirst() + " = " + fieldReference.getField() + ", ");
-                    } else {
-                        sql.append(p.getFirst() + " = ?, ");
-                        params = ArrayUtils.add(params, p.getSecond());
-                    }
-                }
+        StringBuilder sql = new StringBuilder();
+        if (sqlObj.getSqlType().equals(EntityDao.SQL_SELECT)) {
+            sql.append("SELECT ");
+            if (CollectionUtils.isNotEmpty(sqlObj.getSelectFields())) {
+                sqlObj.getSelectFields().forEach(selectField -> sql.append(selectField + ", "));
                 sql.setLength(sql.length() - 2);
             }
-            pair = doCriteria(nextSql, sql);
-            if (StringUtils.isNotEmpty(sqlNext.getUnionType())) {
-                finalSql.append(SPACE).append(sqlNext.getUnionType());
+            sql.append(" FROM ");
+            if (StringUtils.isNotEmpty(sqlObj.getTbName())) {
+                sql.append(sqlObj.getTbName());
             }
-            if (needSurroundBrackets) {
-                finalSql.append(SPACE).append(IN_START).append(pair.getFirst()).append(IN_END);
-            } else {
-                finalSql.append(SPACE).append(pair.getFirst());
+            if (StringUtils.isNotEmpty(sqlObj.getAliasName())) {
+                sql.append(SPACE + sqlObj.getAliasName());
             }
-            params = ArrayUtils.addAll(params, pair.getSecond());
+        } else if (sqlObj.getSqlType().equals(EntityDao.SQL_DELETE)) {
+            sql.append("DELETE ");
+            if (StringUtils.isNotEmpty(sqlObj.getAliasName())) {
+                sql.append(sqlObj.getAliasName());
+                sql.append(SPACE);
+            }
+            sql.append("FROM");
+            if (StringUtils.isNotEmpty(sqlObj.getTbName())) {
+                sql.append(SPACE);
+                sql.append(sqlObj.getTbName());
+            }
+            if (StringUtils.isNotEmpty(sqlObj.getAliasName())) {
+                sql.append(SPACE);
+                sql.append(sqlObj.getAliasName());
+            }
+        } else if (sqlObj.getSqlType().equals(EntityDao.SQL_UPDATE)) {
+            sql.append("UPDATE ");
+            if (StringUtils.isNotEmpty(sqlObj.getTbName())) {
+                sql.append(sqlObj.getTbName());
+            }
+            if (StringUtils.isNotEmpty(sqlObj.getAliasName())) {
+                sql.append(SPACE);
+                sql.append(sqlObj.getAliasName());
+            }
         }
-        return new Pair<>(finalSql.toString().replaceFirst(" ", ""), params);
+        //连接查询sql组装
+        if (CollectionUtils.isNotEmpty(sqlObj.getJoins())) {
+            List<Joins.BaseJoin> joins = sqlObj.getJoins();
+            for (Joins.BaseJoin join : joins) {
+                sql.append(join.getJoinSql());
+                List<CriteriaProxy> criteriaProxies = join.getCriteriaProxys();
+                params = doCriteriaProxy(criteriaProxies, -2, sql, params);
+            }
+        }
+        //update语句的拼接
+        if (sqlObj.getSqlType().equals(EntityDao.SQL_UPDATE)) {
+            sql.append(" SET ");
+            List<Pair> kvs = sqlObj.getKvs();
+            for (int i = 0; i < kvs.size(); i++) {
+                Pair p = kvs.get(i);
+                if (p.getSecond() instanceof FieldReference) {
+                    FieldReference fieldReference = (FieldReference) p.getSecond();
+                    sql.append(p.getFirst() + " = " + fieldReference.getField() + ", ");
+                } else {
+                    sql.append(p.getFirst() + " = ?, ");
+                    params = ArrayUtils.add(params, p.getSecond());
+                }
+            }
+            sql.setLength(sql.length() - 2);
+        }
+        pair = doCriteria(sqlObj, sql);
+        params = ArrayUtils.addAll(params, pair.getSecond());
+        return new Pair<>(pair.getFirst(), params);
     }
 
     /**
@@ -491,7 +485,7 @@ public class SqlMakeTools {
             String[] arr = sqlTree.getSql().split("FROM");
             pair.setFirst(pair.getFirst().concat(arr[0] + "FROM("));
             for (SQLTree cnode : childs) {
-                pair.setFirst(pair.getFirst().concat(" UNION ALL ("));
+                pair.setFirst(pair.getFirst().concat(" " + cnode.getUnionType() + " ("));
                 if (CollectionUtils.isNotEmpty(cnode.getChilds())) {
                     pair = recurSql(cnode, pair);
                 } else {
@@ -508,6 +502,7 @@ public class SqlMakeTools {
             pair.setSecond(ArrayUtils.addAll(pair.getSecond(), sqlTree.getParams()));
         }
         pair.setFirst(pair.getFirst().replace("( UNION ALL", "("));
+        pair.setFirst(pair.getFirst().replace("( UNION", "("));
         return pair;
     }
 }

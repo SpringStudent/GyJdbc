@@ -51,6 +51,10 @@ public class SQL extends AbstractCriteria<SQL> {
      * 待更新的字段和相应的值
      */
     private List<Pair> kvs;
+    /**
+     * 连接类型
+     */
+    private String unionType;
 
     public SQL() {
         selectFields = new LinkedHashSet<>();
@@ -62,7 +66,17 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public SQL from(SQL... cc) {
-        subSqls.addAll(Arrays.asList(cc));
+        for (SQL c : cc) {
+            c.getSqlPiepline().getSqlNexts().forEach(sqlNext -> {
+                SQL s = sqlNext.getSql();
+                if (sqlNext.getUnionType() != null) {
+                    s.setUnionType(sqlNext.getUnionType());
+                } else {
+                    s.setUnionType("UNION ALL");
+                }
+                subSqls.add(s);
+            });
+        }
         return this;
     }
 
@@ -285,5 +299,13 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public void setSqlType(String sqlType) {
         this.sqlType = sqlType;
+    }
+
+    public String getUnionType() {
+        return unionType;
+    }
+
+    public void setUnionType(String unionType) {
+        this.unionType = unionType;
     }
 }

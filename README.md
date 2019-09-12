@@ -548,4 +548,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 17.0.0 SQL插入、更新方法重构使其更加符合sql拼写习惯，实现了DELETE、UPDATE操作的连接拼接
 - 17.1.0 其他sql拼接的支持
 - 17.2.0 join语句支持传递SQL
-### 当前版本17.1.0
+- 18.0.0 修复union()和unionAll()方法中子查询的bug
+### 当前版本18.0.0

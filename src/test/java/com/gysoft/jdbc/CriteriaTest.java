@@ -227,40 +227,44 @@ public class CriteriaTest {
         //UPDATE student s , class c  SET s.class_name = ?, c.stu_name = ? WHERE s.class_id = c.id
         sql = new SQL().update("student").as("s")
                 .natureJoin(new Joins().with("class").as("c"))
-                .set("s.class_name","test00").set("c.stu_name","test00")
-                .where("s.class_id",new FieldReference("c.id"));
+                .set("s.class_name", "test00").set("c.stu_name", "test00")
+                .where("s.class_id", new FieldReference("c.id"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
         //DELETE orders,items FROM orders,items
         //WHERE orders.userid = items.userid  AND orders.orderid = items.orderid AND orders.date <= ?
         sql = new SQL().delete("orders,items")
-                .where("orders.userid",new FieldReference("items.userid "))
-                .and("orders.orderid",new FieldReference("items.orderid"))
-                .let("orders.date","2000/03/01");
+                .where("orders.userid", new FieldReference("items.userid "))
+                .and("orders.orderid", new FieldReference("items.orderid"))
+                .let("orders.date", "2000/03/01");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
         //DELETE FROM orders,items
         // WHERE orders.userid = items.userid  AND orders.orderid = items.orderid AND orders.date <= ?
         sql = new SQL().delete().from("orders,items")
-                .where("orders.userid",new FieldReference("items.userid "))
-                .and("orders.orderid",new FieldReference("items.orderid"))
-                .let("orders.date","2000/03/01");
+                .where("orders.userid", new FieldReference("items.userid "))
+                .and("orders.orderid", new FieldReference("items.orderid"))
+                .let("orders.date", "2000/03/01");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
     }
 
     @Test
-    public void testSqlWith(){
+    public void testSqlWith() {
+        //SELECT m.status mkStatus FROM inspection m LEFT JOIN
+        // (SELECT m.inspId,max(m.modelObjId)modelObjId FROM inspection_model m WHERE m.projectId = ? GROUP BY m.projectId)
+        // g1  ON g1.inspId = m.id  WHERE m.status IN(?,?,?)
         SQL sql = new SQL().select("m.status mkStatus").from("inspection").as("m")
                 .leftJoin(new Joins().with(new SQL().select("m.inspId,max(m.modelObjId)modelObjId").from("inspection_model").as("m")
-                        .and("m.projectId","pid").groupBy("m.projectId")).as("g1").on("g1.inspId","m.id"))
-                .inIfAbsent("m.status",Arrays.asList(1,2,3));
-        Pair<String,Object[]> pair = SqlMakeTools.useSql(sql);
+                        .and("m.projectId", "pid").groupBy("m.projectId")).as("g1").on("g1.inspId", "m.id"))
+                .inIfAbsent("m.status", Arrays.asList(1, 2, 3));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
     }
+
 
 }

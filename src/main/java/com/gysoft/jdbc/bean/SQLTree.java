@@ -25,6 +25,10 @@ public class SQLTree {
      * 树节点的id
      */
     private String id;
+    /**
+     * 连接类型
+     */
+    private String unionType;
 
     public String getSql() {
         return sql;
@@ -58,11 +62,20 @@ public class SQLTree {
         this.id = id;
     }
 
-    public SQLTree(String sql, Object[] params, List<SQLTree> childs, String id) {
+    public String getUnionType() {
+        return unionType;
+    }
+
+    public void setUnionType(String unionType) {
+        this.unionType = unionType;
+    }
+
+    public SQLTree(String sql, Object[] params, List<SQLTree> childs, String id,String unionType) {
         this.sql = sql;
         this.params = params;
         this.childs = childs;
         this.id = id;
+        this.unionType = unionType;
     }
 
     public SQLTree() {
