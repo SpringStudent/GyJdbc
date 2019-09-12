@@ -266,5 +266,20 @@ public class CriteriaTest {
         System.out.println(Arrays.toString(pair.getSecond()));
     }
 
-
+    @Test
+    public void testUnionBug() {
+        SQL sql = new SQL().select("*").from(new SQL().select("*").from("test").as("t2")
+                .unionAll().select("*").from(new SQL().select("*").from("test2")))
+                .union().select("*").from(new SQL().select("*").from("test3")).as("t1");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from(new SQL().select("*").from("test").as("t1")
+                .unionAll().select("*").from(new SQL().select("*").from("test2")).as("t2")).as("t3")
+                .union().select("*").from(new SQL().select("*").from("test3")
+                        .unionAll().select("*").from("test4")).as("t4");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+    }
 }
