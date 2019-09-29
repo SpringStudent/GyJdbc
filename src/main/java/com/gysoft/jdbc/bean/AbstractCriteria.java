@@ -113,7 +113,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public S where(String key, String opt, Object value) {
-        this.whereParams.add(new WhereParam(key,opt,value));
+        this.whereParams.add(new WhereParam(key, opt, value));
         return self();
     }
 
@@ -259,6 +259,14 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     public <T, R> S orBetweenAnd(TypeFunction<T, R> function, Object v1, Object v2) {
         return this.or(TypeFunction.getLambdaColumnName(function), "BETWEEN ? AND ?", new Pair<>(v1, v2));
+    }
+
+    public S in(String key, SQL sql) {
+        return this.where(key, "IN", sql);
+    }
+
+    public <T, R> S in(TypeFunction<T, R> function, SQL sql) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "IN", sql);
     }
 
     @Override

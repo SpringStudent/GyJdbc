@@ -55,7 +55,7 @@ public class CriteriaTest {
                 .natureJoin(new Joins().with(Book.class).as("t2"))
                 .and("sd", "in", Arrays.asList("sd1", "xg1")).gt("sdf", 12)
                 .natureJoin(new Joins().with(Book.class).as("t3"))
-                .leftJoin(new Joins().with(Book.class).as("t4").on("t4.id", "t2.id").on("t4.name", "t2.name").andIfAbsent("t4.andIfAbsent", "=", ""))
+                .leftJoin(new Joins().with(Book.class).as("t4").on("t4.id", "t2.id").on("t4.name", "t2.name").andIfAbsent("t4.andIfAbsent", "=", "123"))
                 .andCriteria(new Criteria().where("k1", "v1").or("k2", "v2")).or("k3", "k5")
                 .limit(12222, 100)
                 .union().select("un.ke", "un.ke2").from(Book.class).where("un.ke", 1);
@@ -272,7 +272,7 @@ public class CriteriaTest {
                 .unionAll().select("*").from(new SQL().select("*").from("test2")
                         .unionAll().select("*").from("test3")).as("t2")).as("t3")
                 .union().select("*").from(new SQL().select("*").from("test3")
-                        .unionAll().select("*").from(new SQL().select("*").from("test").as("t5")
+                        .unionAll().select("*").from(new SQL().select("t5.*").from("test").as("t5")
                                 .leftJoin(new Joins().with("test").as("t6").on("t5.id","t6.id")
                                         .andIfAbsent("t5.id",">",1))).as("t7")).as("t4");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
@@ -280,8 +280,17 @@ public class CriteriaTest {
         System.out.println(Arrays.toString(pair.getSecond()));
         sql = new SQL().select("*").from("test").as("t5")
                 .leftJoin(new Joins().with("test").as("t6").on("t5.id","t6.id")
-                .andIfAbsent("t5.id",">",1));
+                .andIfAbsent("t5.id",">",1).and("t5.pid","=",new FieldReference("field")));
         pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+    }
+
+    @Test
+    public void testInSql(){
+        SQL sql = new SQL().select("*").from(Book.class).in(Book::getId,new SQL().select("id").from("author").where("f1",123).in("f2",Arrays.asList("g","l")))
+                .andCriteria(new Criteria().and(Book::getName,"name1").or(Book::getNum,"asdsd"));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
     }

@@ -254,6 +254,11 @@ public class SqlMakeTools {
                                     }
                                     sql.setLength(sql.length() - 1);
                                 }
+                            } else if (value instanceof SQL) {
+                                SQL inSql = (SQL) value;
+                                Pair<String,Object[]> inPair = useSql(inSql);
+                                sql.append(inPair.getFirst());
+                                params = ArrayUtils.addAll(params,inPair.getSecond());
                             } else {
                                 sql.append(SPACE).append("?");
                                 params = ArrayUtils.add(params, value);

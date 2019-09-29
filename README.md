@@ -549,4 +549,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 17.1.0 其他sql拼接的支持
 - 17.2.0 join语句支持传递SQL
 - 18.0.0 修复union()和unionAll()方法中子查询的bug
-### 当前版本18.0.0
+- 18.1.0 支持in(key,sql)语法
+### 当前版本18.1.0
