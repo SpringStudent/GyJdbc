@@ -10,7 +10,7 @@ import java.sql.JDBCType;
 public class JdbcDataType {
 
     /**
-     * 数据类型转黄
+     * 数据类型转换
      * @param meta 一行对应的元数据
      * @return String 将java的行类型转换为mysql认识的类型
      */

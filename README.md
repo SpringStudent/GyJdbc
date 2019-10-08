@@ -169,7 +169,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
                 .values(0, "zhouning", "周宁")
                 .values(0, "laoning", "老宁")
                 .values(0, "daning", "大宁");
-//                .select("0,userName,realName").from(TbAccount.class);//支持select语句的插入方法但是回合values的插入方法冲突
+//                .select("0,userName,realName").from(TbAccount.class);//支持select语句的插入方法但是会和values的插入方法冲突
         ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
         TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
         String tbName = tbAccountDao.createWithSql(sql);
