@@ -11,149 +11,6 @@
 ### 如何使用
 Demo: https://github.com/SpringStudent/GyJdbcTest
 
-#### 基础插入
-
-
-```
-@Test
-    public void testInsert() throws Exception {
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbUserDao tbUserDao = (TbUserDao) ac.getBean("tbUserDao");
-        List<TbUser> tbUsers = new ArrayList<>();
-
-        TbUser tbUser1 = new TbUser();
-        tbUser1.setAge(26);
-        tbUser1.setBirth(LocalDateToDate(LocalDate.of(1993, 8, 27)));
-        tbUser1.setCareer("Java");
-        tbUser1.setEmail("22888@qq.com");
-        tbUser1.setMobile("17788888888");
-        tbUser1.setName("zhouning");
-        tbUser1.setRealName("周宁");
-        tbUser1.setPwd("123456");
-        tbUser1.setIsActive(0);
-        tbUser1.setRoleId(1);
-        tbUser1.setId(genId());
-
-        TbUser tbUser2 = new TbUser();
-        tbUser2.setAge(27);
-        tbUser2.setBirth(LocalDateToDate(LocalDate.of(1992, 9, 23)));
-        tbUser2.setCareer("Java");
-        tbUser2.setEmail("3334444@qq.com");
-        tbUser2.setMobile("18888888888");
-        tbUser2.setName("chengyl");
-        tbUser2.setRealName("程元麟");
-        tbUser2.setPwd("123456");
-        tbUser2.setIsActive(0);
-        tbUser2.setRoleId(3);
-        tbUser2.setId(genId());
-
-        TbUser tbUser3 = new TbUser();
-        tbUser3.setAge(30);
-        tbUser3.setBirth(LocalDateToDate(LocalDate.of(1989, 1, 22)));
-        tbUser3.setCareer("C++");
-        tbUser3.setEmail("5556666@qq.com");
-        tbUser3.setMobile("19988888888");
-        tbUser3.setName("daijiahao");
-        tbUser3.setRealName("戴嘉豪");
-        tbUser3.setPwd("123456");
-        tbUser3.setIsActive(1);
-        tbUser3.setRoleId(2);
-        tbUser3.setId(genId());
-
-        TbUser tbUser4 = new TbUser();
-        tbUser4.setAge(30);
-        tbUser4.setBirth(LocalDateToDate(LocalDate.of(1989, 1, 22)));
-        tbUser4.setCareer("IOS");
-        tbUser4.setEmail("7777888@qq.com");
-        tbUser4.setMobile("13888888888");
-        tbUser4.setName("Smith");
-        tbUser4.setRealName("LiSen");
-        tbUser4.setPwd("123456");
-        tbUser4.setIsActive(1);
-        tbUser4.setRoleId(3);
-        tbUser4.setId(genId());
-
-        TbUser tbUser5 = new TbUser();
-        tbUser5.setAge(24);
-        tbUser5.setBirth(LocalDateToDate(LocalDate.of(1995, 4, 12)));
-        tbUser5.setCareer("JAVA");
-        tbUser5.setEmail("89800@qq.com");
-        tbUser5.setMobile("18355555555");
-        tbUser5.setName("hxf");
-        tbUser5.setRealName("何小飞");
-        tbUser5.setPwd("123456");
-        tbUser5.setIsActive(1);
-        tbUser5.setRoleId(3);
-        tbUser5.setId(genId());
-
-        tbUsers.add(tbUser1);
-        tbUsers.add(tbUser2);
-        tbUsers.add(tbUser3);
-        tbUsers.add(tbUser4);
-        tbUsers.add(tbUser5);
-        tbUserDao.batchSave(tbUsers);
-    }
-```
-
-
-#### sql插入
-```
-@Test
-    public void testInsertWithSql() throws Exception {
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
-        SQL sql = new SQL().insert_into(TbAccount.class, "userName", "realName")
-                .values("test", "测试")
-                .values("test2", "测试2");
-        SQL sql2 = new SQL().insert_into(TbAccount.class, "userName", "realName")
-                .select("name", "realName").from(TbUser.class);
-        SQL sql3 = new SQL().insert_into(TbAccount.class, TbAccount::getUserName, TbAccount::getRealName)
-                .select("name", "realName").from(TbUser.class).gt(TbUser::getIsActive, 0);
-        tbAccountDao.insertWithSql(sql);
-        tbAccountDao.insertWithSql(sql2);
-        tbAccountDao.insertWithSql(sql3);
-    }
-```
-
-#### 更新语句
-```
- @Test
-    public void testUpdate() throws Exception {
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbUserDao tbUserDao = (TbUserDao) ac.getBean("tbUserDao");
-        //更新一个用户
-        TbUser tbUser = tbUserDao.queryOne(new Criteria().and(TbUser::getName, "zhouning"));
-        tbUser.setRealName("周宁宁");
-        tbUser.setEmail("2267431887@qq.com");
-        tbUserDao.update(tbUser);
-        //更新全部用户
-        List<TbUser> tbUsers = tbUserDao.queryAll();
-        for (TbUser tUser : tbUsers) {
-            tUser.setIsActive(1);
-        }
-        tbUserDao.batchUpdate(tbUsers);
-        //SQL更新某个用户:UPDATE tb_user SET realName = '李森',email='1388888888@163.com' where name = 'Smith'
-        tbUserDao.updateWithSql(new SQL().update(TbUser.class).set(TbUser::getRealName, "元林").set(TbUser::getEmail, "13888888888@163.com").where(TbUser::getName, "Smith"));
-        //SQL关联更新:
-        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
-        tbAccountDao.updateWithSql(new SQL().update(TbAccount.class).as("t1").innerJoin(new Joins().with(TbUser.class).as("t2")
-                .on("t1.userName", "t2.name")).set("t1.realName", new FieldReference("t2.realName")));
-    }
-```
-
-#### 基本查询
-```
-@Test
-    public void testQuery() throws Exception {
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbUserDao tbUserDao = (TbUserDao) ac.getBean("tbUserDao");
-        List<TbUser> result1 = tbUserDao.queryAll();
-        TbUser result2 = tbUserDao.queryOne(result1.get(0).getId());
-        System.out.println("queryAll():" + result1);
-        System.out.println("queryOne:" + result2);
-    }
-```
-
 #### 条件查询
 ```
 @Test
@@ -242,6 +99,49 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 
+#### sql插入
+```
+@Test
+    public void testInsertWithSql() throws Exception {
+        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
+        SQL sql = new SQL().insert_into(TbAccount.class, "userName", "realName")
+                .values("test", "测试")
+                .values("test2", "测试2");
+        SQL sql2 = new SQL().insert_into(TbAccount.class, "userName", "realName")
+                .select("name", "realName").from(TbUser.class);
+        SQL sql3 = new SQL().insert_into(TbAccount.class, TbAccount::getUserName, TbAccount::getRealName)
+                .select("name", "realName").from(TbUser.class).gt(TbUser::getIsActive, 0);
+        tbAccountDao.insertWithSql(sql);
+        tbAccountDao.insertWithSql(sql2);
+        tbAccountDao.insertWithSql(sql3);
+    }
+```
+#### 更新数据
+```
+ @Test
+    public void testUpdate() throws Exception {
+        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+        TbUserDao tbUserDao = (TbUserDao) ac.getBean("tbUserDao");
+        //更新一个用户
+        TbUser tbUser = tbUserDao.queryOne(new Criteria().and(TbUser::getName, "zhouning"));
+        tbUser.setRealName("周宁宁");
+        tbUser.setEmail("2267431887@qq.com");
+        tbUserDao.update(tbUser);
+        //更新全部用户
+        List<TbUser> tbUsers = tbUserDao.queryAll();
+        for (TbUser tUser : tbUsers) {
+            tUser.setIsActive(1);
+        }
+        tbUserDao.batchUpdate(tbUsers);
+        //SQL更新某个用户:UPDATE tb_user SET realName = '李森',email='1388888888@163.com' where name = 'Smith'
+        tbUserDao.updateWithSql(new SQL().update(TbUser.class).set(TbUser::getRealName, "元林").set(TbUser::getEmail, "13888888888@163.com").where(TbUser::getName, "Smith"));
+        //SQL关联更新:
+        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
+        tbAccountDao.updateWithSql(new SQL().update(TbAccount.class).as("t1").innerJoin(new Joins().with(TbUser.class).as("t2")
+                .on("t1.userName", "t2.name")).set("t1.realName", new FieldReference("t2.realName")));
+    }
+```
 #### 删除数据
 ```
 @After
@@ -276,55 +176,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         System.out.println(tbAccountDao.queryWithSql(TbAccount.class, new SQL().select("*").from(tbName)).queryList());
     }
 ```
-#### 使用临时表进行查询
-```
-@Test
-    public void testUseTmpTableQuery() throws Exception {
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
-        SQL sql = new SQL().select("*").from(TbAccount.class).as("a")
-                .innerJoin(new Joins().with(tbAccountDao.createWithSql(
-                        new SQL().createTable().temporary()
-                                .addColumn().name("id").integer().primary().notNull().autoIncrement().commit()
-                                .addColumn().name("userName").varchar(50).notNull().commit()
-                                .index().name("ix_userName").column("userName").commit()
-                                .engine(TableEngine.MyISAM).comment("用户临时表").commit()
-                                .select("0", "name").from(TbUser.class)
-                )).as("b").on("a.userName", "b.userName"));
-        List<TbAccount> result = tbAccountDao.queryWithSql(TbAccount.class,sql).queryList();
-        System.out.println(result);
-        System.out.println(result.size());
-    }
-```
-#### 丰富的函数支持,参照FuncBuilder.java
-```
-@Test
-    public void testFunc(){
-        //支持mysql函数拼接
-        //聚集函数
-        SQL s = new SQL().select(count("*"),avg(Token::getSize),max(Token::getSize),min(Token::getSize),sum(Token::getSize)).from(Token.class);
-        //字符串处理函数
-        SQL s2 = new SQL().select(concat(Token::getTk,Token::getSize),length(Token::getTk),charLength(Token::getTk),upper(Token::getTk),lower(Token::getTk)).from(Token.class);
-        //数值处理函数
-        SQL s3 = new SQL().select(abs(Token::getSize),ceil(Token::getSize),floor(Token::getSize)).from(Token.class);
-        //时间处理函数
-        SQL s4 = new SQL().select(curdate(),curtime(),now(),month(curdate()),week(curdate()),minute(curtime()));
 
-        SQL s5 = new SQL().select(formatAs("10000","2").as("a")).from(Book.class);
-
-        Pair<String, Object[]> pair = SqlMakeTools.useSql(s);
-        System.out.println(pair.getFirst());
-        Pair<String, Object[]> pair2 = SqlMakeTools.useSql(s2);
-        System.out.println(pair2.getFirst());
-        Pair<String, Object[]> pair3 = SqlMakeTools.useSql(s3);
-        System.out.println(pair3.getFirst());
-        Pair<String, Object[]> pair4 = SqlMakeTools.useSql(s4);
-        System.out.println(pair4.getFirst());
-        //...more 等着你完善和探索...
-        Pair<String, Object[]> pair5 = SqlMakeTools.useSql(s5);
-        System.out.println(pair5.getFirst());
-    }
-```
 #### 使用临时表优化in查询
 ```
 //before
@@ -360,6 +212,37 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         );
     }    
 ```
+
+#### 丰富的函数支持,参照FuncBuilder.java
+```
+@Test
+    public void testFunc(){
+        //支持mysql函数拼接
+        //聚集函数
+        SQL s = new SQL().select(count("*"),avg(Token::getSize),max(Token::getSize),min(Token::getSize),sum(Token::getSize)).from(Token.class);
+        //字符串处理函数
+        SQL s2 = new SQL().select(concat(Token::getTk,Token::getSize),length(Token::getTk),charLength(Token::getTk),upper(Token::getTk),lower(Token::getTk)).from(Token.class);
+        //数值处理函数
+        SQL s3 = new SQL().select(abs(Token::getSize),ceil(Token::getSize),floor(Token::getSize)).from(Token.class);
+        //时间处理函数
+        SQL s4 = new SQL().select(curdate(),curtime(),now(),month(curdate()),week(curdate()),minute(curtime()));
+
+        SQL s5 = new SQL().select(formatAs("10000","2").as("a")).from(Book.class);
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(s);
+        System.out.println(pair.getFirst());
+        Pair<String, Object[]> pair2 = SqlMakeTools.useSql(s2);
+        System.out.println(pair2.getFirst());
+        Pair<String, Object[]> pair3 = SqlMakeTools.useSql(s3);
+        System.out.println(pair3.getFirst());
+        Pair<String, Object[]> pair4 = SqlMakeTools.useSql(s4);
+        System.out.println(pair4.getFirst());
+        //...more 等着你完善和探索...
+        Pair<String, Object[]> pair5 = SqlMakeTools.useSql(s5);
+        System.out.println(pair5.getFirst());
+    }
+```
+
 
 #### 其他sql的组装
 ```
