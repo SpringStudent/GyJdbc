@@ -336,7 +336,11 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public S having(String funcField, String opt, Object value) {
-        having = SqlMakeTools.doCriteria(new Criteria().where(funcField, opt, value), new StringBuilder());
+        return having(new Criteria().where(funcField, opt, value));
+    }
+
+    public S having(Criteria criteria){
+        having = SqlMakeTools.doCriteria(criteria, new StringBuilder());
         having.setFirst(having.getFirst().replace("WHERE ", ""));
         return self();
     }
