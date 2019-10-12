@@ -401,7 +401,6 @@ public class SqlMakeTools {
      *
      * @param sqlObj sql对象的封装
      * @return Pair 第一个值为Sql,第二个为参数
-     * @throws Pair
      * @author 周宁
      * @version 1.0
      */
