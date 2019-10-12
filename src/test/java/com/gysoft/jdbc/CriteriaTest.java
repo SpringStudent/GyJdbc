@@ -293,5 +293,10 @@ public class CriteriaTest {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from(Book.class).where(Book::getId,"this is a id").groupBy(Book::getNum).having(new Criteria().gt(count("name"),1).or("fix","heihei"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+
     }
 }
