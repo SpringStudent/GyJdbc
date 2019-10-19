@@ -1,7 +1,8 @@
 ### 让天下没有难写的sql
 像使用mongotemplate一样拼接sql。使用jdbcTemplate不想写sql?写XXXDao和XXXDaoImpl很麻烦?
 sql拼错查找问题浪费时间?通过使用GyJdbc这些问题将迎刃而解；支持作者已知的所有类型的SQL拼接
-语法。
+语法（条件查询，连接查询，子查询，基础插入，insert into select语句插入，基础更新，连接多表更新
+，基本删除，连接多表删除，创建表等。。。）。
 
 ### 参与项目
 作者水平有限，很多出代码写的较烂，欢迎提PR优化代码或者对BUG进行修改
