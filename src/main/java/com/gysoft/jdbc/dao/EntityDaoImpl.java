@@ -293,6 +293,9 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             createSql.append("TEMPORARY ");
         }
         createSql.append("TABLE ");
+        if (tableMeta.isIfNotExists()) {
+            createSql.append("IF NOT EXISTS ");
+        }
         createSql.append(tbName);
         insertSql.append(tbName);
         createSql.append("(");
@@ -351,6 +354,30 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         sql.getPair().setFirst(insertSql.toString());
         insertWithSql(sql);
         return tbName;
+    }
+
+    @Override
+    public void drop() throws Exception {
+        jdbcTemplate.execute("DROP TABLE IF EXISTS `" + tableName + "`");
+    }
+
+    @Override
+    public void truncate() throws Exception {
+        jdbcTemplate.execute("TRUNCATE TABLE " + tableName);
+    }
+
+    @Override
+    public void drunk(SQL sql) throws Exception {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        if (sql.getSqlType().equals(EntityDao.SQL_TRUNCATE)) {
+            String truncateSql = pair.getFirst();
+            jdbcTemplate.batchUpdate(truncateSql.split("\n"));
+        } else if (sql.getSqlType().equals(EntityDao.SQL_DROP)) {
+            String dropSql = pair.getFirst();
+            jdbcTemplate.execute(dropSql);
+        } else{
+            throw new RuntimeException("method drunk only support `DROP` AND `TRUNCATE`");
+        }
     }
 
     @Override

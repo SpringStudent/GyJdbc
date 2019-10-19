@@ -256,9 +256,9 @@ public class SqlMakeTools {
                                 }
                             } else if (value instanceof SQL) {
                                 SQL inSql = (SQL) value;
-                                Pair<String,Object[]> inPair = useSql(inSql);
+                                Pair<String, Object[]> inPair = useSql(inSql);
                                 sql.append(inPair.getFirst());
-                                params = ArrayUtils.addAll(params,inPair.getSecond());
+                                params = ArrayUtils.addAll(params, inPair.getSecond());
                             } else {
                                 sql.append(SPACE).append("?");
                                 params = ArrayUtils.add(params, value);
@@ -445,6 +445,29 @@ public class SqlMakeTools {
                 sql.append(SPACE);
                 sql.append(sqlObj.getAliasName());
             }
+        } else if (sqlObj.getSqlType().equals(EntityDao.SQL_TRUNCATE)) {
+            Drunk drunk = sqlObj.getDrunk();
+            Set<String> tables = drunk.getTables();
+            for(String tb : tables){
+                sql.append("TRUNCATE TABLE "+tb+";\n");
+            }
+            return new Pair<>(sql.toString(),null);
+
+        } else if (sqlObj.getSqlType().equals(EntityDao.SQL_DROP)) {
+            Drunk drunk = sqlObj.getDrunk();
+            Set<String> tables = drunk.getTables();
+            sql.append("DROP TABLE ");
+            if(drunk.isIfExists()){
+                sql.append("IF EXISTS ");
+            }
+            if(CollectionUtils.isNotEmpty(tables)){
+                for(String tb : tables){
+                    sql.append(tb+",");
+                }
+                sql.setLength(sql.length()-1);
+            }
+            return new Pair<>(sql.toString(),null);
+
         }
         //连接查询sql组装
         if (CollectionUtils.isNotEmpty(sqlObj.getJoins())) {

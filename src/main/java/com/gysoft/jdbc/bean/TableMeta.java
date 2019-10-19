@@ -7,6 +7,7 @@ import java.util.List;
  * @author 周宁
  */
 public class TableMeta {
+
     /**
      * 表名称
      */
@@ -23,6 +24,10 @@ public class TableMeta {
      * 是否为临时表
      */
     private boolean temporary;
+    /**
+     * 是否判断表的存在与否
+     */
+    private boolean ifNotExists;
 
     private List<ColumnMeta> columns = new ArrayList<>();
 
@@ -74,5 +79,13 @@ public class TableMeta {
 
     public void setTemporary(boolean temporary) {
         this.temporary = temporary;
+    }
+
+    public boolean isIfNotExists() {
+        return ifNotExists;
+    }
+
+    public void setIfNotExists(boolean ifNotExists) {
+        this.ifNotExists = ifNotExists;
     }
 }

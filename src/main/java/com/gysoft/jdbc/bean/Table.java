@@ -28,6 +28,11 @@ public class Table {
         return this;
     }
 
+    public Table ifNotExists(){
+        tableMeta.setIfNotExists(true);
+        return this;
+    }
+
     public Table comment(String comment) {
         tableMeta.setComment(comment);
         return this;
@@ -54,4 +59,5 @@ public class Table {
     TableMeta getTableMeta() {
         return tableMeta;
     }
+
 }

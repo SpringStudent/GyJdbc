@@ -18,6 +18,8 @@ public interface EntityDao<T,Id extends Serializable>{
 	String SQL_INSERT = "insert";
 	String SQL_UPDATE = "update";
 	String SQL_DELETE = "delete";
+	String SQL_TRUNCATE = "truncate";
+	String SQL_DROP = "drop";
 	String SPACE = " ";
 	String SQL_IN = "IN";
 	String SQL_NOT_IN = "NOT IN";
@@ -191,6 +193,26 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @throws Exception
 	 */
 	String createWithSql(SQL sql)throws Exception;
+
+	/**
+	 * 删除表
+	 * @throws Exception
+	 */
+	void drop()throws Exception;
+
+	/**
+	 * 清除表数据和delete不同的是，该方法不需要where
+	 * 条件并且数据一旦清除不可恢复
+	 * @throws Exception
+	 */
+	void truncate()throws Exception;
+
+	/**
+	 * 喝醉了干一些犯浑的事情，比如删除表，清楚数据
+	 * @param sql sql拼接器
+	 * @throws Exception
+	 */
+	void drunk(SQL sql)throws Exception;
 
 	/**
 	 * 绑定指定的dataSource

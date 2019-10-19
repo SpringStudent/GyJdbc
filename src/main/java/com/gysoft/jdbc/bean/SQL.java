@@ -56,6 +56,11 @@ public class SQL extends AbstractCriteria<SQL> {
      */
     private String unionType;
 
+    /**
+     * 喝醉了的，代表人很糊涂删除表或者清楚数据
+     */
+    private Drunk drunk;
+
     public SQL() {
         selectFields = new LinkedHashSet<>();
         kvs = new ArrayList<>();
@@ -195,6 +200,33 @@ public class SQL extends AbstractCriteria<SQL> {
         return insert_into(EntityTools.getTableName(clss), functions);
     }
 
+    public SQL truncate(){
+        sqlType = EntityDao.SQL_TRUNCATE;
+        drunk = new Drunk();
+        return this;
+    }
+
+    public SQL table(String... tables){
+        drunk.setTables(Arrays.stream(tables).collect(Collectors.toSet()));
+        return this;
+    }
+
+    public SQL table(Class... clss){
+        drunk.setTables(Arrays.stream(clss).map(EntityTools::getTableName).collect(Collectors.toSet()));
+        return this;
+    }
+
+    public SQL drop(){
+        sqlType = EntityDao.SQL_DROP;
+        drunk = new Drunk();
+        return this;
+    }
+
+    public SQL ifExists(){
+        drunk.setIfExists(true);
+        return this;
+    }
+
     public SQL set(String key, Object value) {
         kvs.add(new Pair(key, value));
         return this;
@@ -307,5 +339,13 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public void setUnionType(String unionType) {
         this.unionType = unionType;
+    }
+
+    public Drunk getDrunk() {
+        return drunk;
+    }
+
+    public void setDrunk(Drunk drunk) {
+        this.drunk = drunk;
     }
 }

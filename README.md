@@ -244,7 +244,18 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         System.out.println(pair5.getFirst());
     }
 ```
-
+#### 删除表或者清理表
+```
+@Test
+    public void testDrunk() throws Exception {
+        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
+        SQL sql = new SQL().truncate().table("test","test2","test3");
+        tbAccountDao.drunk(sql);
+        SQL sql2 = new SQL().drop().table("test4","test5").ifExists();
+        tbAccountDao.drunk(sql2);
+    }
+```
 
 #### 其他sql的组装
 ```
@@ -436,4 +447,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 18.0.0 修复union()和unionAll()方法中子查询的bug
 - 18.1.0 支持in(key,sql)语法
 - 18.2.0 支持having(Criteria criteria)语法
+- 18.3.0 添加truncate()和drop()和drunk(SQL sql)方法删除表或者清理数据
 ### 当前版本18.2.0
