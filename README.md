@@ -179,6 +179,33 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
     }
 ```
 
+#### 删除表或者清理表
+```
+   @Test
+    public void testDrunk() throws Exception {
+        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
+        SQL sql = new SQL().truncate().table("test","test2","test3");
+        tbAccountDao.drunk(sql);
+        SQL sql2 = new SQL().drop().table("test4","test5").ifExists();
+        tbAccountDao.drunk(sql2);
+    }
+    
+   @Test
+    public void testTruncate() throws Exception {
+        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
+        tbAccountDao.truncate();
+    }
+
+    @Test
+    public void testDrop() throws Exception {
+        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
+        tbAccountDao.drop();
+    }    
+```
+
 #### 使用临时表优化in查询
 ```
 //before
@@ -242,18 +269,6 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         //...more 等着你完善和探索...
         Pair<String, Object[]> pair5 = SqlMakeTools.useSql(s5);
         System.out.println(pair5.getFirst());
-    }
-```
-#### 删除表或者清理表
-```
-@Test
-    public void testDrunk() throws Exception {
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
-        SQL sql = new SQL().truncate().table("test","test2","test3");
-        tbAccountDao.drunk(sql);
-        SQL sql2 = new SQL().drop().table("test4","test5").ifExists();
-        tbAccountDao.drunk(sql2);
     }
 ```
 
