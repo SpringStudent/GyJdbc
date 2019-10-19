@@ -234,7 +234,7 @@ public class CriteriaTest {
         System.out.println(Arrays.toString(pair.getSecond()));
         //DELETE orders,items FROM orders,items
         //WHERE orders.userid = items.userid  AND orders.orderid = items.orderid AND orders.date <= ?
-        sql = new SQL().delete("orders,items")
+        sql = new SQL().delete("orders,items").from("orders,items")
                 .where("orders.userid", new FieldReference("items.userid "))
                 .and("orders.orderid", new FieldReference("items.orderid"))
                 .let("orders.date", "2000/03/01");
@@ -288,7 +288,7 @@ public class CriteriaTest {
 
     @Test
     public void testInSql(){
-        SQL sql = new SQL().select("*").from(Book.class).in(Book::getId,new SQL().select("id").from("author").where("f1",123).in("f2",Arrays.asList("g","l")))
+        SQL sql = new SQL().select("*").from(Book.class).notIn(Book::getId,new SQL().select("id").from("author").where("f1",123).in("f2",Arrays.asList("g","l")))
                 .andCriteria(new Criteria().and(Book::getName,"name1").or(Book::getNum,"asdsd"));
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());

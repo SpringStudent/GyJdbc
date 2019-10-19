@@ -289,6 +289,14 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return this.where(TypeFunction.getLambdaColumnName(function), "NOT IN", args);
     }
 
+    public S notIn(String key, SQL sql) {
+        return this.where(key, "NOT IN", sql);
+    }
+
+    public <T, R> S notIn(TypeFunction<T, R> function, SQL sql) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "NOT IN", sql);
+    }
+
     public S betweenAnd(String key, Object v1, Object v2) {
         return this.where(key, "BETWEEN ? AND ?", new Pair<>(v1, v2));
     }
