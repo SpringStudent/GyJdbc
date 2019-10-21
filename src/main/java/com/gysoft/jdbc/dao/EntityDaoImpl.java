@@ -358,7 +358,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public void drop() throws Exception {
-        jdbcTemplate.execute("DROP TABLE IF EXISTS `" + tableName + "`");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS " + tableName);
     }
 
     @Override
