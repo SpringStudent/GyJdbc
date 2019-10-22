@@ -309,7 +309,7 @@ public class SQL extends AbstractCriteria<SQL> {
         return pair;
     }
 
-    public Table createTable() {
+    public Table create() {
         return new Table(this);
     }
 

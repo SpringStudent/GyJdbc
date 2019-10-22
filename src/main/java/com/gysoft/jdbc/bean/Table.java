@@ -23,7 +23,7 @@ public class Table {
         return this;
     }
 
-    public Table name(String name) {
+    public Table table(String name) {
         tableMeta.setName(name);
         return this;
     }

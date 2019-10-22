@@ -464,4 +464,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 18.2.0 支持having(Criteria criteria)语法
 - 18.3.0 添加truncate()和drop()和drunk(SQL sql)方法删除表或者清理数据
 - 18.4.0 修改drop对表名称的处理
-### 当前版本18.4.0
+- 18.5.0 修改创建表sql拼接习惯
+### 当前版本:maven repostiroy搜索gyjdbc

@@ -163,7 +163,7 @@ public class CriteriaTest {
 
     @Test
     public void testCreate() throws Exception {
-        SQL sql = new SQL().createTable().name("halou").temporary()
+        SQL sql = new SQL().create().table("halou").temporary()
                 .addColumn().name("id").integer().notNull().primary().autoIncrement().comment("主键").commit()
                 .addColumn().name("name").varchar(5).notNull().comment("名称").defaults("").commit()
                 .addColumn().name("age").tinyint().notNull().commit()
@@ -297,6 +297,5 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-
     }
 }
