@@ -163,7 +163,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 ```
 @Test
     public void testCreateTable() throws Exception {
-        SQL sql = new SQL().createTable()
+        SQL sql = new SQL().create().table("tb_tmp_account")
                 .addColumn().name("id").integer().notNull().autoIncrement().primary().comment("主键").commit()
                 .addColumn().name("userName").varchar(50).notNull().comment("账号").commit()
                 .addColumn().name("realName").varchar(50).defaultNull().comment("真实名称").commit()
@@ -230,7 +230,7 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
         return projectUserDao.queryMapWithSql(
                 new SQL().select(concat("a.projectId","a.userName"),"a.career").from(ProjectUser.class).as("a")
                         .innerJoin(new Joins().with(
-                                projectUserDao.createWithSql(new SQL().createTable().temporary()
+                                projectUserDao.createWithSql(new SQL().create().temporary()
                                         .addColumn().name("id").primary().integer().notNull().autoIncrement().commit()
                                         .addColumn().name("projectId").varchar(32).notNull().commit()
                                         .addColumn().name("userName").varchar(50).notNull().commit()
