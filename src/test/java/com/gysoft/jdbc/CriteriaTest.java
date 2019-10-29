@@ -297,5 +297,11 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+
+        sql = new SQL().select("*").from("test").as("t").natureJoin(new Joins().with("test1").as("t1"))
+                .where("t1.id",new FieldReference("t.id"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
     }
 }

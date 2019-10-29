@@ -1031,4 +1031,25 @@ public class FuncBuilder {
         return date(TypeFunction.getLambdaColumnName(function));
     }
 
+    private static class JsonExtract extends AbstractFuncBuilder {
+        private JsonExtract(String field, String $key) {
+            this.funcSql = "json_extract(" + field + ",'" + $key + "')";
+        }
+    }
+
+    public static String jsonExtract(String field, String $key) {
+        return "json_extract(" + field + ",'" + $key + "')";
+    }
+
+    public static <T, R> String jsonExtract(TypeFunction<T, R> function, String $key) {
+        return jsonExtract(TypeFunction.getLambdaColumnName(function), $key);
+    }
+
+    public static AbstractFuncBuilder jsonExtractAs(String field, String $key) {
+        return new JsonExtract(field, $key);
+    }
+
+    public static <T, R> AbstractFuncBuilder jsonExtractAs(TypeFunction<T, R> function, String $key) {
+        return new JsonExtract(TypeFunction.getLambdaColumnName(function), $key);
+    }
 }

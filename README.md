@@ -465,4 +465,5 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
 - 18.3.0 添加truncate()和drop()和drunk(SQL sql)方法删除表或者清理数据
 - 18.4.0 修改drop对表名称的处理
 - 18.5.0 修改创建表sql拼接习惯
+- 18.6.0 添加json_extract函数的支持
 ### 当前版本:maven repostiroy搜索gyjdbc
