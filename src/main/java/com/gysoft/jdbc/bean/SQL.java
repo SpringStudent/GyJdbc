@@ -42,7 +42,7 @@ public class SQL extends AbstractCriteria<SQL> {
     /**
      * 被查询的字段
      */
-    private Set<String> selectFields;
+    private List<Object> selectFields;
     /**
      * sql插入
      */
@@ -62,7 +62,7 @@ public class SQL extends AbstractCriteria<SQL> {
     private Drunk drunk;
 
     public SQL() {
-        selectFields = new LinkedHashSet<>();
+        selectFields = new ArrayList<>();
         kvs = new ArrayList<>();
         joins = new ArrayList<>();
         subSqls = new ArrayList<>();
@@ -99,11 +99,11 @@ public class SQL extends AbstractCriteria<SQL> {
         return next;
     }
 
-    public Set<String> getSelectFields() {
+    public List<Object> getSelectFields() {
         return selectFields;
     }
 
-    public void setSelectFields(Set<String> selectFields) {
+    public void setSelectFields(List<Object> selectFields) {
         this.selectFields = selectFields;
     }
 
@@ -139,7 +139,7 @@ public class SQL extends AbstractCriteria<SQL> {
         this.subSqls = subSqls;
     }
 
-    public SQL select(String... fields) {
+    public SQL select(Object... fields) {
         selectFields.addAll(Arrays.asList(fields));
         this.sqlType = EntityDao.SQL_SELECT;
         return this;

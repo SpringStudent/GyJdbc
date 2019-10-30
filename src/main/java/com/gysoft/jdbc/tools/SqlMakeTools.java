@@ -411,7 +411,15 @@ public class SqlMakeTools {
         if (sqlObj.getSqlType().equals(EntityDao.SQL_SELECT)) {
             sql.append("SELECT ");
             if (CollectionUtils.isNotEmpty(sqlObj.getSelectFields())) {
-                sqlObj.getSelectFields().forEach(selectField -> sql.append(selectField + ", "));
+                List<Object> selects = sqlObj.getSelectFields();
+                for (Object obj : selects) {
+                    if(obj instanceof ValueReference){
+                        sql.append("?, ");
+                        params = ArrayUtils.add(params, ((ValueReference) obj).getValue());
+                    }else{
+                        sql.append(obj.toString() + ", ");
+                    }
+                }
                 sql.setLength(sql.length() - 2);
             }
             sql.append(" FROM ");
@@ -448,25 +456,25 @@ public class SqlMakeTools {
         } else if (sqlObj.getSqlType().equals(EntityDao.SQL_TRUNCATE)) {
             Drunk drunk = sqlObj.getDrunk();
             Set<String> tables = drunk.getTables();
-            for(String tb : tables){
-                sql.append("TRUNCATE TABLE "+tb+";\n");
+            for (String tb : tables) {
+                sql.append("TRUNCATE TABLE " + tb + ";\n");
             }
-            return new Pair<>(sql.toString(),null);
+            return new Pair<>(sql.toString(), null);
 
         } else if (sqlObj.getSqlType().equals(EntityDao.SQL_DROP)) {
             Drunk drunk = sqlObj.getDrunk();
             Set<String> tables = drunk.getTables();
             sql.append("DROP TABLE ");
-            if(drunk.isIfExists()){
+            if (drunk.isIfExists()) {
                 sql.append("IF EXISTS ");
             }
-            if(CollectionUtils.isNotEmpty(tables)){
-                for(String tb : tables){
-                    sql.append(tb+",");
+            if (CollectionUtils.isNotEmpty(tables)) {
+                for (String tb : tables) {
+                    sql.append(tb + ",");
                 }
-                sql.setLength(sql.length()-1);
+                sql.setLength(sql.length() - 1);
             }
-            return new Pair<>(sql.toString(),null);
+            return new Pair<>(sql.toString(), null);
 
         }
         //连接查询sql组装

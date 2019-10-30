@@ -114,9 +114,12 @@ Demo: https://github.com/SpringStudent/GyJdbcTest
                 .select("name", "realName").from(TbUser.class);
         SQL sql3 = new SQL().insert_into(TbAccount.class, TbAccount::getUserName, TbAccount::getRealName)
                 .select("name", "realName").from(TbUser.class).gt(TbUser::getIsActive, 0);
+        SQL sql4 = new SQL().insert_into(TbAccount.class, "userName", "realName")
+                        .select(new ValueReference("laoda"),new ValueReference("老大")).from("dual");        
         tbAccountDao.insertWithSql(sql);
         tbAccountDao.insertWithSql(sql2);
         tbAccountDao.insertWithSql(sql3);
+        tbAccountDao.insertWithSql(sql4);
     }
 ```
 #### 更新数据

@@ -303,5 +303,10 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+
+        sql = new SQL().select("id,name,value",new ValueReference(1),new ValueReference(new Date())).from("test").where(Book::getId,"this is a id");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
     }
 }
