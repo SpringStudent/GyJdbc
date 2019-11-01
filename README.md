@@ -17,7 +17,8 @@
 欢迎联系author微信:z2267431887 或者你可以自己修复
 
 ### 不会用
-https://github.com/SpringStudent/GyJdbcTest
+- https://github.com/SpringStudent/GyJdbcTest
+- 或者参考com.gysoft.jdbc.CriteriaTest类中的Sql
 
 #### 条件查询
 ```
