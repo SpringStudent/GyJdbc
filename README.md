@@ -1,5 +1,5 @@
 ### 让天下没有难写的sql
-面向对象的SQL拼接，降低拼接sql出错概率，链式sql配合lambda表达式，真的巴适；支持作者已知的所有类型的SQL拼接
+面向对象的SQL拼接，降低拼接sql出错概率，链式sql配合lambda表达式。支持作者已知的所有类型的SQL拼接
 语法（条件查询，连接查询，临时表查询，子查询，基础插入，insert into select语句插入，基础更新，连接多表更新
 ，基本删除，连接多表删除，创建表，删除表，truncate表等。。。），支持多数据源。
 
@@ -10,8 +10,14 @@
 - jdk1.8+
 - mysql
 
-### 如何使用
-Demo: https://github.com/SpringStudent/GyJdbcTest
+### 谁在用
+一家不知名的创业公司
+
+### 踩到坑
+欢迎联系author微信:z2267431887 或者你可以自己修复
+
+### 不会用
+https://github.com/SpringStudent/GyJdbcTest
 
 #### 条件查询
 ```
