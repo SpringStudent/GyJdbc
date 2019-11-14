@@ -20,6 +20,9 @@
 - https://github.com/SpringStudent/GyJdbcTest
 - 或者参考com.gysoft.jdbc.CriteriaTest类中的Sql
 
+### 规划中
+多数据源的负载均衡实现
+
 #### 条件查询
 ```
 @Test
@@ -476,6 +479,5 @@
 - 18.4.0 修改drop对表名称的处理
 - 18.5.0 修改创建表sql拼接习惯
 - 18.6.0 添加json_extract函数的支持
-- 18.7.0 insert into select语句增强实现
 - 18.7.0 insert into select语句增强实现
 ### 当前版本:maven repostiroy搜索gyjdbc
