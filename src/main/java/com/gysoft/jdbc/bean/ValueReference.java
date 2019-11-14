@@ -18,4 +18,5 @@ public class ValueReference {
     public ValueReference(Object value) {
         this.value = value;
     }
+
 }

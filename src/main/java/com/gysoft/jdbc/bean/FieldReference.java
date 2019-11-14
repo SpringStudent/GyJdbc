@@ -21,5 +21,4 @@ public class FieldReference {
     public void setField(String field) {
         this.field = field;
     }
-
 }

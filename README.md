@@ -477,4 +477,5 @@
 - 18.5.0 修改创建表sql拼接习惯
 - 18.6.0 添加json_extract函数的支持
 - 18.7.0 insert into select语句增强实现
+- 18.7.0 insert into select语句增强实现
 ### 当前版本:maven repostiroy搜索gyjdbc

@@ -4,6 +4,7 @@ import com.gysoft.jdbc.annotation.Table;
 import com.gysoft.jdbc.bean.*;
 import com.gysoft.jdbc.dao.EntityDao;
 import com.gysoft.jdbc.dao.EntityDaoImpl;
+import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.lang.ArrayUtils;
 import org.junit.Test;
@@ -95,7 +96,7 @@ public class CriteriaTest {
         System.out.println(ArrayUtils.toString(sqlParamPair.getSecond()));
     }
 
-    @Table(name = "tb_book")
+    @Table
     private class Book {
         private String id;
         private String name;
@@ -132,6 +133,16 @@ public class CriteriaTest {
 
     private class BookDaoImpl extends EntityDaoImpl<Book, String> implements BookDao {
 
+    }
+
+    @Table
+    public static  class TableTest{
+
+    }
+
+    @Test
+    public void testAnnotation(){
+        System.out.println(EntityTools.getTableName(TableTest.class));
     }
 
     @Test

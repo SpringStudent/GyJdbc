@@ -114,6 +114,4 @@ public class Column {
         table.getTableMeta().getColumns().add(this.columnMeta);
         return table;
     }
-
-
 }
