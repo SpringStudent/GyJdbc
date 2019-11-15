@@ -336,7 +336,7 @@
 ```
 @BindPoint(group = "slaveGroup",loadBalance = RandomLoadBalance.class)
 或者
-xxxDao.bindPoint("slaveGroup").queryXxx();
+xxxDao.bindGroup("slaveGroup").queryXxx();
 ```
 #### 绑定到指定数据源
 ```
