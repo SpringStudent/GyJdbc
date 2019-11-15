@@ -378,5 +378,5 @@ xxxDao.bindKey("slaveGroup").queryXxx();
 - 18.6.0 添加json_extract函数的支持
 - 18.7.0 insert into select语句增强实现
 - 19.0.0 多数据源重构，添加负载均衡策略的实现
-- 19.1.0 多数据源重构，添加负载均衡策略的实现
+- 19.1.0 多数据源BUG修复
 ### 当前版本:maven repostiroy搜索gyjdbc
