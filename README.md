@@ -20,9 +20,6 @@
 - https://github.com/SpringStudent/GyJdbcTest
 - 或者参考com.gysoft.jdbc.CriteriaTest类中的Sql
 
-### 规划中
-多数据源的负载均衡实现
-
 #### 条件查询
 ```
 @Test
@@ -259,18 +256,11 @@
 ```
 @Test
     public void testFunc(){
-        //支持mysql函数拼接
-        //聚集函数
         SQL s = new SQL().select(count("*"),avg(Token::getSize),max(Token::getSize),min(Token::getSize),sum(Token::getSize)).from(Token.class);
-        //字符串处理函数
         SQL s2 = new SQL().select(concat(Token::getTk,Token::getSize),length(Token::getTk),charLength(Token::getTk),upper(Token::getTk),lower(Token::getTk)).from(Token.class);
-        //数值处理函数
         SQL s3 = new SQL().select(abs(Token::getSize),ceil(Token::getSize),floor(Token::getSize)).from(Token.class);
-        //时间处理函数
         SQL s4 = new SQL().select(curdate(),curtime(),now(),month(curdate()),week(curdate()),minute(curtime()));
-
         SQL s5 = new SQL().select(formatAs("10000","2").as("a")).from(Book.class);
-
         Pair<String, Object[]> pair = SqlMakeTools.useSql(s);
         System.out.println(pair.getFirst());
         Pair<String, Object[]> pair2 = SqlMakeTools.useSql(s2);
@@ -279,87 +269,11 @@
         System.out.println(pair3.getFirst());
         Pair<String, Object[]> pair4 = SqlMakeTools.useSql(s4);
         System.out.println(pair4.getFirst());
-        //...more 等着你完善和探索...
         Pair<String, Object[]> pair5 = SqlMakeTools.useSql(s5);
         System.out.println(pair5.getFirst());
     }
 ```
 
-#### 其他sql的组装
-```
-    @Test
-    public void testOtherSql() {
-        //UPDATE test SET id = ?, name = ? WHERE pid = ?
-        SQL sql = new SQL().update("test").set("id", 1).set("name", "asd").where("pid", 15);
-        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        //UPDATE test t1
-        // INNER JOIN
-        // tb_test t2  ON t1.id = t2.id  AND t1.id = ? SET t1.id = ?, t1.id = ? WHERE t1.id IN(?,?)
-        sql = new SQL().update("test").as("t1").innerJoin(new Joins().with("tb_test").as("t2")
-                .on("t1.id", "t2.id").and("t1.id", "=", 123)).set("t1.id", "t2.pid")
-                .set("t1.id", 123).in("t1.id", Arrays.asList("id1", "id2"));
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        //DELETE FROM test WHERE id = ?
-        sql = new SQL().delete().from("test").where("id", 1);
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        //DELETE t1 FROM tb_table t1
-        // INNER JOIN
-        //tmp_table t2  ON t2.moduletype  = t1.moduletype  AND t2.unitqdkey = t1.unitqdkey  WHERE t1.unid = ? AND t1.epid = ?
-        sql = new SQL().delete("t1").from("tb_table")
-                .innerJoin(new Joins().with("tmp_table").as("t2").on("t2.moduletype ", "t1.moduletype")
-                        .on("t2.unitqdkey", "t1.unitqdkey")).where("t1.unid", "iiods").and("t1.epid", 9192);
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        //DELETE FROM test WHERE id = ?
-        sql = new SQL().delete().from("test").where("id", 1);
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        //UPDATE test t1 INNER JOIN tb_test t2  ON t1.id = t2.id  AND t1.id = ?
-        //INNER JOIN
-        //test_tb t3  ON t1.id = t3.id  AND t1.id = ? SET t1.id = t2.pid, t1.id = t3.cid, t1.id = ? WHERE t1.id IN(?,?)
-        sql = new SQL().update("test").as("t1")
-                .innerJoin(new Joins().with("tb_test").as("t2").on("t1.id", "t2.id").and("t1.id", "=", "id1"))
-                .innerJoin(new Joins().with("test_tb").as("t3").on("t1.id", "t3.id").and("t1.id", "=", "id1"))
-                .set("t1.id", new FieldReference("t2.pid")).set("t1.id", new FieldReference("t3.cid")).set("t1.id", "id2").in("t1.id", Arrays.asList("id3", "id4"));
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        //UPDATE student s , class c  SET s.class_name = ?, c.stu_name = ? WHERE s.class_id = c.id
-        sql = new SQL().update("student").as("s")
-                .natureJoin(new Joins().with("class").as("c"))
-                .set("s.class_name","test00").set("c.stu_name","test00")
-                .where("s.class_id",new FieldReference("c.id"));
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        //DELETE orders,items FROM orders,items
-        //WHERE orders.userid = items.userid  AND orders.orderid = items.orderid AND orders.date <= ?
-        sql = new SQL().delete("orders,items")
-                .where("orders.userid",new FieldReference("items.userid "))
-                .and("orders.orderid",new FieldReference("items.orderid"))
-                .let("orders.date","2000/03/01");
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        //DELETE FROM orders,items
-        // WHERE orders.userid = items.userid  AND orders.orderid = items.orderid AND orders.date <= ?
-        sql = new SQL().delete().from("orders,items")
-                .where("orders.userid",new FieldReference("items.userid "))
-                .and("orders.orderid",new FieldReference("items.orderid"))
-                .let("orders.date","2000/03/01");
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-    }
-```
 #### 动态数据源切换
 ##### 使用须知 方法选择数据源的优先级
 ```
@@ -418,6 +332,19 @@
         <property name="dataSource" ref="dataSource"/>
     </bean>
 ```
+#### 绑定到一组数据源
+```
+@BindPoint(group = "slaveGroup",loadBalance = RandomLoadBalance.class)
+或者
+xxxDao.bindPoint("slaveGroup").queryXxx();
+```
+#### 绑定到指定数据源
+```
+@BindPoint(key = "slaveGroup")
+或者
+xxxDao.bindKey("slaveGroup").queryXxx();
+```
+
 
 ### 版本更新
 - 10.1.0 修复union查询和子查询的sql无大括号导致报错bug
