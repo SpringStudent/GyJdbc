@@ -1,6 +1,7 @@
 package com.gysoft.jdbc.dao;
 
 import com.gysoft.jdbc.bean.*;
+import com.gysoft.jdbc.multi.LoadBalance;
 import org.springframework.jdbc.core.ResultSetExtractor;
 
 import java.io.Serializable;
@@ -215,24 +216,26 @@ public interface EntityDao<T,Id extends Serializable>{
 	void drunk(SQL sql)throws Exception;
 
 	/**
-	 * 绑定指定的dataSource
+	 * 绑定指定key的数据源
 	 * @param bindKey 数据源dataSource
 	 * @return EntityDao 当前的dao对象
 	 * @throws Exception
 	 */
-	EntityDao<T,Id> bindPoint(String bindKey)throws Exception;
-
+	EntityDao<T,Id> bindKey(String bindKey)throws Exception;
 	/**
-	 * 绑定master的dataSource
+	 * 绑定指定组的数据源
+	 * @param group 指定的数据源组
+	 * @param loadBalance 负载均衡策略
 	 * @return EntityDao 当前的dao对象
 	 * @throws Exception
 	 */
-	EntityDao<T,Id> bindMaster()throws Exception;
+	EntityDao<T,Id> bindGroup(String group, Class<? extends LoadBalance> loadBalance)throws Exception;
 
 	/**
-	 * 绑定slave的dataSource
+	 * 绑定指定组的数据源
+	 * @param group 指定的数据源组
 	 * @return EntityDao 当前的dao对象
 	 * @throws Exception
 	 */
-	EntityDao<T,Id> bindSlave()throws Exception;
+	EntityDao<T,Id> bindGroup(String group)throws Exception;
 }

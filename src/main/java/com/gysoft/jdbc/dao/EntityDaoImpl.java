@@ -2,8 +2,10 @@ package com.gysoft.jdbc.dao;
 
 
 import com.gysoft.jdbc.bean.*;
-import com.gysoft.jdbc.multi.BindPointType;
-import com.gysoft.jdbc.multi.DataSourceIdHolder;
+import com.gysoft.jdbc.multi.DataSourceBind;
+import com.gysoft.jdbc.multi.DataSourceBindHolder;
+import com.gysoft.jdbc.multi.LoadBalance;
+import com.gysoft.jdbc.multi.RoundbinLoadBalance;
 import com.gysoft.jdbc.tools.CollectionUtil;
 import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
@@ -375,26 +377,25 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         } else if (sql.getSqlType().equals(EntityDao.SQL_DROP)) {
             String dropSql = pair.getFirst();
             jdbcTemplate.execute(dropSql);
-        } else{
+        } else {
             throw new RuntimeException("method drunk only support `DROP` AND `TRUNCATE`");
         }
     }
 
     @Override
-    public EntityDaoImpl<T, Id> bindPoint(String bindKey) throws Exception {
-        DataSourceIdHolder.setDataSource(bindKey, BindPointType.ByMethod);
+    public EntityDaoImpl<T, Id> bindKey(String bindKey) throws Exception {
+        DataSourceBindHolder.setDataSource(DataSourceBind.bindKey(bindKey));
         return this;
     }
 
     @Override
-    public EntityDaoImpl<T, Id> bindMaster() throws Exception {
-        DataSourceIdHolder.setDataSource(DataSourceIdHolder.MASTER, BindPointType.ByMethod);
+    public EntityDao<T, Id> bindGroup(String group, Class<? extends LoadBalance> loadBalance) throws Exception {
+        DataSourceBindHolder.setDataSource(DataSourceBind.bindGroup(group, loadBalance));
         return this;
     }
 
     @Override
-    public EntityDaoImpl<T, Id> bindSlave() throws Exception {
-        DataSourceIdHolder.setDataSource(DataSourceIdHolder.SLAVE, BindPointType.ByMethod);
-        return this;
+    public EntityDao<T, Id> bindGroup(String group) throws Exception {
+        return bindGroup(group, RoundbinLoadBalance.class);
     }
 }

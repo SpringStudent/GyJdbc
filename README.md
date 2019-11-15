@@ -363,10 +363,9 @@
 #### 动态数据源切换
 ##### 使用须知 方法选择数据源的优先级
 ```
-   entityDao.bindXXX()>@BindPoint()>GyJdbcRoutingDataSource.defaultLookUpKey
+   entityDao.bindXXX()>@BindPoint>GyJdbcRoutingDataSource.defaultLookUpKey
 ```
-1. applicationContext的配置
-
+#### 多数据源配置
 ```
  <bean id="sourceDs" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
         <!-- 数据库基本信息配置 -->
@@ -393,61 +392,32 @@
     </bean>
     
     <!-- 配置多数据源的支持对象-->
-    <bean id="dataSource" class="com.gysoft.jdbc.multi.GyJdbcRoutingDataSource">
-        <property name="targetDataSources">
-            <map>
-                //此处targetDataSources的entry key如果不是配置的master、
-                //slave那么在下文使用dao的bindMaster()、bindSlave()
-                //方法会获取不到数据源，这时候可以通过bindPoint(String ds)
-                //方法去获取配置的数据源
-                <entry key="master" value-ref="sourceDs"/>
-                <entry key="slave" value-ref="targetDs"/>
-                <entry key="slave2" value-ref="thirdDs"/>
-            </map>
-        </property>
-        //在没有调用tbAccountDao.bindxxx()方法时并且对应的service类的方法
-        //上没有@BindPoint注解 此时指定一个默认的数据源的key
-        <property name="defaultLookUpKey" value="slave"/>
-    </bean>
+    <bean id="dataSource" class="com.gysoft.jdbc.multi.JdbcRoutingDataSource">
+            <property name="targetDataSources">
+                //数据源配置
+                <map>
+                    <entry key="master" value-ref="sourceDs"/>
+                    <entry key="slave" value-ref="targetDs"/>
+                    <entry key="slave2" value-ref="nightDs"/>
+                </map>
+            </property>
+            //数据源分组配置
+            <property name="dataSourceKeysGroup">
+                <map>
+                    <entry key="masterGroup" value="master"/>
+                    <entry key="slaveGroup" value="slave,slave2"/>
+                </map>
+            </property>
+            //在没有@BindPoint注解的类或方法上，也没有通过bindKey或者bindGroup方法
+            //指定数据源的情况下，此时指定一个默认的数据源的key
+            <property name="defaultLookUpKey" value="master"/>
+        </bean>
 
     <!-- 数据目标jdbcTemplate -->
     <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
         <property name="dataSource" ref="dataSource"/>
     </bean>
 ```
-2.sql级别的数据源切换：在调用方法的时候指定数据源master、slave
-
-```
- @Test
-    public void testMasterSlave() throws Exception {
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
-        //没有调用bindxxx()方法数据源为defaultLookUpKey配置的slave
-        System.out.println("common query"+tbAccountDao.queryAll());
-        //使用master数据源
-        System.out.println("Master query"+tbAccountDao.bindMaster().queryAll());
-        //使用slave数据源
-        System.out.println("Slave query"+tbAccountDao.bindSlave().queryAll());
-        //使用slave2数据源
-        System.out.println("Slave2 query"+tbAccountDao.bindPoint("slave2").queryAll());
-        //使用slave
-        System.out.println("common query"+tbAccountDao.queryAll());
-    }
-```
-
-3.方法级别的数据源切换：通过使用@BindPoint注解
-```
-@Override
-    @BindPoint("master")
-    public void bindDataSource() throws Exception {
-        System.out.println("common query"+tbAccountDao.queryAll());
-        System.out.println("Master query"+tbAccountDao.bindMaster().queryAll());
-        System.out.println("Slave query"+tbAccountDao.bindSlave().queryAll());
-        System.out.println("Slave2 query"+tbAccountDao.bindPoint("slave2").queryAll());
-        System.out.println("common query"+tbAccountDao.queryAll());
-    }
-```
-
 
 ### 版本更新
 - 10.1.0 修复union查询和子查询的sql无大括号导致报错bug
@@ -480,4 +450,5 @@
 - 18.5.0 修改创建表sql拼接习惯
 - 18.6.0 添加json_extract函数的支持
 - 18.7.0 insert into select语句增强实现
+- 19.0.0 多数据源重构，添加负载均衡策略的实现
 ### 当前版本:maven repostiroy搜索gyjdbc

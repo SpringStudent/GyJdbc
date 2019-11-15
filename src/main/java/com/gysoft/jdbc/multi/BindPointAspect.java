@@ -15,24 +15,32 @@ import java.lang.reflect.Method;
 public class BindPointAspect {
 
     @Pointcut("@annotation(com.gysoft.jdbc.multi.BindPoint)")
-    public void dataSourceChange() {
+    public void processMethod() {
     }
 
-    @Around("dataSourceChange()")
+    @Pointcut("@within(com.gysoft.jdbc.multi.BindPoint)")
+    public void processClass() {
+    }
+
+    @Around("processMethod()||processClass()")
     public Object around(ProceedingJoinPoint point) throws Throwable {
         Object object = point.getTarget();
+        BindPoint classBindPoint = object.getClass().getAnnotation(BindPoint.class);
+        if (classBindPoint != null) {
+            DataSourceBindHolder.setDataSource(DataSourceBind.bindPoint(classBindPoint));
+        }
         String methodName = point.getSignature().getName();
-        MethodSignature methodSignature = ((MethodSignature)point.getSignature());
+        MethodSignature methodSignature = ((MethodSignature) point.getSignature());
         Class<?>[] parameterTypes = methodSignature.getMethod().getParameterTypes();
         Method method = object.getClass().getMethod(methodName, parameterTypes);
-        BindPoint bindPoint = method.getAnnotation(BindPoint.class);
-        if (bindPoint != null) {
-            DataSourceIdHolder.setDataSource(bindPoint.value(), BindPointType.ByAnno);
+        BindPoint methodBindPoint = method.getAnnotation(BindPoint.class);
+        if (methodBindPoint != null) {
+            DataSourceBindHolder.setDataSource(DataSourceBind.bindPoint(methodBindPoint));
         }
         try {
             return point.proceed();
         } finally {
-            DataSourceIdHolder.clearDataSource();
+            DataSourceBindHolder.clearDataSource();
         }
     }
 }
