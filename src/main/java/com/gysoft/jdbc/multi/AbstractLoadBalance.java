@@ -23,7 +23,7 @@ public abstract class AbstractLoadBalance implements LoadBalance {
             return null;
         }
         String keys = dataSourceKeysGroup.get(group);
-        if (StringUtils.isNotEmpty(group)) {
+        if (StringUtils.isNotEmpty(keys)) {
             List<String> list = Arrays.asList(keys.split(","));
             if (list.size() == 1) {
                 return list.get(0);
