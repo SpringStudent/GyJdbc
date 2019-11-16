@@ -379,4 +379,5 @@ xxxDao.bindKey("slaveGroup").queryXxx();
 - 18.7.0 insert into select语句增强实现
 - 19.0.0 多数据源重构，添加负载均衡策略的实现
 - 19.1.0 多数据源BUG修复
+- 19.2.0 添加Dual类，用于支持select 1 from dual这种语句
 ### 当前版本:maven repostiroy搜索gyjdbc

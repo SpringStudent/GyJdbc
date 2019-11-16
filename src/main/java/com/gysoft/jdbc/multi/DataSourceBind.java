@@ -65,9 +65,9 @@ public class DataSourceBind {
         if(StringUtils.isNotEmpty(this.select)){
             return select;
         }
-        if (key != null) {
+        if (StringUtils.isNotEmpty(key)) {
             this.select = key;
-        } else {
+        } else if(StringUtils.isNotEmpty(group)){
             this.select = LoadBalanceMap.get(loadBalance).select(this);
         }
         return select;
