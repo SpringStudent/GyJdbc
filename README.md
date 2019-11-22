@@ -1,383 +1,166 @@
-### SQL
-面向对象的SQL拼接，降低拼接sql出错概率，链式sql配合lambda表达式。支持作者已知的所有类型的SQL拼接
-语法（条件查询，连接查询，union查询，union all查询，临时表查询，子查询，基础插入，insert into select语句插入，基础更新，连接多表更新
-，基本删除，连接多表删除，创建表，删除表，truncate表等。。。），支持多数据源。
+## GyJdbc
 
-### 贡献到
-欢迎提PR优化代码或者对BUG进行修复
+基于jdbctemplate的类似JPA的ORM框架，使用Gyjdbc的优势：
 
-### 运行于
-- jdk1.8+
-- mysql
+1. **Dao层0代码，再也不需要为Dao层的方法名称命名掉头发。**
+2. **链式SQL拼接与查询，配合lambda表达式，既装X又简洁。**
+3. **强悍的SQL拼接，支持作者已知的所有SQL语法。**
+4. **学习成本极低，靠近SQL语法，开发者使用起来会像平时一样写SQL一样简单。**
+5. **支持多数据源，多数据源的负载均衡，仅需一个注解或者一个方法调用。**
 
-### 谁在用
-一家不知名的创业公司
+#### 快速开始
 
-### 踩到坑
-欢迎联系author微信:z2267431887 或者你可以自己修复
+**step1.添加maven坐标**
 
-### 不会用
-- https://github.com/SpringStudent/GyJdbcTest
-- 或者参考com.gysoft.jdbc.CriteriaTest类中的Sql
+<!--请选用gyjdbc的最新版本，当前最新的版本为19.2.0-->
 
-#### 条件查询
-```
-@Test
-    public void testQueryWithCriteria() throws Exception {
-         ApplicationContext ac = new  ClassPathXmlApplicationContext("applicationContext.xml");
-        TbUserDao tbUserDao = (TbUserDao) ac.getBean("tbUserDao");
-        //根据用户名查询:SELECT * FROM tb_user where name = 'zhouning'
-        TbUser tbUser = tbUserDao.queryOne(new Criteria().where(TbUser::getName, "zhouning").andIfAbsent(TbUser::getName, null));
-        System.out.println("queryOne:" + tbUser);
-        //根据用户名批量查询:SELECT * FROM tb_user where name in('zhouning','yinhw');
-        List<TbUser> tbUsers = tbUserDao.queryWithCriteria(new Criteria().in(TbUser::getName, Arrays.asList("zhouning", "yinhw")));
-        System.out.println("queryWithCriteria:" + tbUsers);
-        //根据关键字和年龄模糊查询:SELECT * FROM tb_user where age > 26 and (realName like '%l%' or name like '%l%')
-        String searchKey = "l";
-        List<TbUser> tbUsers2 = tbUserDao.queryWithCriteria(new Criteria().gt(TbUser::getAge, 26).andCriteria(new Criteria().like(TbUser::getRealName, searchKey).or(TbUser::getName, "like", "%" + searchKey + "%")));
-        System.out.println("queryWithCriteria:" + tbUsers2);
-        //根据关键字搜索，关键字空或者null则不传:SELECT * FROM tb_user
-        searchKey = "";
-        List<TbUser> tbUsers3 = tbUserDao.queryWithCriteria(new Criteria().likeIfAbsent(TbUser::getName, searchKey));
-        System.out.println("queryWithCriteria:" + tbUsers3);
-        //分页查询:SELECT * FROM tb_user LIMIT 0,2
-        PageResult<TbUser> pageResult = tbUserDao.pageQuery(new Page(1, 2));
-        System.out.println("pageQuery:" + pageResult);
-        //分页条件查询:SELECT * FROM tb_user WHERE age < 28 LIMIT 0,2
-        PageResult<TbUser> pageResult2 = tbUserDao.pageQueryWithCriteria(new Page(1, 2), new Criteria().lt(TbUser::getAge, 28));
-        System.out.println("pageQueryWithCriteria:" + pageResult2);
-        //按年龄降序查询用户:SELECT * FROM tb_user ORDER BY age DESC
-        List<TbUser> tbUsers4 = tbUserDao.queryWithCriteria(new Criteria().orderBy(new Sort(TbUser::getAge)));
-        System.out.println("queryWithCriteria:" + tbUsers4);
-    }
+<dependency>
+    <groupId>io.github.springstudent</groupId>
+    <artifactId>GyJdbc</artifactId>
+    <version>19.2.0</version>
+</dependency>
+
+**step2.定义Pojo类，对应数据库中的一张表。**
+
+`<!--@Table`注解，`name`定义pojo类与数据库表的关系，`pk`指定表的主键-->
+
+```java
+@Table(name = "tb_user",pk = "id")
+public class TbUser {    
+	private String id;    
+	private String name;    
+	private String realName;    
+	private String pwd;    
+	private String email;    
+	private String mobile;    
+	private Date birth;    
+	private Integer age;    
+	private String career;    
+	private Integer isActive = 0;    
+	private Integer roleId;
+}	
 ```
 
-#### 自定义sql查询
-```
- @Test
-    public void testUseSQL() throws Exception {
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbUserDao tbUserDao = (TbUserDao) ac.getBean("tbUserDao");
-        //SELECT name, email, realName, mobile FROM tb_user WHERE isActive = 1
-        SQL sql = new SQL().select(TbUser::getName, TbUser::getEmail, TbUser::getRealName, TbUser::getMobile)
-                .from(TbUser.class).where(TbUser::getIsActive, 1);
-        List<SimpleUser> simpleUsers = tbUserDao.queryWithSql(SimpleUser.class, sql).queryList();
-        System.out.println("queryWithSql:" + simpleUsers);
-        //SELECT name, email, realName, mobile FROM tb_user WHERE isActive = 1 limit 0,2
-        SQL sql2 = new SQL().select(TbUser::getName, TbUser::getEmail, TbUser::getRealName, TbUser::getMobile)
-                .from(TbUser.class).where(TbUser::getIsActive, 1);
-        PageResult<SimpleUser> simpleUsers2 = tbUserDao.queryWithSql(SimpleUser.class, sql2).pageQuery(new Page(1, 2));
-        System.out.println("queryWithSql:" + simpleUsers2);
-        //SELECT count(id) from tb_user
-        SQL sql3 = new SQL().select(count(TbUser::getId)).from(TbUser.class);
-        Integer count = tbUserDao.queryIntegerWithSql(sql3);
-        Integer count2 = tbUserDao.queryWithSql(Integer.class, sql3).queryObject();
-        System.out.println("queryIntegerWithSql:" + count);
-        System.out.println("queryWithSql:" + count2);
-        //SELECT age, COUNT(age) AS num FROM tb_user GROUP BY age ORDER BY age DESC
-        SQL sql4 = new SQL().select("age", countAs("age").as("num")).from(TbUser.class).orderBy(new Sort(TbUser::getAge)).groupBy(TbUser::getAge);
-        Map<Integer, Integer> map = tbUserDao.queryMapWithSql(sql4, CustomResultSetExractorFactory.createDoubleColumnValueResultSetExractor());
-        System.out.println("queryMapWithSql:" + map);
-        //SELECT DISTINCT(career) FROM tb_user
-        SQL sql5 = new SQL().select(distinct(TbUser::getCareer)).from(TbUser.class);
-        List<String> careers = tbUserDao.queryWithSql(String.class, sql5).queryForList();
-        System.out.println("queryWithSql" + careers);
-        //SELECT t1.name,t1.realName,t2.id,t2.roleName FROM tb_user t1 LEFT JOIN tb_role t2  ON t1.roleId = t2.id  WHERE t1.age > ?
-        SQL sql6 = new SQL().select("t1.name,t1.realName,t2.id as roleId,t2.roleName").from(TbUser.class)
-                .as("t1").leftJoin(new Joins().with(TbRole.class).as("t2").on("t1.roleId", "t2.id"))
-                .where("t1.age", ">", 24);
-        List<UserRole> userRoles = tbUserDao.queryWithSql(UserRole.class, sql6).queryList();
-        System.out.println("queryWithSql:" + userRoles);
-        //以下SQL仅仅用来演示SQL功能
-        //SELECT roleId FROM( (SELECT DISTINCT(t.roleId) AS roleId FROM tb_user t) UNION ALL (SELECT DISTINCT(t1.roleId) AS roleId FROM tb_user t1))  t2
-        SQL sql7 = new SQL().select("roleId").from(new SQL().select(distinctAs("t.roleId").as("roleId")).from(TbUser.class).as("t")
-                , new SQL().select(distinctAs("t1.roleId").as("roleId")).from(TbUser.class).as("t1")).as("t2");
-        List<Integer> inUseRoleId = tbUserDao.queryWithSql(Integer.class, sql7).queryForList();
-        System.out.println("queryWithSql:" + inUseRoleId);
-        //(SELECT t1.name,t1.realName,t2.id,t2.roleName FROM tb_user t1 LEFT JOIN tb_role t2  ON t1.roleId = t2.id  WHERE t1.age > 24)
-        // UNION
-        //(SELECT t3.name,t3.realName,t4.id,t4.roleName FROM tb_user t3 LEFT JOIN tb_role t4  ON t3.roleId = t4.id  WHERE t3.career IN('JAVA'))
-        SQL sql8 = new SQL().select("t1.name,t1.realName,t2.id as roleId,t2.roleName").from(TbUser.class)
-                .as("t1").leftJoin(new Joins().with(TbRole.class).as("t2").on("t1.roleId", "t2.id"))
-                .where("t1.age", ">", 24).union().select("t3.name,t3.realName,t4.id,t4.roleName").from(TbUser.class)
-                .as("t3").leftJoin(new Joins().with(TbRole.class).as("t4").on("t3.roleId", "t4.id"))
-                .in("t3.career", Arrays.asList("JAVA"));
-        List<UserRole> userRoles2 = tbUserDao.queryWithSql(UserRole.class, sql8).queryList();
-        System.out.println(userRoles2);
-        //more ...............................
-    }
-```
+**step3.定义Dao与DaoImpl，分别继承自EntityDao和EntityDaoImpl**
 
-#### sql插入
-```
-@Test
-    public void testInsertWithSql() throws Exception {
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
-        SQL sql = new SQL().insert_into(TbAccount.class, "userName", "realName")
-                .values("test", "测试")
-                .values("test2", "测试2");
-        SQL sql2 = new SQL().insert_into(TbAccount.class, "userName", "realName")
-                .select("name", "realName").from(TbUser.class);
-        SQL sql3 = new SQL().insert_into(TbAccount.class, TbAccount::getUserName, TbAccount::getRealName)
-                .select("name", "realName").from(TbUser.class).gt(TbUser::getIsActive, 0);
-        SQL sql4 = new SQL().insert_into(TbAccount.class, "userName", "realName")
-                        .select(new ValueReference("laoda"),new ValueReference("老大")).from("dual");        
-        tbAccountDao.insertWithSql(sql);
-        tbAccountDao.insertWithSql(sql2);
-        tbAccountDao.insertWithSql(sql3);
-        tbAccountDao.insertWithSql(sql4);
-    }
-```
-#### 更新数据
-```
- @Test
-    public void testUpdate() throws Exception {
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbUserDao tbUserDao = (TbUserDao) ac.getBean("tbUserDao");
-        //更新一个用户
-        TbUser tbUser = tbUserDao.queryOne(new Criteria().and(TbUser::getName, "zhouning"));
-        tbUser.setRealName("周宁宁");
-        tbUser.setEmail("2267431887@qq.com");
-        tbUserDao.update(tbUser);
-        //更新全部用户
-        List<TbUser> tbUsers = tbUserDao.queryAll();
-        for (TbUser tUser : tbUsers) {
-            tUser.setIsActive(1);
-        }
-        tbUserDao.batchUpdate(tbUsers);
-        //SQL更新某个用户:UPDATE tb_user SET realName = '李森',email='1388888888@163.com' where name = 'Smith'
-        tbUserDao.updateWithSql(new SQL().update(TbUser.class).set(TbUser::getRealName, "元林").set(TbUser::getEmail, "13888888888@163.com").where(TbUser::getName, "Smith"));
-        //SQL关联更新:
-        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
-        tbAccountDao.updateWithSql(new SQL().update(TbAccount.class).as("t1").innerJoin(new Joins().with(TbUser.class).as("t2")
-                .on("t1.userName", "t2.name")).set("t1.realName", new FieldReference("t2.realName")));
-    }
-```
-#### 删除数据
-```
-@After
-    public void testDelete() throws Exception {
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
-        tbAccountDao.delete(1);
-        tbAccountDao.deleteWithCriteria(new Criteria().in("userName", Arrays.asList("test2")));
-        tbAccountDao.deleteWithSql(new SQL().delete().from(TbAccount.class).where("userName","Smith"));
-        tbAccountDao.deleteWithSql(new SQL().delete("t1").from(TbAccount.class).innerJoin(
-                new Joins().with(TbUser.class).as("t2").on("t1.userName", "t2.name")
-        ));
-    }
-```
-
-#### 创建表并插入数据
-```
-@Test
-    public void testCreateTable() throws Exception {
-        SQL sql = new SQL().create().table("tb_tmp_account")
-                .addColumn().name("id").integer().notNull().autoIncrement().primary().comment("主键").commit()
-                .addColumn().name("userName").varchar(50).notNull().comment("账号").commit()
-                .addColumn().name("realName").varchar(50).defaultNull().comment("真实名称").commit()
-                .engine(TableEngine.MyISAM).comment("账号表2").commit()
-                .values(0, "zhouning", "周宁")
-                .values(0, "laoning", "老宁")
-                .values(0, "daning", "大宁");
-//                .select("0,userName,realName").from(TbAccount.class);//支持select语句的插入方法但是会和values的插入方法冲突
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
-        String tbName = tbAccountDao.createWithSql(sql);
-        System.out.println(tbAccountDao.queryWithSql(TbAccount.class, new SQL().select("*").from(tbName)).queryList());
-    }
-```
-
-#### 删除表或者清理表
-```
-   @Test
-    public void testDrunk() throws Exception {
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
-        SQL sql = new SQL().truncate().table("test","test2","test3");
-        tbAccountDao.drunk(sql);
-        SQL sql2 = new SQL().drop().table("test4","test5").ifExists();
-        tbAccountDao.drunk(sql2);
-    }
+```java
+public interface TbUserDao extends EntityDao<TbUser,String> {
     
-   @Test
-    public void testTruncate() throws Exception {
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
-        tbAccountDao.truncate();
-    }
-
-    @Test
-    public void testDrop() throws Exception {
-        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
-        TbAccountDao tbAccountDao = (TbAccountDao) ac.getBean("tbAccountDao");
-        tbAccountDao.drop();
-    }    
-```
-
-#### 使用临时表优化in查询
-```
-//before
-@Override
-    public Map<String, String> getProjUserNameCareerMap(List<String> projIds, List<String> userNames) throws Exception {
-        List<Object[]> tmpValues = new ArrayList<>();
-        if (EmptyUtils.isEmpty(projIds) || EmptyUtils.isEmpty(userNames)) {
-            return new HashMap<>();
-        }
-        return projectUserDao.queryMapWithSql(
-                new SQL().select(concat("a.projectId", "a.userName"), "a.career").from(ProjectUser.class).as("a")
-                        .in("a.projectId", projIds).in("a.userName", userNames).groupBy("a.projectId","a.userName"), CustomResultSetExractorFactory.createDoubleColumnValueResultSetExractor())
-    }
-//after
-@Override
-    public Map<String, String> getProjUserNameCareerMap(List<String> projIds, List<String> userNames) throws Exception {
-        List<Object[]> tmpValues = new ArrayList<>();
-        if(EmptyUtils.isEmpty(projIds)||EmptyUtils.isEmpty(userNames)){
-            return new HashMap<>();
-        }
-        projIds.forEach(pid -> userNames.forEach(unm -> tmpValues.add(new Object[]{0,pid,unm})));
-        return projectUserDao.queryMapWithSql(
-                new SQL().select(concat("a.projectId","a.userName"),"a.career").from(ProjectUser.class).as("a")
-                        .innerJoin(new Joins().with(
-                                projectUserDao.createWithSql(new SQL().create().temporary()
-                                        .addColumn().name("id").primary().integer().notNull().autoIncrement().commit()
-                                        .addColumn().name("projectId").varchar(32).notNull().commit()
-                                        .addColumn().name("userName").varchar(50).notNull().commit()
-                                        .engine(TableEngine.MyISAM).commit().values(tmpValues))
-                        ).as("b").on("a.projectId","b.projectId").on("a.userName","b.userName"))
-                        .groupBy("a.projectId","a.userName")
-                ,CustomResultSetExractorFactory.createDoubleColumnValueResultSetExractor()
-        );
-    }    
-```
-
-#### 丰富的函数支持,参照FuncBuilder.java
-```
-@Test
-    public void testFunc(){
-        SQL s = new SQL().select(count("*"),avg(Token::getSize),max(Token::getSize),min(Token::getSize),sum(Token::getSize)).from(Token.class);
-        SQL s2 = new SQL().select(concat(Token::getTk,Token::getSize),length(Token::getTk),charLength(Token::getTk),upper(Token::getTk),lower(Token::getTk)).from(Token.class);
-        SQL s3 = new SQL().select(abs(Token::getSize),ceil(Token::getSize),floor(Token::getSize)).from(Token.class);
-        SQL s4 = new SQL().select(curdate(),curtime(),now(),month(curdate()),week(curdate()),minute(curtime()));
-        SQL s5 = new SQL().select(formatAs("10000","2").as("a")).from(Book.class);
-        Pair<String, Object[]> pair = SqlMakeTools.useSql(s);
-        System.out.println(pair.getFirst());
-        Pair<String, Object[]> pair2 = SqlMakeTools.useSql(s2);
-        System.out.println(pair2.getFirst());
-        Pair<String, Object[]> pair3 = SqlMakeTools.useSql(s3);
-        System.out.println(pair3.getFirst());
-        Pair<String, Object[]> pair4 = SqlMakeTools.useSql(s4);
-        System.out.println(pair4.getFirst());
-        Pair<String, Object[]> pair5 = SqlMakeTools.useSql(s5);
-        System.out.println(pair5.getFirst());
-    }
-```
-
-#### 动态数据源切换
-##### 使用须知 方法选择数据源的优先级
-```
-   entityDao.bindXXX()>@BindPoint>GyJdbcRoutingDataSource.defaultLookUpKey
-```
-#### 多数据源配置
-```
- <bean id="sourceDs" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
-        <!-- 数据库基本信息配置 -->
-        <property name="driverClassName" value="${mysql.driver}"/>
-        <property name="url" value="${source.mysql.url}"/>
-        <property name="username" value="${source.mysql.username}"/>
-        <property name="password" value="${source.mysql.password}"/>
-    </bean>
-
-    <bean id="targetDs" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
-        <!-- 数据库基本信息配置 -->
-        <property name="driverClassName" value="${mysql.driver}"/>
-        <property name="url" value="${target.mysql.url}"/>
-        <property name="username" value="${target.mysql.username}"/>
-        <property name="password" value="${target.mysql.password}"/>
-    </bean>
+}
+@Repository
+public class TbUserDaoImpl extends EntityDaoImpl<TbUser,String> implements TbUserDao {
     
-    <bean id="thirdDs" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
-        <!-- 数据库基本信息配置 -->
-        <property name="driverClassName" value="${mysql.driver}"/>
-        <property name="url" value="${third.mysql.url}"/>
-        <property name="username" value="${third.mysql.username}"/>
-        <property name="password" value="${third.mysql.password}"/>
-    </bean>
-    
-    <!-- 配置多数据源的支持对象-->
-    <bean id="dataSource" class="com.gysoft.jdbc.multi.JdbcRoutingDataSource">
-            <property name="targetDataSources">
-                //数据源配置
-                <map>
-                    <entry key="master" value-ref="sourceDs"/>
-                    <entry key="slave" value-ref="targetDs"/>
-                    <entry key="slave2" value-ref="nightDs"/>
-                </map>
-            </property>
-            //数据源分组配置
-            <property name="dataSourceKeysGroup">
-                <map>
-                    <entry key="masterGroup" value="master"/>
-                    <entry key="slaveGroup" value="slave,slave2"/>
-                </map>
-            </property>
-            //在没有@BindPoint注解的类或方法上，也没有通过bindKey或者bindGroup方法
-            //指定数据源的情况下，此时指定一个默认的数据源的key
-            <property name="defaultLookUpKey" value="master"/>
-        </bean>
+}
+```
 
-    <!-- 数据目标jdbcTemplate -->
-    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
-        <property name="dataSource" ref="dataSource"/>
-    </bean>
+**step4.在Service层注入Dao，使用EntityDao提供的方法完成增、删、改、查**
+
+<!--增-->
+
+```java
+void save(T t) throws Exception ;
+void batchSave(List<T> list) throws Exception ;
+int insertWithSql(SQL sql)throws Exception;
 ```
-#### 绑定到一组数据源
+
+<!--删-->
+
+```java
+void delete(Id id) throws Exception ;
+void deleteWithCriteria(Criteria criteria) throws Exception;
+void batchDelete(List<Id> ids) throws Exception ;
+int deleteWithSql(SQL sql)throws Exception;
+void truncate()throws Exception;
+void drop()throws Exception;
+void drunk(SQL sql)throws Exception;
 ```
+
+<!--改-->
+
+```java
+void update(T t) throws Exception ;
+void batchUpdate(List<T> list) throws Exception ;
+int updateWithSql(SQL sql)throws Exception;
+```
+
+<!--查-->
+
+```java
+T queryOne(Id id) throws Exception ;
+List<T> queryAll() throws Exception ;
+PageResult<T> pageQuery(Page page) throws Exception;
+PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria) throws Exception;
+List<T> queryWithCriteria(Criteria criteria) throws Exception;
+<E> Result<E> queryWithSql(Class<E> clss,SQL sql)throws Exception;
+List<Map<String,Object>> queryMapsWithSql(SQL sql)throws Exception;
+<K,V> Map<K,V> queryMapWithSql(SQL sql,ResultSetExtractor<Map<K,V>> resultSetExtractor)throws Exception;
+
+```
+
+具体用法参考：https://github.com/SpringStudent/GyJdbcTest 
+
+#### 多数据源支持
+
+<!--数据源配置文件-->
+
+```xml
+<bean id="sourceDs" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+    ...省略
+</bean>
+        
+<bean id="targetDs" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+     ...省略
+</bean>
+
+<bean id="nightDs" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+    ...省略
+</bean>   
+
+<bean id="dataSource" class="com.gysoft.jdbc.multi.JdbcRoutingDataSource">    
+    <property name="targetDataSources">        
+        <map>            
+            <entry key="master" value-ref="sourceDs"/>            
+            <entry key="slave" value-ref="targetDs"/>            
+            <entry key="slave2" value-ref="nightDs"/>        
+        </map>    
+    </property>    
+    <property name="dataSourceKeysGroup">        
+        <map>            
+            <entry key="masterGroup" value="master"/>            
+            <entry key="slaveGroup" value="slave,slave2"/>        
+        </map>    
+    </property>    
+    <property name="defaultLookUpKey" value="master"/></bean>
+
+<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">    <property name="dataSource" ref="dataSource"/></bean>
+```
+
+**@Bindpoint注解绑定数据源**
+
+<!--通过该注解可以绑定方法或者类级别的数据源-->
+
+```java
+//绑定数据源slaveGroup组，采用RandomLoadBalance策略（随机）的负载均衡策略选取数据源
 @BindPoint(group = "slaveGroup",loadBalance = RandomLoadBalance.class)
-或者
-xxxDao.bindGroup("slaveGroup").queryXxx();
-```
-#### 绑定到指定数据源
-```
-@BindPoint(key = "slaveGroup")
-或者
-xxxDao.bindKey("slaveGroup").queryXxx();
+//绑定指定slave2数据源
+@BindPoint(key = "slave2")
 ```
 
+**EntityDao.binxxx方法绑定数据源**
 
-### 版本更新
-- 10.1.0 修复union查询和子查询的sql无大括号导致报错bug
-- 10.2.0 修复无selectFields sql拼接的一处BUG
-- 11.0.0 自定义sql插入语句支持
-- 11.1.1 自定义sql支持lambda表达式
-- 12.0.0 自定义sql插入语句支持调整
-- 12.1.1 支持拼接limit
-- 12.2.0 支持orLike拼接，修复相同WhereParam的条件丢失问题
-- 13.0.0 支持创建表并插入数据,配合临时表使用美滋滋
-- 13.0.1 修复createWithSql不插入数据的一处bug
-- 13.0.2 创建表添加defaultNull
-- 13.0.3 join查询忘了支持表名称字符串
-- 13.0.4 修复limit查询的bug
-- 13.0.5 修复使用lambda表达式Mysql特殊字符未添加``导致的错误
-- 13.0.6 修复创建表并插入数据column为mysql特殊字符未添加``导致的报错
-- 14.0.0 insertWithSql方法改为分页插入
-- 15.0.1 添加了切换数据源的支持
-- 15.0.2 解决多数据源方法类型转换丢失
-- 15.1.0 使用@BindPoint注解绑定数据源
-- 16.0.0 删除需要lombok的支持
-- 17.0.0 SQL插入、更新方法重构使其更加符合sql拼写习惯，实现了DELETE、UPDATE操作的连接拼接
-- 17.1.0 其他sql拼接的支持
-- 17.2.0 join语句支持传递SQL
-- 18.0.0 修复union()和unionAll()方法中子查询的bug
-- 18.1.0 支持in(key,sql)语法
-- 18.2.0 支持having(Criteria criteria)语法
-- 18.3.0 添加truncate()和drop()和drunk(SQL sql)方法删除表或者清理数据
-- 18.4.0 修改drop对表名称的处理
-- 18.5.0 修改创建表sql拼接习惯
-- 18.6.0 添加json_extract函数的支持
-- 18.7.0 insert into select语句增强实现
-- 19.0.0 多数据源重构，添加负载均衡策略的实现
-- 19.1.0 多数据源BUG修复
-- 19.2.0 添加Dual类，用于支持select 1 from dual这种语句
-### 当前版本:maven repostiroy搜索gyjdbc
+<!--通过方法级别绑定Sql级别的数据源-->
+
+```java
+//SELECT * FROM tb_user where name in('zhouning','yinhw')将会在slave数据源上执行
+ List<TbUser> tbUsers = tbUserDao.bindKey("slave").queryWithCriteria(new Criteria().in(TbUser::getName, Arrays.asList("zhouning", "yinhw")));
+
+//UPDATE tb_user set realName = "元林",email = "13888888888@163.com" WHERE name = "Smith"
+//采用轮询负载均衡策略分别在masterGroup组中选择一个数据源执行update操作
+tbUserDao.bindGroup("masterGroup",RoundbinLoadBalance.class).updateWithSql(new SQL().update(TbUser.class).set(TbUser::getRealName, "元林").set(TbUser::getEmail, "13888888888@163.com").where(TbUser::getName, "Smith"));
+```
+
+**FAQ**
+
+<!--数据源选择的优先级顺序：-->
+
+*entityDao.bindXxx* > *方法上@BindPoint* > *类上@BindPoint* > *JdbcRoutingDataSource.defaultLookUpKey*
