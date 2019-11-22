@@ -12,7 +12,8 @@
 
 **step1.添加maven坐标**
 
-<!--请选用gyjdbc的最新版本，当前最新的版本为19.2.0-->
+请选用`gyjdbc`的最新版本，当前最新的版本为19.2.0
+
 ```xml
 <dependency>
     <groupId>io.github.springstudent</groupId>
@@ -23,7 +24,7 @@
 
 **step2.定义Pojo类，对应数据库中的一张表。**
 
-`<!--@Table`注解，`name`定义pojo类与数据库表的关系，`pk`指定表的主键-->
+`@Table`注解，`name`定义pojo类与数据库表的关系，`pk`指定表的主键
 
 ```java
 @Table(name = "tb_user",pk = "id")
@@ -56,7 +57,7 @@ public class TbUserDaoImpl extends EntityDaoImpl<TbUser,String> implements TbUse
 
 **step4.在Service层注入Dao，使用EntityDao提供的方法完成增、删、改、查**
 
-<!--增-->
+<u>增</u>
 
 ```java
 void save(T t) throws Exception ;
@@ -64,7 +65,7 @@ void batchSave(List<T> list) throws Exception ;
 int insertWithSql(SQL sql)throws Exception;
 ```
 
-<!--删-->
+<u>删</u>
 
 ```java
 void delete(Id id) throws Exception ;
@@ -76,7 +77,7 @@ void drop()throws Exception;
 void drunk(SQL sql)throws Exception;
 ```
 
-<!--改-->
+<u>改</u>
 
 ```java
 void update(T t) throws Exception ;
@@ -84,7 +85,7 @@ void batchUpdate(List<T> list) throws Exception ;
 int updateWithSql(SQL sql)throws Exception;
 ```
 
-<!--查-->
+<u>查</u>
 
 ```java
 T queryOne(Id id) throws Exception ;
@@ -102,7 +103,7 @@ List<Map<String,Object>> queryMapsWithSql(SQL sql)throws Exception;
 
 #### 多数据源支持
 
-<!--数据源配置文件-->
+**数据源配置文件**
 
 ```xml
 <bean id="sourceDs" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
@@ -138,7 +139,7 @@ List<Map<String,Object>> queryMapsWithSql(SQL sql)throws Exception;
 
 **@Bindpoint注解绑定数据源**
 
-<!--通过该注解可以绑定方法或者类级别的数据源-->
+<u>通过该注解可以绑定方法或者类级别的数据源</u>
 
 ```java
 //绑定数据源slaveGroup组，采用RandomLoadBalance策略（随机）的负载均衡策略选取数据源
@@ -149,7 +150,7 @@ List<Map<String,Object>> queryMapsWithSql(SQL sql)throws Exception;
 
 **EntityDao.binxxx方法绑定数据源**
 
-<!--通过方法级别绑定Sql级别的数据源-->
+<u>通过方法级别绑定Sql级别的数据源</u>
 
 ```java
 //SELECT * FROM tb_user where name in('zhouning','yinhw')将会在slave数据源上执行
@@ -162,6 +163,6 @@ tbUserDao.bindGroup("masterGroup",RoundbinLoadBalance.class).updateWithSql(new S
 
 **FAQ**
 
-<!--数据源选择的优先级顺序：-->
+<u>数据源选择的优先级顺序：</u>
 
 *entityDao.bindXxx* > *方法上@BindPoint* > *类上@BindPoint* > *JdbcRoutingDataSource.defaultLookUpKey*
