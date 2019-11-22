@@ -13,12 +13,13 @@
 **step1.添加maven坐标**
 
 <!--请选用gyjdbc的最新版本，当前最新的版本为19.2.0-->
-
+```xml
 <dependency>
     <groupId>io.github.springstudent</groupId>
     <artifactId>GyJdbc</artifactId>
     <version>19.2.0</version>
 </dependency>
+```
 
 **step2.定义Pojo类，对应数据库中的一张表。**
 
