@@ -157,7 +157,7 @@ List<Map<String,Object>> queryMapsWithSql(SQL sql)throws Exception;
  List<TbUser> tbUsers = tbUserDao.bindKey("slave").queryWithCriteria(new Criteria().in(TbUser::getName, Arrays.asList("zhouning", "yinhw")));
 
 //UPDATE tb_user set realName = "元林",email = "13888888888@163.com" WHERE name = "Smith"
-//采用轮询负载均衡策略分别在masterGroup组中选择一个数据源执行update操作
+//采用轮询负载均衡策略在masterGroup组中选择一个数据源执行update操作
 tbUserDao.bindGroup("masterGroup",RoundbinLoadBalance.class).updateWithSql(new SQL().update(TbUser.class).set(TbUser::getRealName, "元林").set(TbUser::getEmail, "13888888888@163.com").where(TbUser::getName, "Smith"));
 ```
 
