@@ -99,7 +99,7 @@ List<Map<String,Object>> queryMapsWithSql(SQL sql)throws Exception;
 
 ```
 
-具体用法参考：https://github.com/SpringStudent/GyJdbcTest 
+具体用法：https://github.com/SpringStudent/GyJdbcTest 
 
 #### 多数据源支持
 
@@ -134,12 +134,14 @@ List<Map<String,Object>> queryMapsWithSql(SQL sql)throws Exception;
     </property>    
     <property name="defaultLookUpKey" value="master"/></bean>
 
-<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">    <property name="dataSource" ref="dataSource"/></bean>
+<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">    
+    <property name="dataSource" ref="dataSource"/>
+</bean>
 ```
 
 **@Bindpoint注解绑定数据源**
 
-<u>通过该注解可以绑定方法或者类级别的数据源</u>
+<u>绑定方法或者类级别的数据源</u>
 
 ```java
 //绑定数据源slaveGroup组，采用RandomLoadBalance策略（随机）的负载均衡策略选取数据源
@@ -150,7 +152,7 @@ List<Map<String,Object>> queryMapsWithSql(SQL sql)throws Exception;
 
 **EntityDao.binxxx方法绑定数据源**
 
-<u>通过方法级别绑定Sql级别的数据源</u>
+<u>绑定Sql级别的数据源</u>
 
 ```java
 //SELECT * FROM tb_user where name in('zhouning','yinhw')将会在slave数据源上执行
