@@ -1,5 +1,7 @@
 package com.gysoft.jdbc.multi;
 
+import org.springframework.context.annotation.Import;
+
 import java.lang.annotation.*;
 
 /**
@@ -9,6 +11,7 @@ import java.lang.annotation.*;
 @Target({ElementType.METHOD,ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
+@Import(BindPointAspectRegistar.class)
 public @interface BindPoint {
     /**
      *
