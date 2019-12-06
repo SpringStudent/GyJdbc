@@ -1052,4 +1052,5 @@ public class FuncBuilder {
     public static <T, R> AbstractFuncBuilder jsonExtractAs(TypeFunction<T, R> function, String $key) {
         return new JsonExtract(TypeFunction.getLambdaColumnName(function), $key);
     }
+
 }
