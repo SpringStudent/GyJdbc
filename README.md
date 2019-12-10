@@ -12,8 +12,6 @@
 
 **step1.添加maven坐标**
 
-请选用`gyjdbc`的最新版本，当前最新的版本为19.2.0
-
 ```xml
 <dependency>
     <groupId>io.github.springstudent</groupId>
@@ -99,7 +97,29 @@ List<Map<String,Object>> queryMapsWithSql(SQL sql)throws Exception;
 
 ```
 
-具体用法：https://github.com/SpringStudent/GyJdbcTest 
+`Criteria语法示例:`
+
+```java
+new Criteria().where(TbUser::getName, "zhouning").andIfAbsent(TbUser::getName, null);
+new Criteria().in(TbUser::getName, Arrays.asList("zhouning", "yinhw"));
+new Criteria().lt(TbUser::getAge, 28).orderBy(new Sort(TbUser::getAge)
+```
+
+`SQL语法示例:`
+
+```java
+new SQL().select(TbUser::getName, TbUser::getEmail, TbUser::getRealName,TbUser::getMobile).from(TbUser.class).where(TbUser::getIsActive, 1);
+new SQL().select("age", countAs("age").as("num")).from(TbUser.class).orderBy(new Sort(TbUser::getAge)).groupBy(TbUser::getAge);
+new SQL().update(TbUser.class).set(TbUser::getRealName, "元林").set(TbUser::getEmail, "13888888888@163.com").where(TbUser::getName, "Smith");
+new SQL().delete("t1").from(TbAccount.class).innerJoin(
+new Joins().with(TbUser.class).as("t2").on("t1.userName", "t2.name");
+new SQL().insert_into(TbAccount.class, "userName", "realName").values("test", "测试")
+.values("test2", "测试2")
+```
+
+#### 更多用法见
+
+#### https://github.com/SpringStudent/GyJdbcTest 
 
 #### 多数据源支持
 

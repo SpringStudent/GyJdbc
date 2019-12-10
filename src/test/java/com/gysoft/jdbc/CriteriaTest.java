@@ -10,9 +10,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.junit.Test;
 
 import java.sql.JDBCType;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
+import java.util.*;
 
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
 
@@ -325,5 +323,4 @@ public class CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
     }
-
 }
