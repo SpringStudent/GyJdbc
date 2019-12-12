@@ -16,7 +16,7 @@
 <dependency>
     <groupId>io.github.springstudent</groupId>
     <artifactId>GyJdbc</artifactId>
-    <version>19.3.4</version>
+    <version>{最新版本}</version>
 </dependency>
 ```
 
