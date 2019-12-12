@@ -2,6 +2,7 @@ package com.gysoft.jdbc.bean;
 
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -106,6 +107,25 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     public S where(String key, Object value) {
         return this.where(key, "=", value);
+    }
+
+    public S where(String[] keys, Object value) {
+        return this.where(keys, "=", value);
+    }
+
+    public S where(String[] keys, String opt, Object value) {
+        if (keys == null || keys.length == 0) {
+            throw new RuntimeException("keys cannot be null or []");
+        }
+        if (keys.length == 1) {
+            return this.where(keys[0], opt, value);
+        } else {
+            StringBuilder columnsAppender = new StringBuilder();
+            columnsAppender.append("(");
+            columnsAppender.append(StringUtils.join(keys, ","));
+            columnsAppender.append(")");
+            return this.where(columnsAppender.toString(), opt, value);
+        }
     }
 
     public <T, R> S where(TypeFunction<T, R> function, Object value) {
@@ -249,12 +269,12 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return this.where(" OR " + key, opt, value);
     }
 
-    public S exists(SQL sql){
-        return this.where("EXISTS","",sql);
+    public S exists(SQL sql) {
+        return this.where("EXISTS", "", sql);
     }
 
-    public S notExists(SQL sql){
-        return this.where("NOT EXISTS","",sql);
+    public S notExists(SQL sql) {
+        return this.where("NOT EXISTS", "", sql);
     }
 
     public <T, R> S or(TypeFunction<T, R> function, String opt, Object value) {
@@ -355,7 +375,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return having(new Criteria().where(funcField, opt, value));
     }
 
-    public S having(Criteria criteria){
+    public S having(Criteria criteria) {
         having = SqlMakeTools.doCriteria(criteria, new StringBuilder());
         having.setFirst(having.getFirst().replace("WHERE ", ""));
         return self();

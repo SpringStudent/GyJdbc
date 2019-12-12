@@ -24,7 +24,7 @@ public class CriteriaTest {
     public void testCriteria() {
         Criteria criteria = new Criteria();
         criteria.isNull("filedss");
-        criteria.orBetweenAnd("btke",1,2);
+        criteria.orBetweenAnd("btke", 1, 2);
         criteria.in("sets", new HashSet(Arrays.asList("1234567890", "111111")));
         criteria.orLike("likeKey", "thisi s p lsa");
         criteria.orBetweenAnd("btad", 19920928, 20190321);
@@ -137,12 +137,12 @@ public class CriteriaTest {
     }
 
     @Table
-    public static  class TableTest{
+    public static class TableTest {
 
     }
 
     @Test
-    public void testAnnotation(){
+    public void testAnnotation() {
         System.out.println(EntityTools.getTableName(TableTest.class));
     }
 
@@ -285,38 +285,38 @@ public class CriteriaTest {
                         .unionAll().select("*").from("test3")).as("t2")).as("t3")
                 .union().select("*").from(new SQL().select("*").from("test3")
                         .unionAll().select("*").from(new SQL().select("t5.*").from("test").as("t5")
-                                .leftJoin(new Joins().with("test").as("t6").on("t5.id","t6.id")
-                                        .andIfAbsent("t5.id",">",1))).as("t7")).as("t4");
+                                .leftJoin(new Joins().with("test").as("t6").on("t5.id", "t6.id")
+                                        .andIfAbsent("t5.id", ">", 1))).as("t7")).as("t4");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
         sql = new SQL().select("*").from("test").as("t5")
-                .leftJoin(new Joins().with("test").as("t6").on("t5.id","t6.id")
-                .andIfAbsent("t5.id",">",1).and("t5.pid","=",new FieldReference("field")));
+                .leftJoin(new Joins().with("test").as("t6").on("t5.id", "t6.id")
+                        .andIfAbsent("t5.id", ">", 1).and("t5.pid", "=", new FieldReference("field")));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
     }
 
     @Test
-    public void testInSql(){
-        SQL sql = new SQL().select("*").from(Book.class).notIn(Book::getId,new SQL().select("id").from("author").where("f1",123).in("f2",Arrays.asList("g","l")))
-                .andCriteria(new Criteria().and(Book::getName,"name1").or(Book::getNum,"asdsd"));
+    public void testInSql() {
+        SQL sql = new SQL().select("*").from(Book.class).notIn(Book::getId, new SQL().select("id").from("author").where("f1", 123).in("f2", Arrays.asList("g", "l")))
+                .andCriteria(new Criteria().and(Book::getName, "name1").or(Book::getNum, "asdsd"));
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select("*").from(Book.class).where(Book::getId,"this is a id").groupBy(Book::getNum).having(new Criteria().gt(count("name"),1).or("fix","heihei"));
+        sql = new SQL().select("*").from(Book.class).where(Book::getId, "this is a id").groupBy(Book::getNum).having(new Criteria().gt(count("name"), 1).or("fix", "heihei"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
 
         sql = new SQL().select("*").from("test").as("t").natureJoin(new Joins().with("test1").as("t1"))
-                .where("t1.id",new FieldReference("t.id"));
+                .where("t1.id", new FieldReference("t.id"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
 
-        sql = new SQL().select("id,name,value",new ValueReference(1),new ValueReference(new Date())).from("test").where(Book::getId,"this is a id");
+        sql = new SQL().select("id,name,value", new ValueReference(1), new ValueReference(new Date())).from("test").where(Book::getId, "this is a id");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
@@ -328,13 +328,28 @@ public class CriteriaTest {
     }
 
     @Test
-    public void testWhereSql(){
-        SQL sql = new SQL().select("*").from("test").where("id",new SQL().select("pid").from("tb_test").gt("type",2));
+    public void testWhereSql() {
+        SQL sql = new SQL().select("*").from("test").where("id", new SQL().select("pid").from("tb_test").gt("type", 2));
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
         sql = new SQL().select("number, name, id_number, major").from("student_info").exists(new SQL().select("*")
-        .from("student_score").where("student_score.number",new FieldReference("student_info.number")));
+                .from("student_score").where("student_score.number", new FieldReference("student_info.number")));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from("student_score").where("(number, subject)", new SQL()
+                .select("number", new ValueReference("母猪的产后护理")).from("student_info").limit(1));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from("student_score").where("subject", "母猪的产后护理").gt("score",
+                new SQL().select(avg("score")).from("student_score").where("subject", "母猪的产后护理"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from("student_score").where(new String[]{"number"}, new SQL()
+                .select("number", new ValueReference("母猪的产后护理")).from("student_info").limit(1));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
