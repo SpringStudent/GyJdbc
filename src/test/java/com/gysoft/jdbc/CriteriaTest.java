@@ -23,6 +23,8 @@ public class CriteriaTest {
     @Test
     public void testCriteria() {
         Criteria criteria = new Criteria();
+        criteria.isNull("filedss");
+        criteria.orBetweenAnd("btke",1,2);
         criteria.in("sets", new HashSet(Arrays.asList("1234567890", "111111")));
         criteria.orLike("likeKey", "thisi s p lsa");
         criteria.orBetweenAnd("btad", 19920928, 20190321);
@@ -44,6 +46,7 @@ public class CriteriaTest {
         criteria.groupBy("userName", "id");
         criteria.having(count("asd"), "in", Arrays.asList(1, 2, 3)).limit(1);
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
+
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
@@ -319,6 +322,19 @@ public class CriteriaTest {
         System.out.println(Arrays.toString(pair.getSecond()));
 
         sql = new SQL().select(new ValueReference(1)).from(Dual.class);
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+    }
+
+    @Test
+    public void testWhereSql(){
+        SQL sql = new SQL().select("*").from("test").where("id",new SQL().select("pid").from("tb_test").gt("type",2));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("number, name, id_number, major").from("student_info").exists(new SQL().select("*")
+        .from("student_score").where("student_score.number",new FieldReference("student_info.number")));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));

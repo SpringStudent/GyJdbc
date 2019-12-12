@@ -275,6 +275,11 @@ public class SqlMakeTools {
                             if (value instanceof FieldReference) {
                                 FieldReference fieldReference = (FieldReference) value;
                                 sql.append(opt).append(SPACE).append(fieldReference.getField());
+                            } else if (value instanceof SQL) {
+                                SQL whereSql = (SQL) value;
+                                Pair<String, Object[]> wherePair = useSql(whereSql);
+                                sql.append(opt).append(IN_START).append(wherePair.getFirst()).append(IN_END);
+                                params = ArrayUtils.addAll(params, wherePair.getSecond());
                             } else {
                                 sql.append(opt).append(SPACE).append("?");
                                 params = ArrayUtils.add(params, value);
@@ -413,10 +418,10 @@ public class SqlMakeTools {
             if (CollectionUtils.isNotEmpty(sqlObj.getSelectFields())) {
                 List<Object> selects = sqlObj.getSelectFields();
                 for (Object obj : selects) {
-                    if(obj instanceof ValueReference){
+                    if (obj instanceof ValueReference) {
                         sql.append("?, ");
                         params = ArrayUtils.add(params, ((ValueReference) obj).getValue());
-                    }else{
+                    } else {
                         sql.append(obj.toString() + ", ");
                     }
                 }

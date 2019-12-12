@@ -249,6 +249,14 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return this.where(" OR " + key, opt, value);
     }
 
+    public S exists(SQL sql){
+        return this.where("EXISTS","",sql);
+    }
+
+    public S notExists(SQL sql){
+        return this.where("NOT EXISTS","",sql);
+    }
+
     public <T, R> S or(TypeFunction<T, R> function, String opt, Object value) {
         return this.or(TypeFunction.getLambdaColumnName(function), opt, value);
     }
