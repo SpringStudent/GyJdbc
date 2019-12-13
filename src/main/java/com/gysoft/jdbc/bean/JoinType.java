@@ -6,7 +6,8 @@ package com.gysoft.jdbc.bean;
 public enum JoinType {
     LeftJoin("LEFT JOIN"),
     RightJoin("RIGHT JOIN"),
-    InnerJoin("INNER JOIN");
+    InnerJoin("INNER JOIN"),
+    NatureJoin(",");
 
     private final String type;
 
