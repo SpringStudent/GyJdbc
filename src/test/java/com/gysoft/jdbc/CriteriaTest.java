@@ -236,14 +236,6 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        //UPDATE student s , class c  SET s.class_name = ?, c.stu_name = ? WHERE s.class_id = c.id
-        sql = new SQL().update("student").as("s")
-                .natureJoin(new Joins().with("class").as("c"))
-                .set("s.class_name", "test00").set("c.stu_name", "test00")
-                .where("s.class_id", new FieldReference("c.id"));
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
         //DELETE orders,items FROM orders,items
         //WHERE orders.userid = items.userid  AND orders.orderid = items.orderid AND orders.date <= ?
         sql = new SQL().delete("orders,items").from("orders,items")
@@ -353,8 +345,24 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select("*").from("student_score").where(new String[]{"number","subject"}, new SQL()
+        sql = new SQL().select("*").from("student_score").where(new String[]{"number", "subject"}, new SQL()
                 .select("number", new ValueReference("母猪的产后护理")).from("student_info").limit(1));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+    }
+
+    @Test
+    public void test() {
+        SQL sql = new SQL().delete().from("first_table").orderBy(new Sort("first_column", "desc")).limit(1);
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().update("first_table").set("second_column", "擦擦").orderBy(new Sort("first_column")).limit(1);
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().insert_into("first_table").values(8,"ga");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));

@@ -175,7 +175,7 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public SQL insert_into(String table, String... fields) {
-        pair.setFirst(new String("INSERT INTO `" + table + "` ("
+        pair.setFirst(new String("INSERT INTO " + table + " ("
                 + Arrays.stream(fields).collect(Collectors.joining(","))
                 + ") "));
         this.sqlType = EntityDao.SQL_INSERT;
@@ -184,7 +184,7 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public <T, R> SQL insert_into(String table, TypeFunction<T, R>... functions) {
-        pair.setFirst(new String("INSERT INTO `" + table + "` ("
+        pair.setFirst(new String("INSERT INTO " + table + " ("
                 + Arrays.stream(functions).map(f -> transfer(TypeFunction.getLambdaColumnName(f))).collect(Collectors.joining(","))
                 + ") "));
         this.sqlType = EntityDao.SQL_INSERT;
@@ -192,37 +192,48 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
+    public SQL insert_into(String table) {
+        pair.setFirst(new String("INSERT INTO " + table + " "));
+        this.sqlType = EntityDao.SQL_INSERT;
+        pair.setSecond(new ArrayList<>());
+        return this;
+    }
+
     public <T, R> SQL insert_into(Class clss, String... fields) {
-        return insert_into(EntityTools.getTableName(clss), fields);
+        return insert_into(transfer(EntityTools.getTableName(clss)), fields);
     }
 
     public <T, R> SQL insert_into(Class clss, TypeFunction<T, R>... functions) {
-        return insert_into(EntityTools.getTableName(clss), functions);
+        return insert_into(transfer(EntityTools.getTableName(clss)), functions);
     }
 
-    public SQL truncate(){
+    public <T, R> SQL insert_into(Class clss) {
+        return insert_into(transfer(EntityTools.getTableName(clss)));
+    }
+
+    public SQL truncate() {
         sqlType = EntityDao.SQL_TRUNCATE;
         drunk = new Drunk();
         return this;
     }
 
-    public SQL table(String... tables){
+    public SQL table(String... tables) {
         drunk.setTables(Arrays.stream(tables).collect(Collectors.toSet()));
         return this;
     }
 
-    public SQL table(Class... clss){
+    public SQL table(Class... clss) {
         drunk.setTables(Arrays.stream(clss).map(EntityTools::getTableName).collect(Collectors.toSet()));
         return this;
     }
 
-    public SQL drop(){
+    public SQL drop() {
         sqlType = EntityDao.SQL_DROP;
         drunk = new Drunk();
         return this;
     }
 
-    public SQL ifExists(){
+    public SQL ifExists() {
         drunk.setIfExists(true);
         return this;
     }
@@ -321,7 +332,7 @@ public class SQL extends AbstractCriteria<SQL> {
         return tableMeta;
     }
 
-    private String transfer(String field) {
+    private final String transfer(String field) {
         return "`" + field + "`";
     }
 
@@ -348,4 +359,15 @@ public class SQL extends AbstractCriteria<SQL> {
     public void setDrunk(Drunk drunk) {
         this.drunk = drunk;
     }
+
+    public SQL onDuplicateKeyUpdate(String key, Object value) {
+        kvs.add(new Pair(key, value));
+        return this;
+    }
+
+    public <T, R> SQL onDuplicateKeyUpdate(TypeFunction<T, R> function, Object value) {
+        kvs.add(new Pair(transfer(TypeFunction.getLambdaColumnName(function)), value));
+        return this;
+    }
+
 }

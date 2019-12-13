@@ -249,6 +249,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         StringBuilder insertSql = new StringBuilder(sql.getPair().getFirst());
         //待插入数据
         List<Object[]> params = sql.getPair().getSecond();
+        List<Pair> kvs = sql.getKvs();
         int res = 0;
         if (CollectionUtils.isNotEmpty(params)) {
             List<Object[]>[] batchs = CollectionUtil.slice(params, BATCH_PAGE_SIZE);
@@ -266,6 +267,19 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
                     tempInsertSql.append("),");
                 }
                 tempInsertSql.setLength(tempInsertSql.length() - 1);
+                if(CollectionUtils.isNotEmpty(kvs)){
+                    tempInsertSql.append(" ON DUPLICATE KEY UPDATE ");
+                    for(Pair p : kvs){
+                        if (p.getSecond() instanceof FieldReference) {
+                            FieldReference fieldReference = (FieldReference) p.getSecond();
+                            tempInsertSql.append(p.getFirst() + " = " + fieldReference.getField() + ", ");
+                        } else {
+                            tempInsertSql.append(p.getFirst() + " = ?, ");
+                            paramList.add(p.getSecond());
+                        }
+                    }
+                    tempInsertSql.setLength(tempInsertSql.length() - 2);
+                }
                 res += jdbcTemplate.update(tempInsertSql.toString(), paramList.toArray());
             }
         } else if (CollectionUtils.isNotEmpty(sql.getSelectFields())) {
