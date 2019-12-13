@@ -353,5 +353,10 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from("student_score").where(new String[]{"number","subject"}, new SQL()
+                .select("number", new ValueReference("母猪的产后护理")).from("student_info").limit(1));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
     }
 }
