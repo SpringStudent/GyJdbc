@@ -1,5 +1,7 @@
 package com.gysoft.jdbc.bean;
 
+import java.util.Arrays;
+
 /**
  * @author 周宁
  */
@@ -28,8 +30,8 @@ public class Index {
         return this;
     }
 
-    public Index column(String column) {
-        this.indexMeta.getColumnNames().add(column);
+    public Index column(String... columns) {
+        this.indexMeta.getColumnNames().addAll(Arrays.asList(columns));
         return this;
     }
 

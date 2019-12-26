@@ -320,7 +320,7 @@ public class CriteriaTest {
     }
 
     @Test
-    public void testWhereSql() {
+    public <T,R>void testWhereSql() {
         SQL sql = new SQL().select("*").from("test").where("id", new SQL().select("pid").from("tb_test").gt("type", 2));
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
@@ -352,19 +352,4 @@ public class CriteriaTest {
         System.out.println(Arrays.toString(pair.getSecond()));
     }
 
-    @Test
-    public void test() {
-        SQL sql = new SQL().delete().from("first_table").orderBy(new Sort("first_column", "desc")).limit(1);
-        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().update("first_table").set("second_column", "擦擦").orderBy(new Sort("first_column")).limit(1);
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().insert_into("first_table").values(8,"ga");
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-    }
 }

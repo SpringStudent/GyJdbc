@@ -1,5 +1,7 @@
 package com.gysoft.jdbc.bean;
 
+import com.gysoft.jdbc.tools.EntityTools;
+
 import java.beans.Introspector;
 import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
@@ -24,7 +26,7 @@ public interface TypeFunction<T, R> extends Serializable, Function<T, R> {
             SerializedLambda serializedLambda = (SerializedLambda) method.invoke(lambda);
             String getter = serializedLambda.getImplMethodName();
             String fieldName = Introspector.decapitalize(getter.replace("get", ""));
-            return fieldName;
+            return EntityTools.transferColumnName(fieldName);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }

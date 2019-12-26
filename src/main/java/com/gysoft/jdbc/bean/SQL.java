@@ -1,6 +1,5 @@
 package com.gysoft.jdbc.bean;
 
-
 import com.gysoft.jdbc.dao.EntityDao;
 import com.gysoft.jdbc.tools.EntityTools;
 
@@ -146,7 +145,7 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public <T, R> SQL select(TypeFunction<T, R>... functions) {
-        selectFields.addAll(Arrays.stream(functions).map(function -> transfer(TypeFunction.getLambdaColumnName(function))).collect(Collectors.toList()));
+        selectFields.addAll(Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()));
         this.sqlType = EntityDao.SQL_SELECT;
         return this;
     }
@@ -185,7 +184,7 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public <T, R> SQL insert_into(String table, TypeFunction<T, R>... functions) {
         pair.setFirst(new String("INSERT INTO " + table + " ("
-                + Arrays.stream(functions).map(f -> transfer(TypeFunction.getLambdaColumnName(f))).collect(Collectors.joining(","))
+                + Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.joining(","))
                 + ") "));
         this.sqlType = EntityDao.SQL_INSERT;
         pair.setSecond(new ArrayList<>());
@@ -200,15 +199,52 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public <T, R> SQL insert_into(Class clss, String... fields) {
-        return insert_into(transfer(EntityTools.getTableName(clss)), fields);
+        return insert_into(EntityTools.getTableName(clss), fields);
     }
 
     public <T, R> SQL insert_into(Class clss, TypeFunction<T, R>... functions) {
-        return insert_into(transfer(EntityTools.getTableName(clss)), functions);
+        return insert_into(EntityTools.getTableName(clss), functions);
     }
 
     public <T, R> SQL insert_into(Class clss) {
-        return insert_into(transfer(EntityTools.getTableName(clss)));
+        return insert_into(EntityTools.getTableName(clss));
+    }
+
+    public SQL insert_ignore_into(String table, String... fields) {
+        pair.setFirst(new String("INSERT IGNORE INTO " + table + " ("
+                + Arrays.stream(fields).collect(Collectors.joining(","))
+                + ") "));
+        this.sqlType = EntityDao.SQL_INSERT;
+        pair.setSecond(new ArrayList<>());
+        return this;
+    }
+
+    public <T, R> SQL insert_ignore_into(String table, TypeFunction<T, R>... functions) {
+        pair.setFirst(new String("INSERT IGNORE INTO " + table + " ("
+                + Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.joining(","))
+                + ") "));
+        this.sqlType = EntityDao.SQL_INSERT;
+        pair.setSecond(new ArrayList<>());
+        return this;
+    }
+
+    public SQL insert_ignore_into(String table) {
+        pair.setFirst(new String("INSERT IGNORE INTO " + table + " "));
+        this.sqlType = EntityDao.SQL_INSERT;
+        pair.setSecond(new ArrayList<>());
+        return this;
+    }
+
+    public <T, R> SQL insert_ignore_into(Class clss, String... fields) {
+        return insert_ignore_into(EntityTools.getTableName(clss), fields);
+    }
+
+    public <T, R> SQL insert_ignore_into(Class clss, TypeFunction<T, R>... functions) {
+        return insert_ignore_into(EntityTools.getTableName(clss), functions);
+    }
+
+    public <T, R> SQL insert_ignore_into(Class clss) {
+        return insert_ignore_into(EntityTools.getTableName(clss));
     }
 
     public SQL truncate() {
@@ -244,7 +280,7 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public <T, R> SQL set(TypeFunction<T, R> function, Object value) {
-        kvs.add(new Pair(transfer(TypeFunction.getLambdaColumnName(function)), value));
+        kvs.add(new Pair(TypeFunction.getLambdaColumnName(function), value));
         return this;
     }
 
@@ -332,9 +368,6 @@ public class SQL extends AbstractCriteria<SQL> {
         return tableMeta;
     }
 
-    private final String transfer(String field) {
-        return "`" + field + "`";
-    }
 
     public String getSqlType() {
         return sqlType;
@@ -366,7 +399,7 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public <T, R> SQL onDuplicateKeyUpdate(TypeFunction<T, R> function, Object value) {
-        kvs.add(new Pair(transfer(TypeFunction.getLambdaColumnName(function)), value));
+        kvs.add(new Pair(TypeFunction.getLambdaColumnName(function), value));
         return this;
     }
 

@@ -267,9 +267,9 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
                     tempInsertSql.append("),");
                 }
                 tempInsertSql.setLength(tempInsertSql.length() - 1);
-                if(CollectionUtils.isNotEmpty(kvs)){
+                if (CollectionUtils.isNotEmpty(kvs)) {
                     tempInsertSql.append(" ON DUPLICATE KEY UPDATE ");
-                    for(Pair p : kvs){
+                    for (Pair p : kvs) {
                         if (p.getSecond() instanceof FieldReference) {
                             FieldReference fieldReference = (FieldReference) p.getSecond();
                             tempInsertSql.append(p.getFirst() + " = " + fieldReference.getField() + ", ");
@@ -317,12 +317,8 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         createSql.append("(");
         insertSql.append("(");
         columns.forEach(columnMeta -> {
-            createSql.append("`");
-            insertSql.append("`");
-            createSql.append(columnMeta.getName());
-            insertSql.append(columnMeta.getName());
-            createSql.append("` ");
-            insertSql.append("` ");
+            createSql.append(EntityTools.transferColumnName(columnMeta.getName()));
+            insertSql.append(EntityTools.transferColumnName(columnMeta.getName()));
             createSql.append(columnMeta.getDataType());
             if (columnMeta.isNotNull()) {
                 createSql.append(" not null");
@@ -350,9 +346,9 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         //索引
         List<IndexMeta> indexMetas = tableMeta.getIndexs();
         indexMetas.forEach(indexMeta -> {
-            createSql.append((indexMeta.isUnique() ? "unique" : "") + " key`" + indexMeta.getIndexName() + "`(");
+            createSql.append((indexMeta.isUnique() ? "unique" : "") + " key" + EntityTools.transferColumnName(indexMeta.getIndexName()) + "(");
             indexMeta.getColumnNames().forEach(cc -> {
-                createSql.append("`" + cc + "`");
+                createSql.append(EntityTools.transferColumnName(cc));
                 createSql.append(",");
             });
             createSql.setLength(createSql.length() - 1);
