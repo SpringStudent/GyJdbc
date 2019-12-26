@@ -181,7 +181,7 @@ public class CriteriaTest {
                 .addColumn().name("age").tinyint().notNull().commit()
                 .addColumn().name("email").jdbcType(JDBCType.LONGVARCHAR).defaultNull().commit()
                 .addColumn().name("birthday").datetime().notNull().defaultCurrentTimestamp().commit()
-                .index().unique().column("name").column("age").name("ix_name_age").commit()
+                .index().unique().column("name","age").name("ix_name_age").commit()
                 .index().name("ix_name").column("name").commit()
                 .engine(TableEngine.InnoDB).comment("用户").commit()
                 .values(1, "zhou", 23)
