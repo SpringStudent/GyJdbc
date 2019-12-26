@@ -121,7 +121,7 @@ new SQL().insert_into(TbAccount.class, "userName", "realName").values("test", "�
 
 #### 更多用法见
 
-#### https://github.com/SpringStudent/GyJdbcTest 
+#### https://github.com/SpringStudent/GyJdbcTest/blob/master/src/test/test/TestGyJdbc.java
 
 #### 多数据源支持
 
