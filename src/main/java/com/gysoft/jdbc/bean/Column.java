@@ -32,17 +32,17 @@ public class Column {
         return this;
     }
 
-    public Column defaults(String val) {
+    public Column defaultVal(String val) {
         columnMeta.setVal(val);
         return this;
     }
 
     public Column defaultCurrentTimestamp() {
-        return defaults("CURRENT_TIMESTAMP");
+        return defaultVal("CURRENT_TIMESTAMP");
     }
 
     public Column defaultNull() {
-        return defaults("NULL");
+        return defaultVal("NULL");
     }
 
     public Column length(int length) {

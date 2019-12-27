@@ -312,8 +312,8 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         if (tableMeta.isIfNotExists()) {
             createSql.append("IF NOT EXISTS ");
         }
-        createSql.append(tbName);
-        insertSql.append(tbName);
+        createSql.append(EntityTools.transferColumnName(tbName));
+        insertSql.append(EntityTools.transferColumnName(tbName));
         createSql.append("(");
         insertSql.append("(");
         columns.forEach(columnMeta -> {
@@ -346,13 +346,20 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         //索引
         List<IndexMeta> indexMetas = tableMeta.getIndexs();
         indexMetas.forEach(indexMeta -> {
-            createSql.append((indexMeta.isUnique() ? "unique" : "") + " key" + EntityTools.transferColumnName(indexMeta.getIndexName()) + "(");
+            createSql.append((indexMeta.isUnique() ? "unique" : "") + " key" + (indexMeta.getIndexName() == null ? EntityTools.transferColumnName(indexMeta.getColumnNames().iterator().next()) : EntityTools.transferColumnName(indexMeta.getIndexName())) + "(");
             indexMeta.getColumnNames().forEach(cc -> {
                 createSql.append(EntityTools.transferColumnName(cc));
                 createSql.append(",");
             });
             createSql.setLength(createSql.length() - 1);
-            createSql.append("),");
+            createSql.append(")");
+            if (StringUtils.isNotEmpty(indexMeta.getIndexType())) {
+                createSql.append(" ").append(indexMeta.getIndexType());
+            }
+            if (StringUtils.isNotEmpty(indexMeta.getComment())) {
+                createSql.append(" COMMENT '").append(indexMeta.getComment()).append("'");
+            }
+            createSql.append(",");
         });
         insertSql.setLength(insertSql.length() - 1);
         createSql.setLength(createSql.length() - 1);
@@ -408,4 +415,5 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     public EntityDao<T, Id> bindGroup(String group) throws Exception {
         return bindGroup(group, RoundbinLoadBalance.class);
     }
+
 }

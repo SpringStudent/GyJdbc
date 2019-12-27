@@ -177,7 +177,7 @@ public class CriteriaTest {
     public void testCreate() throws Exception {
         SQL sql = new SQL().create().table("halou").temporary()
                 .addColumn().name("id").integer().notNull().primary().autoIncrement().comment("主键").commit()
-                .addColumn().name("name").varchar(5).notNull().comment("名称").defaults("").commit()
+                .addColumn().name("name").varchar(5).notNull().comment("名称").defaultVal("").commit()
                 .addColumn().name("age").tinyint().notNull().commit()
                 .addColumn().name("email").jdbcType(JDBCType.LONGVARCHAR).defaultNull().commit()
                 .addColumn().name("birthday").datetime().notNull().defaultCurrentTimestamp().commit()

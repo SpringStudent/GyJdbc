@@ -35,6 +35,21 @@ public class Index {
         return this;
     }
 
+    public Index usingBtree(){
+        this.indexMeta.setIndexType("USING BTREE");
+        return this;
+    }
+
+    public Index usingHash(){
+        this.indexMeta.setIndexType("USING HASH");
+        return this;
+    }
+
+    public Index comment(String comment){
+        this.indexMeta.setComment(comment);
+        return this;
+    }
+
     public Table commit() {
         table.getTableMeta().getIndexs().add(this.indexMeta);
         return table;

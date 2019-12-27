@@ -19,6 +19,14 @@ public class IndexMeta {
      * 是否为唯一索引
      */
     private boolean unique;
+    /**
+     * 索引类型
+     */
+    private String indexType;
+    /**
+     * 备注
+     */
+    private String comment;
 
     public String getIndexName() {
         return indexName;
@@ -44,4 +52,19 @@ public class IndexMeta {
         this.unique = unique;
     }
 
+    public String getIndexType() {
+        return indexType;
+    }
+
+    public void setIndexType(String indexType) {
+        this.indexType = indexType;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
 }
