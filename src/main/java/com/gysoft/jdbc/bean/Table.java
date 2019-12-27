@@ -28,6 +28,10 @@ public class Table {
         return this;
     }
 
+    public Table table(){
+        return this;
+    }
+
     public Table ifNotExists(){
         tableMeta.setIfNotExists(true);
         return this;
