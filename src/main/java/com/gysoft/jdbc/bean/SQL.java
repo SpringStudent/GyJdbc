@@ -173,7 +173,7 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
-    public SQL insert_into(String table, String... fields) {
+    public SQL insertInto(String table, String... fields) {
         pair.setFirst(new String("INSERT INTO " + table + " ("
                 + Arrays.stream(fields).collect(Collectors.joining(","))
                 + ") "));
@@ -182,7 +182,7 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
-    public <T, R> SQL insert_into(String table, TypeFunction<T, R>... functions) {
+    public <T, R> SQL insertInto(String table, TypeFunction<T, R>... functions) {
         pair.setFirst(new String("INSERT INTO " + table + " ("
                 + Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.joining(","))
                 + ") "));
@@ -191,26 +191,26 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
-    public SQL insert_into(String table) {
+    public SQL insertInto(String table) {
         pair.setFirst(new String("INSERT INTO " + table + " "));
         this.sqlType = EntityDao.SQL_INSERT;
         pair.setSecond(new ArrayList<>());
         return this;
     }
 
-    public <T, R> SQL insert_into(Class clss, String... fields) {
-        return insert_into(EntityTools.getTableName(clss), fields);
+    public <T, R> SQL insertInto(Class clss, String... fields) {
+        return insertInto(EntityTools.getTableName(clss), fields);
     }
 
-    public <T, R> SQL insert_into(Class clss, TypeFunction<T, R>... functions) {
-        return insert_into(EntityTools.getTableName(clss), functions);
+    public <T, R> SQL insertInto(Class clss, TypeFunction<T, R>... functions) {
+        return insertInto(EntityTools.getTableName(clss), functions);
     }
 
-    public <T, R> SQL insert_into(Class clss) {
-        return insert_into(EntityTools.getTableName(clss));
+    public <T, R> SQL insertInto(Class clss) {
+        return insertInto(EntityTools.getTableName(clss));
     }
 
-    public SQL insert_ignore_into(String table, String... fields) {
+    public SQL insertIgnoreInto(String table, String... fields) {
         pair.setFirst(new String("INSERT IGNORE INTO " + table + " ("
                 + Arrays.stream(fields).collect(Collectors.joining(","))
                 + ") "));
@@ -219,7 +219,7 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
-    public <T, R> SQL insert_ignore_into(String table, TypeFunction<T, R>... functions) {
+    public <T, R> SQL insertIgnoreInto(String table, TypeFunction<T, R>... functions) {
         pair.setFirst(new String("INSERT IGNORE INTO " + table + " ("
                 + Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.joining(","))
                 + ") "));
@@ -228,23 +228,23 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
-    public SQL insert_ignore_into(String table) {
+    public SQL insertIgnoreInto(String table) {
         pair.setFirst(new String("INSERT IGNORE INTO " + table + " "));
         this.sqlType = EntityDao.SQL_INSERT;
         pair.setSecond(new ArrayList<>());
         return this;
     }
 
-    public <T, R> SQL insert_ignore_into(Class clss, String... fields) {
-        return insert_ignore_into(EntityTools.getTableName(clss), fields);
+    public <T, R> SQL insertIgnoreInto(Class clss, String... fields) {
+        return insertIgnoreInto(EntityTools.getTableName(clss), fields);
     }
 
-    public <T, R> SQL insert_ignore_into(Class clss, TypeFunction<T, R>... functions) {
-        return insert_ignore_into(EntityTools.getTableName(clss), functions);
+    public <T, R> SQL insertIgnoreInto(Class clss, TypeFunction<T, R>... functions) {
+        return insertIgnoreInto(EntityTools.getTableName(clss), functions);
     }
 
-    public <T, R> SQL insert_ignore_into(Class clss) {
-        return insert_ignore_into(EntityTools.getTableName(clss));
+    public <T, R> SQL insertIgnoreInto(Class clss) {
+        return insertIgnoreInto(EntityTools.getTableName(clss));
     }
 
     public SQL truncate() {
