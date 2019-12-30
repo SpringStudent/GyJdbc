@@ -10,7 +10,9 @@ import org.apache.commons.lang.ArrayUtils;
 import org.junit.Test;
 
 import java.sql.JDBCType;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
 
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
 
@@ -176,12 +178,12 @@ public class CriteriaTest {
     @Test
     public void testCreate() throws Exception {
         SQL sql = new SQL().create().table("halou").temporary()
-                .addColumn().name("id").integer().notNull().primary().autoIncrement().comment("主键").commit()
-                .addColumn().name("name").varchar(5).notNull().comment("名称").defaultVal("").commit()
-                .addColumn().name("age").tinyint().notNull().commit()
-                .addColumn().name("email").jdbcType(JDBCType.LONGVARCHAR).defaultNull().commit()
-                .addColumn().name("birthday").datetime().notNull().defaultCurrentTimestamp().commit()
-                .index().unique().column("name","age").name("ix_name_age").commit()
+                .column().name("id").integer().notNull().primary().autoIncrement().comment("主键").commit()
+                .column().name("name").varchar(5).notNull().comment("名称").defaultVal("").commit()
+                .column().name("age").tinyint().notNull().commit()
+                .column().name("email").jdbcType(JDBCType.LONGVARCHAR).defaultNull().commit()
+                .column().name("birthday").datetime().notNull().defaultCurrentTimestamp().commit()
+                .index().unique().column("name", "age").name("ix_name_age").commit()
                 .index().name("ix_name").column("name").commit()
                 .engine(TableEngine.InnoDB).comment("用户").commit()
                 .values(1, "zhou", 23)
@@ -320,7 +322,7 @@ public class CriteriaTest {
     }
 
     @Test
-    public <T,R>void testWhereSql() {
+    public void testWhereSql() {
         SQL sql = new SQL().select("*").from("test").where("id", new SQL().select("pid").from("tb_test").gt("type", 2));
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());

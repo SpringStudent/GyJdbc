@@ -52,7 +52,7 @@ public class Table {
         return sql;
     }
 
-    public Column addColumn() {
+    public Column column() {
         return new Column(this);
     }
 
