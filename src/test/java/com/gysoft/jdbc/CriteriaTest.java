@@ -290,6 +290,13 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from("test").as("t")
+                .leftJoin(new Joins().with("test").as("t1").on("t1.kid", "t.sid").and("t1.mmm", "=", "asd"))
+                .unionAll()
+                .select("*").from("t3").where("t3.mid", new SQL().select("mid").from("t4").where("t4.cco", "aaa"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
     }
 
     @Test
@@ -349,6 +356,11 @@ public class CriteriaTest {
         System.out.println(Arrays.toString(pair.getSecond()));
         sql = new SQL().select("*").from("student_score").where(new String[]{"number", "subject"}, new SQL()
                 .select("number", new ValueReference("母猪的产后护理")).from("student_info").limit(1));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().update("hehei").as("a").innerJoin(new Joins().with("hahei").as("b")
+                .on("a.epid", "b.epid")).set("a.id", new FieldReference("b.id"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));

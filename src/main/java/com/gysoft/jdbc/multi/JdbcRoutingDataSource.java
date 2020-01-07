@@ -10,8 +10,8 @@ import java.util.Map;
  */
 public class JdbcRoutingDataSource extends AbstractRoutingDataSource {
     /**
-     * 默认的数据源key;如果您的dao没有调用任何bind***()方法
-     * 或者在对应的方法上使用了@BindPoint("slave")注解
+     * 默认的数据源key;如果你的dao没有调用任何bind***()方法
+     * 或者在对应的方法上没有使用类似@BindPoint("slave")注解
      * 则该值会很有用,他会帮我们应用一个全局的数据源key
      */
     private String defaultLookUpKey;
