@@ -113,10 +113,8 @@ new Criteria().lt(TbUser::getAge, 28).orderBy(new Sort(TbUser::getAge)
 new SQL().select(TbUser::getName, TbUser::getEmail, TbUser::getRealName,TbUser::getMobile).from(TbUser.class).where(TbUser::getIsActive, 1);
 new SQL().select("age", countAs("age").as("num")).from(TbUser.class).orderBy(new Sort(TbUser::getAge)).groupBy(TbUser::getAge);
 new SQL().update(TbUser.class).set(TbUser::getRealName, "元林").set(TbUser::getEmail, "13888888888@163.com").where(TbUser::getName, "Smith");
-new SQL().delete("t1").from(TbAccount.class).innerJoin(
-new Joins().with(TbUser.class).as("t2").on("t1.userName", "t2.name");
-new SQL().insert_into(TbAccount.class, "userName", "realName").values("test", "测试")
-.values("test2", "测试2")
+new SQL().insertInto(TbAccount.class, "userName", "realName").values("test", "测试").values("test2", "测试2")
+new SQL().delete().from(TbUser.class).gt(TbUser::getAge,20)
 ```
 
 #### 更多用法见

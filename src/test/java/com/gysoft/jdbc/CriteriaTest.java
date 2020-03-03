@@ -13,6 +13,9 @@ import java.sql.JDBCType;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
 
@@ -48,7 +51,6 @@ public class CriteriaTest {
         criteria.groupBy("userName", "id");
         criteria.having(count("asd"), "in", Arrays.asList(1, 2, 3)).limit(1);
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
-
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
@@ -365,5 +367,4 @@ public class CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
     }
-
 }
