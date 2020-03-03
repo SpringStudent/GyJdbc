@@ -102,9 +102,14 @@ List<Map<String,Object>> queryMapsWithSql(SQL sql)throws Exception;
 `Criteria语法示例:`
 
 ```java
+//where name = 'zhouning'
 new Criteria().where(TbUser::getName, "zhouning").andIfAbsent(TbUser::getName, null);
+//where name in ('zhouning','yinhw')
 new Criteria().in(TbUser::getName, Arrays.asList("zhouning", "yinhw"));
-new Criteria().lt(TbUser::getAge, 28).orderBy(new Sort(TbUser::getAge)
+//where age < 28 order by age desc
+new Criteria().lt(TbUser::getAge, 28).orderBy(new Sort(TbUser::getAge);
+//where age < 20 and (name like '%zhou%' or realName like 'zhouning')
+new Criteria().lt(TbUser::getAge,20).andCriteria(new Criteria().like(TbUser::getName,"zhou").orLike(TbUser::getRealName,"周"));
 ```
 
 `SQL语法示例:`
@@ -113,8 +118,8 @@ new Criteria().lt(TbUser::getAge, 28).orderBy(new Sort(TbUser::getAge)
 new SQL().select(TbUser::getName, TbUser::getEmail, TbUser::getRealName,TbUser::getMobile).from(TbUser.class).where(TbUser::getIsActive, 1);
 new SQL().select("age", countAs("age").as("num")).from(TbUser.class).orderBy(new Sort(TbUser::getAge)).groupBy(TbUser::getAge);
 new SQL().update(TbUser.class).set(TbUser::getRealName, "元林").set(TbUser::getEmail, "13888888888@163.com").where(TbUser::getName, "Smith");
-new SQL().insertInto(TbAccount.class, "userName", "realName").values("test", "测试").values("test2", "测试2")
-new SQL().delete().from(TbUser.class).gt(TbUser::getAge,20)
+new SQL().insertInto(TbAccount.class, "userName", "realName").values("test", "测试").values("test2", "测试2");
+new SQL().delete().from(TbUser.class).gt(TbUser::getAge,20);
 ```
 
 #### 更多用法见
