@@ -115,7 +115,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     public S where(String[] keys, String opt, Object value) {
         if (keys == null || keys.length == 0) {
-            throw new RuntimeException("keys cannot be null or []");
+            throw new IllegalArgumentException("keys cannot be null or []");
         }
         if (keys.length == 1) {
             return this.where(keys[0], opt, value);
@@ -264,7 +264,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     public S or(String key, String opt, Object value) {
         if (CollectionUtils.isEmpty(this.whereParams)) {
-            throw new RuntimeException("sql error,condition \"or\" must be following after \"where\"!");
+            throw new IllegalArgumentException("sql error,condition \"or\" must be following after \"where\"!");
         }
         return this.where(" OR " + key, opt, value);
     }
@@ -339,14 +339,14 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     public S orCriteria(Criteria criteria) {
         if (CollectionUtils.isEmpty(whereParams)) {
-            throw new RuntimeException("sql error,condition \"orCriteria\" must be following after \"where\"!");
+            throw new IllegalArgumentException("sql error,condition \"orCriteria\" must be following after \"where\"!");
         }
         return criteria(criteria, "OR");
     }
 
     private S criteria(Criteria criteria, String criteriaType) {
         if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
-            throw new RuntimeException("unsupport doCriteria operate");
+            throw new IllegalArgumentException("unsupport doCriteria operate");
         }
         if (CollectionUtils.isEmpty(whereParams)) {
             whereParams.add(new WhereParam());

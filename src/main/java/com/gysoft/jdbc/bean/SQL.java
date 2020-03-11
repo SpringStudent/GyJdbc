@@ -182,8 +182,26 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
+    public SQL replaceInto(String table, String... fields) {
+        pair.setFirst(new String("REPLACE INTO " + table + " ("
+                + Arrays.stream(fields).collect(Collectors.joining(","))
+                + ") "));
+        this.sqlType = EntityDao.SQL_INSERT;
+        pair.setSecond(new ArrayList<>());
+        return this;
+    }
+
     public <T, R> SQL insertInto(String table, TypeFunction<T, R>... functions) {
         pair.setFirst(new String("INSERT INTO " + table + " ("
+                + Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.joining(","))
+                + ") "));
+        this.sqlType = EntityDao.SQL_INSERT;
+        pair.setSecond(new ArrayList<>());
+        return this;
+    }
+
+    public <T, R> SQL replaceInto(String table, TypeFunction<T, R>... functions) {
+        pair.setFirst(new String("REPLACE INTO " + table + " ("
                 + Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.joining(","))
                 + ") "));
         this.sqlType = EntityDao.SQL_INSERT;
@@ -198,16 +216,35 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
+    public SQL replaceInto(String table) {
+        pair.setFirst(new String("REPLACE INTO " + table + " "));
+        this.sqlType = EntityDao.SQL_INSERT;
+        pair.setSecond(new ArrayList<>());
+        return this;
+    }
+
     public <T, R> SQL insertInto(Class clss, String... fields) {
         return insertInto(EntityTools.getTableName(clss), fields);
+    }
+
+    public <T, R> SQL replaceInto(Class clss, String... fields) {
+        return replaceInto(EntityTools.getTableName(clss), fields);
     }
 
     public <T, R> SQL insertInto(Class clss, TypeFunction<T, R>... functions) {
         return insertInto(EntityTools.getTableName(clss), functions);
     }
 
+    public <T, R> SQL replaceInto(Class clss, TypeFunction<T, R>... functions) {
+        return replaceInto(EntityTools.getTableName(clss), functions);
+    }
+
     public <T, R> SQL insertInto(Class clss) {
         return insertInto(EntityTools.getTableName(clss));
+    }
+
+    public <T, R> SQL replaceInto(Class clss) {
+        return replaceInto(EntityTools.getTableName(clss));
     }
 
     public SQL insertIgnoreInto(String table, String... fields) {

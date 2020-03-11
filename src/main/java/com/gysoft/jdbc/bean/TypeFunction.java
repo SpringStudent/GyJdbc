@@ -28,7 +28,7 @@ public interface TypeFunction<T, R> extends Serializable, Function<T, R> {
             String fieldName = Introspector.decapitalize(getter.replace("get", ""));
             return EntityTools.transferColumnName(fieldName);
         } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 }
