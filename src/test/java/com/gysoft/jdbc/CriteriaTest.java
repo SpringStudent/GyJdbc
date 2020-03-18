@@ -367,4 +367,12 @@ public class CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
     }
+
+    @Test
+    public void testDual(){
+        SQL sql = new SQL().select(Dual.all).from(Dual.class);
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+    }
 }
