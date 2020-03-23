@@ -9,6 +9,7 @@ import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.lang.ArrayUtils;
 import org.junit.Test;
 
+import java.sql.Array;
 import java.sql.JDBCType;
 import java.util.Arrays;
 import java.util.Date;
@@ -141,7 +142,7 @@ public class CriteriaTest {
     }
 
     @Table
-    public static class TableTest {
+    public static class TableTest extends Dual{
 
     }
 
@@ -366,12 +367,11 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-    }
-
-    @Test
-    public void testDual(){
-        SQL sql = new SQL().select(Dual.all).from(Dual.class);
-        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        sql = new SQL().select("a.*").from("table_a").as("a")
+                .leftJoin(new Joins().with("table_b").as("b").on("a.id","b.pid")
+                .and("a.key",new FieldReference("b.pos")).on("a.nn","b.nnns").andIfAbsent("a.null",null))
+                .in("a.ksd", Arrays.asList(1,4,65,3));
+        pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
     }

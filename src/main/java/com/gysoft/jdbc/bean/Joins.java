@@ -51,6 +51,10 @@ public class Joins {
             return this;
         }
 
+        public On and(String key, Object value) {
+            return this.and(key,"=",value);
+        }
+
         public On and(String key, String opt, Object value) {
             CriteriaProxy criteriaProxy = new CriteriaProxy();
             Pair<String, Object[]> pair = SqlMakeTools.doCriteria(new Criteria().where(key, opt, value), new StringBuilder());
@@ -62,11 +66,19 @@ public class Joins {
             return this;
         }
 
+        public On andIfAbsent(String key, Object value) {
+            return this.andIfAbsent(key,"=",value);
+        }
+
         public On andIfAbsent(String key, String opt, Object value) {
             if (AuxiliaryOperation.getDefaultPredicate(value).test(value)) {
                 return and(key, opt, value);
             }
             return this;
+        }
+
+        public On andIfAbsent(String key, Object value, Predicate<Object> predicate) {
+           return this.andIfAbsent(key, "=", value, predicate);
         }
 
         public On andIfAbsent(String key, String opt, Object value, Predicate<Object> predicate) {
@@ -92,9 +104,9 @@ public class Joins {
         return getWith();
     }
 
-    public With with(SQL sql){
-        Pair<String,Object[]> pair = SqlMakeTools.useSql(sql);
-        joinSql.append(" %s "+"("+pair.getFirst()+")");
+    public With with(SQL sql) {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        joinSql.append(" %s " + "(" + pair.getFirst() + ")");
         CriteriaProxy criteriaProxy = new CriteriaProxy();
         criteriaProxy.setWhereParamsIndex(-1);
         criteriaProxy.setParams(pair.getSecond());

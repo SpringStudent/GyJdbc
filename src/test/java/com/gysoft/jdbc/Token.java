@@ -8,7 +8,6 @@ import com.gysoft.jdbc.annotation.Table;
  */
 @Table(name = "tb_token")
 public class Token {
-
     private Integer id;
 
     private Integer size;
