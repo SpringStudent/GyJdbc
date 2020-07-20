@@ -28,9 +28,6 @@ public class SpringJdbc implements ISpringJdbc {
 
     private static final Map<Integer, String> paramSymbol = new HashMap<Integer, String>();
 
-    private SpringJdbc(JdbcTemplate jdbcTemplate){
-        this.jdbcTemplate = jdbcTemplate;
-    }
     @Override
     public String insertForId(String sql) throws Exception {
         return this.insertForId(sql, null);
