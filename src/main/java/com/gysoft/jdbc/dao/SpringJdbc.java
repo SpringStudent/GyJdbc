@@ -41,6 +41,10 @@ public class SpringJdbc implements ISpringJdbc {
         return jdbcTemplate;
     }
 
+    public void setJdbcTemplate(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
     @Override
     public NamedParameterJdbcTemplate getNamedParameterJdbcTemplate() {
         return new NamedParameterJdbcTemplate(jdbcTemplate);
