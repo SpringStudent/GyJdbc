@@ -1,6 +1,7 @@
 package com.gysoft.jdbc;
 
 import com.gysoft.jdbc.annotation.Table;
+import com.gysoft.jdbc.tools.SqlMakeTools;
 
 /**
  * @author 周宁

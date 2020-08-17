@@ -53,6 +53,14 @@ public interface EntityDao<T,Id extends Serializable>{
 	void batchSave(List<T> list) throws Exception ;
 
 	/**
+	 * 批量保存指定的持久化对象
+	 * @param list 实体对象集合
+	 * @return int插入记录的条数
+	 * @throws Exception
+	 */
+	int save(List<T> list)throws Exception;
+
+	/**
 	 * 批量更新指定的持久化对象
 	 * @throws Exception sql错误抛出异常
 	 * @param list 实体对象集合

@@ -545,4 +545,5 @@ public class SqlMakeTools {
         pair.setFirst(pair.getFirst().replace("( UNION", "("));
         return pair;
     }
+
 }

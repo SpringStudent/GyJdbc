@@ -1,7 +1,16 @@
 package com.gysoft.jdbc.dao;
 
 
-import com.gysoft.jdbc.bean.*;
+import com.gysoft.jdbc.bean.ColumnMeta;
+import com.gysoft.jdbc.bean.Criteria;
+import com.gysoft.jdbc.bean.FieldReference;
+import com.gysoft.jdbc.bean.IndexMeta;
+import com.gysoft.jdbc.bean.Page;
+import com.gysoft.jdbc.bean.PageResult;
+import com.gysoft.jdbc.bean.Pair;
+import com.gysoft.jdbc.bean.Result;
+import com.gysoft.jdbc.bean.SQL;
+import com.gysoft.jdbc.bean.TableMeta;
 import com.gysoft.jdbc.multi.DataSourceBind;
 import com.gysoft.jdbc.multi.DataSourceBindHolder;
 import com.gysoft.jdbc.multi.LoadBalance;
@@ -9,19 +18,26 @@ import com.gysoft.jdbc.multi.RoundbinLoadBalance;
 import com.gysoft.jdbc.tools.CollectionUtil;
 import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
+import java.io.Serializable;
+import java.lang.reflect.ParameterizedType;
+import java.sql.JDBCType;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
-import org.springframework.jdbc.core.*;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.ColumnMapRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.io.Serializable;
-import java.lang.reflect.ParameterizedType;
-import java.sql.JDBCType;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 支持注解，若实体没有注解，实体类名需要按照驼峰命名，属性与数据库字段一致不区分大小写
@@ -97,6 +113,50 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             }
         }
         jdbcTemplate.batchUpdate(sql, batchArgs, argTypes);
+    }
+
+    @Override
+    public int save(List<T> list) throws Exception {
+        if (CollectionUtils.isEmpty(list)) {
+            return 0;
+        }
+        //分页操作
+        String sql = SqlMakeTools.makeSql(entityClass, tableName, SQL_INSERT);
+        int[] argTypes = SqlMakeTools.setArgTypes(list.get(0), SQL_INSERT);
+        List<Object[]> batchArgs = new ArrayList<Object[]>();
+        for (int i = 0; i < list.size(); i++) {
+            batchArgs.add(SqlMakeTools.setArgs(list.get(i), SQL_INSERT));
+        }
+        //将sql分为左右两部分
+        int index = sql.indexOf("VALUES");
+        index = sql.indexOf("(", index);
+        //sql的左侧insert into
+        String sqlLeft = sql.substring(0, index);
+        //sql的右侧values
+        String sqlRight = sql.substring(index);
+        //分批次插入
+        List<Object[]>[] batchArgsArr = CollectionUtil.slice(batchArgs, BATCH_PAGE_SIZE);
+        int resultSize = 0;
+        for (List<Object[]> args : batchArgsArr) {
+            int batchSize = args.size();
+            StringBuilder insSql = new StringBuilder(sqlLeft);
+            List<Object> params = new ArrayList<>();
+            int[] types = new int[batchSize*argTypes.length];
+            for (int i = 0; i < batchSize; i++) {
+                for (int j = 0; j < argTypes.length; j++) {
+                    types[i * argTypes.length + j] = argTypes[j];
+                }
+                insSql.append(sqlRight).append(",");
+            }
+            insSql.setLength(insSql.length()-1);
+            for(Object[] objs : args){
+                for(Object arg : objs){
+                    params.add(arg);
+                }
+            }
+            resultSize = resultSize+jdbcTemplate.update(insSql.toString(),params.toArray(),types);
+        }
+        return resultSize;
     }
 
     @Override
@@ -226,7 +286,9 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public <K, V> Map<K, V> queryMapWithSql(SQL sql, ResultSetExtractor<Map<K, V>> resultSetExtractor) throws Exception {
+    public <K, V> Map<K, V> queryMapWithSql(SQL sql,
+                                            ResultSetExtractor<Map<K, V>> resultSetExtractor)
+            throws Exception {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), resultSetExtractor);
     }
@@ -272,7 +334,8 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
                     for (Pair p : kvs) {
                         if (p.getSecond() instanceof FieldReference) {
                             FieldReference fieldReference = (FieldReference) p.getSecond();
-                            tempInsertSql.append(p.getFirst() + " = " + fieldReference.getField() + ", ");
+                            tempInsertSql.append(p.getFirst() + " = " + fieldReference.getField()
+                                    + ", ");
                         } else {
                             tempInsertSql.append(p.getFirst() + " = ?, ");
                             paramList.add(p.getSecond());
@@ -298,7 +361,9 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         StringBuilder createSql = new StringBuilder();
         StringBuilder insertSql = new StringBuilder();
         //创建表
-        String tbName = StringUtils.isEmpty(tableMeta.getName()) ? "tmp_" + UUID.randomUUID().toString().toLowerCase().replace("-", "") : tableMeta.getName();
+        String tbName =
+                StringUtils.isEmpty(tableMeta.getName()) ? "tmp_" + UUID.randomUUID().toString()
+                        .toLowerCase().replace("-", "") : tableMeta.getName();
         List<ColumnMeta> columns = tableMeta.getColumns();
         if (columns.isEmpty()) {
             throw new IllegalArgumentException("未指定任何字段");
@@ -346,7 +411,10 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         //索引
         List<IndexMeta> indexMetas = tableMeta.getIndexs();
         indexMetas.forEach(indexMeta -> {
-            createSql.append((indexMeta.isUnique() ? "unique" : "") + " key" + (indexMeta.getIndexName() == null ? EntityTools.transferColumnName(indexMeta.getColumnNames().iterator().next()) : EntityTools.transferColumnName(indexMeta.getIndexName())) + "(");
+            createSql.append((indexMeta.isUnique() ? "unique" : "") + " key" + (
+                    indexMeta.getIndexName() == null ? EntityTools
+                            .transferColumnName(indexMeta.getColumnNames().iterator().next())
+                            : EntityTools.transferColumnName(indexMeta.getIndexName())) + "(");
             indexMeta.getColumnNames().forEach(cc -> {
                 createSql.append(EntityTools.transferColumnName(cc));
                 createSql.append(",");
@@ -406,7 +474,8 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public EntityDao<T, Id> bindGroup(String group, Class<? extends LoadBalance> loadBalance) throws Exception {
+    public EntityDao<T, Id> bindGroup(String group, Class<? extends LoadBalance> loadBalance)
+            throws Exception {
         DataSourceBindHolder.setDataSource(DataSourceBind.bindGroup(group, loadBalance));
         return this;
     }
