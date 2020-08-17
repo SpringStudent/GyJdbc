@@ -36,14 +36,14 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @throws Exception sql错误抛出异常
 	 * @param t 实体对象
 	 */
-	void save(T t) throws Exception ;
+	int save(T t) throws Exception ;
 
 	/**
 	 * 修改指定的持久化对象
 	 * @throws Exception sql错误抛出异常
 	 * @param t 实体对象
 	 */
-	void update(T t) throws Exception ;
+	int update(T t) throws Exception ;
 
 	/**
 	 * 批量保存指定的持久化对象
@@ -58,7 +58,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @return int插入记录的条数
 	 * @throws Exception
 	 */
-	int save(List<T> list)throws Exception;
+	int saveAll(List<T> list)throws Exception;
 
 	/**
 	 * 批量更新指定的持久化对象
@@ -72,21 +72,21 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @throws Exception sql错误抛出异常
 	 * @param id 实体主键
 	 */
-	void delete(Id id) throws Exception ;
+	int delete(Id id) throws Exception ;
 
 	/**
 	 * 根据where条件删除
 	 * @param criteria 条件参数
 	 * @throws Exception sql错误抛出异常
 	 */
-	void deleteWithCriteria(Criteria criteria) throws Exception;
+	int deleteWithCriteria(Criteria criteria) throws Exception;
 
 	/**
 	 * 根据主键批量删除
 	 * @throws Exception sql错误抛出异常
 	 * @param ids 主键集合
 	 */
-	void batchDelete(List<Id> ids) throws Exception ;
+	int batchDelete(List<Id> ids) throws Exception ;
 
 	/**
 	 * 根据ID检索持久化对象

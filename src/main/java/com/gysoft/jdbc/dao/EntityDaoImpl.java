@@ -78,19 +78,19 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public void save(T t) throws Exception {
+    public int save(T t) throws Exception {
         String sql = SqlMakeTools.makeSql(entityClass, tableName, SQL_INSERT);
         Object[] args = SqlMakeTools.setArgs(t, SQL_INSERT);
         int[] argTypes = SqlMakeTools.setArgTypes(t, SQL_INSERT);
-        jdbcTemplate.update(sql, args, argTypes);
+        return jdbcTemplate.update(sql, args, argTypes);
     }
 
     @Override
-    public void update(T t) throws Exception {
+    public int update(T t) throws Exception {
         String sql = SqlMakeTools.makeSql(entityClass, tableName, SQL_UPDATE);
         Object[] args = SqlMakeTools.setArgs(t, SQL_UPDATE);
         int[] argTypes = SqlMakeTools.setArgTypes(t, SQL_UPDATE);
-        jdbcTemplate.update(sql, args, argTypes);
+        return jdbcTemplate.update(sql, args, argTypes);
     }
 
     @Override
@@ -116,7 +116,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public int save(List<T> list) throws Exception {
+    public int saveAll(List<T> list) throws Exception {
         if (CollectionUtils.isEmpty(list)) {
             return 0;
         }
@@ -196,20 +196,21 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public void delete(Id id) throws Exception {
-        this.batchDelete(Collections.singletonList(id));
+    public int delete(Id id) throws Exception {
+        return this.batchDelete(Collections.singletonList(id));
     }
 
     @Override
-    public void batchDelete(List<Id> ids) throws Exception {
+    public int batchDelete(List<Id> ids) throws Exception {
         if (CollectionUtils.isNotEmpty(ids)) {
             StringBuilder sql = new StringBuilder();
             List<String> marks = ids.stream().map(s -> "?").collect(Collectors.toList());
             sql.append(" DELETE FROM " + tableName + " WHERE " + primaryKey + " in (");
             sql.append(String.join(",", marks));
             sql.append(")");
-            jdbcTemplate.update(sql.toString(), ids.toArray());
+            return jdbcTemplate.update(sql.toString(), ids.toArray());
         }
+        return 0;
     }
 
     @SuppressWarnings("unchecked")
@@ -253,13 +254,13 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public void deleteWithCriteria(Criteria criteria) throws Exception {
+    public int deleteWithCriteria(Criteria criteria) throws Exception {
         if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
             throw new RuntimeException("不支持的操作!");
         }
         String sql = "delete FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
-        jdbcTemplate.update(pair.getFirst(), pair.getSecond());
+        return jdbcTemplate.update(pair.getFirst(), pair.getSecond());
     }
 
     @Override
