@@ -136,11 +136,16 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         String sqlRight = sql.substring(index);
         //分批次插入
         List<Object[]>[] batchArgsArr = CollectionUtil.slice(batchArgs, BATCH_PAGE_SIZE);
+        //影响记录数量
         int resultSize = 0;
         for (List<Object[]> args : batchArgsArr) {
+            //本批次的大小
             int batchSize = args.size();
+            //插入语句
             StringBuilder insSql = new StringBuilder(sqlLeft);
+            //参数
             List<Object> params = new ArrayList<>();
+            //字段类型数组
             int[] types = new int[batchSize*argTypes.length];
             for (int i = 0; i < batchSize; i++) {
                 for (int j = 0; j < argTypes.length; j++) {
