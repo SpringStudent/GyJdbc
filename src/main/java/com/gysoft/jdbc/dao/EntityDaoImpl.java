@@ -42,7 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 支持注解，若实体没有注解，实体类名需要按照驼峰命名，属性与数据库字段一致不区分大小写
  *
- * @author 彭佳佳
+ * @author 周宁
  */
 public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, Id> {
 
@@ -66,7 +66,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     private String primaryKey;
 
     @SuppressWarnings("rawtypes")
-    private RowMapper rowMapper;
+    private RowMapper<T> rowMapper;
 
     @SuppressWarnings("unchecked")
     public EntityDaoImpl() {
@@ -190,8 +190,13 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @SuppressWarnings("unchecked")
     @Override
     public T queryOne(Id id) throws Exception {
+        return this.queryOne(id,rowMapper);
+    }
+
+    @Override
+    public T queryOne(Id id, RowMapper<T> tRowMapper) throws Exception {
         String sql = "SELECT * FROM " + tableName + " WHERE " + primaryKey + " = ?";
-        List<T> result = jdbcTemplate.query(sql, rowMapper, id);
+        List<T> result = jdbcTemplate.query(sql, tRowMapper, id);
         return DataAccessUtils.singleResult(result);
     }
 
@@ -216,19 +221,33 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @SuppressWarnings("unchecked")
     @Override
     public List<T> queryAll() throws Exception {
-        String sql = "SELECT * FROM " + tableName;
-        return jdbcTemplate.query(sql, rowMapper);
+        return this.queryAll(rowMapper);
     }
 
+    @Override
+    public List<T> queryAll(RowMapper<T> tRowMapper) throws Exception {
+        String sql = "SELECT * FROM " + tableName;
+        return jdbcTemplate.query(sql, tRowMapper);
+    }
 
     @Override
     public PageResult<T> pageQuery(Page page) throws Exception {
         return this.pageQueryWithCriteria(page, null);
     }
 
+    @Override
+    public PageResult<T> pageQuery(Page page, RowMapper<T> tRowMapper) throws Exception {
+        return this.pageQueryWithCriteria(page,null,rowMapper);
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria) throws Exception {
+        return this.pageQueryWithCriteria(page,criteria,rowMapper);
+    }
+
+    @Override
+    public PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria, RowMapper<T> tRowMapper) throws Exception {
         String sql = "SELECT * FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
         sql = pair.getFirst();
@@ -239,7 +258,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             params = ArrayUtils.add(params, page.getOffset());
             params = ArrayUtils.add(params, page.getPageSize());
         }
-        List<T> paged = jdbcTemplate.query(pageSql, params, rowMapper);
+        List<T> paged = jdbcTemplate.query(pageSql, params, tRowMapper);
         String countSql = "SELECT FOUND_ROWS() ";
         int count = jdbcTemplate.queryForObject(countSql, Integer.class);
         return new PageResult(paged, count);
@@ -248,9 +267,14 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @SuppressWarnings("unchecked")
     @Override
     public List<T> queryWithCriteria(Criteria criteria) throws Exception {
+        return this.queryWithCriteria(criteria,rowMapper);
+    }
+
+    @Override
+    public List<T> queryWithCriteria(Criteria criteria, RowMapper<T> tRowMapper) throws Exception {
         String sql = "SELECT * FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
-        return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), rowMapper);
+        return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), tRowMapper);
     }
 
     @Override
@@ -266,6 +290,12 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @Override
     public T queryOne(Criteria criteria) throws Exception {
         List<T> result = this.queryWithCriteria(criteria);
+        return DataAccessUtils.singleResult(result);
+    }
+
+    @Override
+    public T queryOne(Criteria criteria, RowMapper<T> tRowMapper) throws Exception {
+        List<T> result = this.queryWithCriteria(criteria,tRowMapper);
         return DataAccessUtils.singleResult(result);
     }
 

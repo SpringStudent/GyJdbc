@@ -7,6 +7,8 @@ import org.springframework.jdbc.core.ResultSetExtractor;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import org.springframework.jdbc.core.RowMapper;
+
 /**
  *@author 周宁
  */
@@ -21,15 +23,6 @@ public interface EntityDao<T,Id extends Serializable>{
 	String SQL_DELETE = "delete";
 	String SQL_TRUNCATE = "truncate";
 	String SQL_DROP = "drop";
-	String SPACE = " ";
-	String SQL_IN = "IN";
-	String SQL_NOT_IN = "NOT IN";
-	char IN_START = '(';
-	char IN_END = ')';
-	String SQL_IS = "IS";
-	String SQL_ORDER_BY = "ORDER BY";
-	String SQL_GROUP_BY = "GROUP BY";
-	String SQL_BETWEEN_AND = "BETWEEN ? AND ?";
 
 	/**
 	 * 插入指定的持久化对象
@@ -97,11 +90,28 @@ public interface EntityDao<T,Id extends Serializable>{
 	T queryOne(Id id) throws Exception ;
 
 	/**
+	 * 根据ID检索持久化对象
+	 * @param id 主键
+	 * @param tRowMapper 自定义实体映射mapper
+	 * @return T 实体对象
+	 * @throws Exception sql错误抛出异常
+	 */
+	T queryOne(Id id, RowMapper<T> tRowMapper) throws Exception ;
+
+	/**
 	 * 检索所有持久化对象
 	 * @return List 实体对象列表
 	 * @throws Exception sql错误抛出异常
 	 */
 	List<T> queryAll() throws Exception ;
+
+	/**
+	 * 检索所有持久化对象
+	 * @param tRowMapper 自定义实体映射mapper
+	 * @return List 实体对象列表
+	 * @throws Exception sql错误抛出异常
+	 */
+	List<T> queryAll(RowMapper<T> tRowMapper) throws Exception ;
 
 	/**
 	 * 分页查询
@@ -110,6 +120,15 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @throws Exception sql错误抛出异常
 	 */
 	PageResult<T> pageQuery(Page page) throws Exception;
+
+	/**
+	 * 分页查询
+	 * @param page 分页条件
+	 * @param tRowMapper 自定义实体映射mapper
+	 * @return PageResult 分页查询结果
+	 * @throws Exception sql错误抛出异常
+	 */
+	PageResult<T> pageQuery(Page page,RowMapper<T> tRowMapper) throws Exception;
 
 	/**
 	 * 分页条件查询
@@ -121,6 +140,16 @@ public interface EntityDao<T,Id extends Serializable>{
 	PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria) throws Exception;
 
 	/**
+	 * 分页条件查询
+	 * @param page 分页条件
+	 * @param criteria 查询条件
+	 * @param tRowMapper 自定义实体映射mapper
+	 * @return PageResult 分页查询结果
+	 * @throws Exception sql错误抛出异常
+	 */
+	PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria,RowMapper<T> tRowMapper) throws Exception;
+
+	/**
 	 * 条件查询
 	 * @param criteria 查询条件
 	 * @return List 结果集
@@ -129,12 +158,30 @@ public interface EntityDao<T,Id extends Serializable>{
 	List<T> queryWithCriteria(Criteria criteria) throws Exception;
 
 	/**
+	 * 条件查询
+	 * @param criteria 查询条件
+	 * @param tRowMapper 自定义实体映射mapper
+	 * @return List 结果集
+	 * @throws Exception sql错误抛出异常
+	 */
+	List<T> queryWithCriteria(Criteria criteria,RowMapper<T> tRowMapper) throws Exception;
+
+	/**
 	 * 根据条件查询
 	 * @param criteria 查询条件
 	 * @return T 实体对象
 	 * @throws Exception sql错误抛出异常
 	 */
 	T queryOne(Criteria criteria)throws Exception;
+
+	/**
+	 * 根据条件查询
+	 * @param criteria 查询条件
+	 * @param tRowMapper 自定义实体映射mapper
+	 * @return T 实体对象
+	 * @throws Exception sql错误抛出异常
+	 */
+	T queryOne(Criteria criteria,RowMapper<T> tRowMapper)throws Exception;
 
 	/**
 	 * 根据sql查询

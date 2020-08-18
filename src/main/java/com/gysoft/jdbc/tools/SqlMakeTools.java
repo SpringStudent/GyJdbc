@@ -18,7 +18,6 @@ import static com.gysoft.jdbc.dao.EntityDao.*;
  * @author 周宁
  */
 public class SqlMakeTools {
-
     /**
      * 组装SQL
      *
@@ -242,9 +241,9 @@ public class SqlMakeTools {
                         String key = whereParam.getKey();
                         String opt = whereParam.getOpt();
                         Object value = whereParam.getValue();
-                        sql.append(key).append(SPACE);
-                        if (SQL_IN.equals(opt.toUpperCase()) || SQL_NOT_IN.equals(opt.toUpperCase())) {
-                            sql.append(opt).append(IN_START);
+                        sql.append(key).append(" ");
+                        if ("IN".equals(opt.toUpperCase()) || "NOT IN".equals(opt.toUpperCase())) {
+                            sql.append(opt).append('(');
                             if (value instanceof Collection) {
                                 if (CollectionUtils.isNotEmpty(((Collection) value))) {
                                     Iterator iterator = ((Collection) value).iterator();
@@ -260,28 +259,28 @@ public class SqlMakeTools {
                                 sql.append(inPair.getFirst());
                                 params = ArrayUtils.addAll(params, inPair.getSecond());
                             } else {
-                                sql.append(SPACE).append("?");
+                                sql.append(" ").append("?");
                                 params = ArrayUtils.add(params, value);
                             }
-                            sql.append(IN_END);
-                        } else if (SQL_IS.equals(opt.toUpperCase())) {
-                            sql.append(opt).append(SPACE).append(value);
-                        } else if (SQL_BETWEEN_AND.equals(opt.toUpperCase())) {
-                            sql.append(opt).append(SPACE);
+                            sql.append(')');
+                        } else if ("IS".equals(opt.toUpperCase())) {
+                            sql.append(opt).append(" ").append(value);
+                        } else if ("BETWEEN ? AND ?".equals(opt.toUpperCase())) {
+                            sql.append(opt).append(" ");
                             Pair<Object, Object> pair = (Pair<Object, Object>) value;
                             params = ArrayUtils.add(params, pair.getFirst());
                             params = ArrayUtils.add(params, pair.getSecond());
                         } else {
                             if (value instanceof FieldReference) {
                                 FieldReference fieldReference = (FieldReference) value;
-                                sql.append(opt).append(SPACE).append(fieldReference.getField());
+                                sql.append(opt).append(" ").append(fieldReference.getField());
                             } else if (value instanceof SQL) {
                                 SQL whereSql = (SQL) value;
                                 Pair<String, Object[]> wherePair = useSql(whereSql);
-                                sql.append(opt).append(IN_START).append(wherePair.getFirst()).append(IN_END);
+                                sql.append(opt).append('(').append(wherePair.getFirst()).append(')');
                                 params = ArrayUtils.addAll(params, wherePair.getSecond());
                             } else {
-                                sql.append(opt).append(SPACE).append("?");
+                                sql.append(opt).append(" ").append("?");
                                 params = ArrayUtils.add(params, value);
                             }
                         }
@@ -293,7 +292,7 @@ public class SqlMakeTools {
             }
             //group by条件拼接
             if (CollectionUtils.isNotEmpty(criteria.getGroupFields())) {
-                sql.append(SPACE).append(SQL_GROUP_BY).append(SPACE);
+                sql.append(" ").append("GROUP BY").append(" ");
                 Set<String> groupByFileds = criteria.getGroupFields();
                 for (String groupByFiled : groupByFileds) {
                     sql.append(groupByFiled + ",");
@@ -301,16 +300,16 @@ public class SqlMakeTools {
                 sql.setLength(sql.length() - 1);
                 if (criteria.getHaving() != null) {
                     Pair<String, Object[]> having = criteria.getHaving();
-                    sql.append(SPACE).append("HAVING").append(having.getFirst());
+                    sql.append(" ").append("HAVING").append(having.getFirst());
                     params = ArrayUtils.addAll(params, having.getSecond());
                 }
             }
             //排序条件拼接
             if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
-                sql.append(SPACE).append(SQL_ORDER_BY).append(SPACE);
+                sql.append(" ").append("ORDER BY").append(" ");
                 Set<Sort> sorts = criteria.getSorts();
                 for (Sort sort : sorts) {
-                    sql.append(sort.getSortField()).append(SPACE).append(sort.getSortType()).append(",");
+                    sql.append(sort.getSortField()).append(" ").append(sort.getSortType()).append(",");
                 }
                 sql.setLength(sql.length() - 1);
             }
@@ -344,11 +343,11 @@ public class SqlMakeTools {
                         if (criteriaProxy.getWhereParamsIndex() == -1) {
                             sql.append(" AND ").append(criteriaProxy.getSql());
                         } else {
-                            sql.append(IN_START).append(criteriaProxy.getSql()).append(IN_END).append(" AND ");
+                            sql.append('(').append(criteriaProxy.getSql()).append(')').append(" AND ");
                         }
                     } else if (criteriaType.equals("WITH")) {
                     } else {
-                        sql.append(SPACE).append(criteriaType).append(IN_START).append(criteriaProxy.getSql()).append(IN_END).append(" AND ");
+                        sql.append(" ").append(criteriaType).append('(').append(criteriaProxy.getSql()).append(')').append(" AND ");
                     }
                     params = ArrayUtils.addAll(params, criteriaProxy.getParams());
                 }
@@ -432,21 +431,21 @@ public class SqlMakeTools {
                 sql.append(sqlObj.getTbName());
             }
             if (StringUtils.isNotEmpty(sqlObj.getAliasName())) {
-                sql.append(SPACE + sqlObj.getAliasName());
+                sql.append(" " + sqlObj.getAliasName());
             }
         } else if (sqlObj.getSqlType().equals(EntityDao.SQL_DELETE)) {
             sql.append("DELETE ");
             if (StringUtils.isNotEmpty(sqlObj.getAliasName())) {
                 sql.append(sqlObj.getAliasName());
-                sql.append(SPACE);
+                sql.append(" ");
             }
             sql.append("FROM");
             if (StringUtils.isNotEmpty(sqlObj.getTbName())) {
-                sql.append(SPACE);
+                sql.append(" ");
                 sql.append(sqlObj.getTbName());
             }
             if (StringUtils.isNotEmpty(sqlObj.getAliasName())) {
-                sql.append(SPACE);
+                sql.append(" ");
                 sql.append(sqlObj.getAliasName());
             }
         } else if (sqlObj.getSqlType().equals(EntityDao.SQL_UPDATE)) {
@@ -455,7 +454,7 @@ public class SqlMakeTools {
                 sql.append(sqlObj.getTbName());
             }
             if (StringUtils.isNotEmpty(sqlObj.getAliasName())) {
-                sql.append(SPACE);
+                sql.append(" ");
                 sql.append(sqlObj.getAliasName());
             }
         } else if (sqlObj.getSqlType().equals(EntityDao.SQL_TRUNCATE)) {
