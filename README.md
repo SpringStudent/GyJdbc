@@ -18,7 +18,7 @@ GyJdbc基于jdbctemplate的类似JPA的持久层框架封装，使用优势：
 <dependency>
     <groupId>io.github.springstudent</groupId>
     <artifactId>GyJdbc</artifactId>
-    <version>{最新版本}</version>
+    <version>1.0.0.RELEASE</version>
 </dependency>
 ```
 
