@@ -18,6 +18,7 @@ import com.gysoft.jdbc.multi.RoundbinLoadBalance;
 import com.gysoft.jdbc.tools.CollectionUtil;
 import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
+
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.sql.JDBCType;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -146,20 +148,20 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             //参数
             List<Object> params = new ArrayList<>();
             //字段类型数组
-            int[] types = new int[batchSize*argTypes.length];
+            int[] types = new int[batchSize * argTypes.length];
             for (int i = 0; i < batchSize; i++) {
                 for (int j = 0; j < argTypes.length; j++) {
                     types[i * argTypes.length + j] = argTypes[j];
                 }
                 insSql.append(sqlRight).append(",");
             }
-            insSql.setLength(insSql.length()-1);
-            for(Object[] objs : args){
-                for(Object arg : objs){
+            insSql.setLength(insSql.length() - 1);
+            for (Object[] objs : args) {
+                for (Object arg : objs) {
                     params.add(arg);
                 }
             }
-            resultSize = resultSize+jdbcTemplate.update(insSql.toString(),params.toArray(),types);
+            resultSize = resultSize + jdbcTemplate.update(insSql.toString(), params.toArray(), types);
         }
         return resultSize;
     }
@@ -190,7 +192,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @SuppressWarnings("unchecked")
     @Override
     public T queryOne(Id id) throws Exception {
-        return this.queryOne(id,rowMapper);
+        return this.queryOne(id, rowMapper);
     }
 
     @Override
@@ -237,13 +239,13 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public PageResult<T> pageQuery(Page page, RowMapper<T> tRowMapper) throws Exception {
-        return this.pageQueryWithCriteria(page,null,rowMapper);
+        return this.pageQueryWithCriteria(page, null, rowMapper);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria) throws Exception {
-        return this.pageQueryWithCriteria(page,criteria,rowMapper);
+        return this.pageQueryWithCriteria(page, criteria, rowMapper);
     }
 
     @Override
@@ -267,7 +269,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @SuppressWarnings("unchecked")
     @Override
     public List<T> queryWithCriteria(Criteria criteria) throws Exception {
-        return this.queryWithCriteria(criteria,rowMapper);
+        return this.queryWithCriteria(criteria, rowMapper);
     }
 
     @Override
@@ -295,7 +297,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public T queryOne(Criteria criteria, RowMapper<T> tRowMapper) throws Exception {
-        List<T> result = this.queryWithCriteria(criteria,tRowMapper);
+        List<T> result = this.queryWithCriteria(criteria, tRowMapper);
         return DataAccessUtils.singleResult(result);
     }
 
