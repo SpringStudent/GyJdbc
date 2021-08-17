@@ -1,4 +1,6 @@
-package com.gysoft.jdbc.multi;
+package com.gysoft.jdbc.multi.balance;
+
+import com.gysoft.jdbc.multi.DataSourceBind;
 
 /**
  * 负载均衡策略接口
@@ -8,6 +10,7 @@ package com.gysoft.jdbc.multi;
 public interface LoadBalance {
     /**
      * 选择一个数据源
+     *
      * @param dataSourceBind 数据源绑定参数
      * @return String 数据源的key
      */

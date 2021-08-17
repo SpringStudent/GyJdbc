@@ -1,5 +1,6 @@
 package com.gysoft.jdbc.multi;
 
+import com.gysoft.jdbc.multi.balance.*;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.HashMap;
@@ -13,8 +14,11 @@ public class DataSourceBind {
     private static final Map<Class, LoadBalance> LoadBalanceMap = new HashMap<>();
 
     static {
-        LoadBalanceMap.put(RoundbinLoadBalance.class, RoundbinLoadBalance.getInstance());
-        LoadBalanceMap.put(RandomLoadBalance.class, RandomLoadBalance.getInstance());
+        LoadBalanceMap.put(RoundRobinLoadBalance.class, new RoundRobinLoadBalance());
+        LoadBalanceMap.put(RandomLoadBalance.class, new RandomLoadBalance());
+        LoadBalanceMap.put(SelectFirstLoadBalance.class, new SelectFirstLoadBalance());
+        LoadBalanceMap.put(SelectLastLoadBalance.class, new SelectLastLoadBalance());
+
     }
 
     enum BindType {
@@ -62,19 +66,19 @@ public class DataSourceBind {
     }
 
     public String select() {
-        if(StringUtils.isNotEmpty(this.select)){
+        if (StringUtils.isNotEmpty(this.select)) {
             return select;
         }
         if (StringUtils.isNotEmpty(key)) {
             this.select = key;
-        } else if(StringUtils.isNotEmpty(group)){
+        } else if (StringUtils.isNotEmpty(group)) {
             this.select = LoadBalanceMap.get(loadBalance).select(this);
         }
         return select;
     }
 
     public void setPrev(DataSourceBind prev) {
-        if(this.getBindType().equals(BindType.byMethod)&&prev!=null&&prev.getBindType().equals(BindType.byAnno)){
+        if (this.getBindType().equals(BindType.byMethod) && prev != null && prev.getBindType().equals(BindType.byAnno)) {
             this.prev = prev;
         }
     }

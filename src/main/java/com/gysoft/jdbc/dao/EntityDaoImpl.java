@@ -13,8 +13,8 @@ import com.gysoft.jdbc.bean.SQL;
 import com.gysoft.jdbc.bean.TableMeta;
 import com.gysoft.jdbc.multi.DataSourceBind;
 import com.gysoft.jdbc.multi.DataSourceBindHolder;
-import com.gysoft.jdbc.multi.LoadBalance;
-import com.gysoft.jdbc.multi.RoundbinLoadBalance;
+import com.gysoft.jdbc.multi.balance.LoadBalance;
+import com.gysoft.jdbc.multi.balance.RoundRobinLoadBalance;
 import com.gysoft.jdbc.tools.CollectionUtil;
 import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
@@ -520,7 +520,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public EntityDao<T, Id> bindGroup(String group) throws Exception {
-        return bindGroup(group, RoundbinLoadBalance.class);
+        return bindGroup(group, RoundRobinLoadBalance.class);
     }
 
 }

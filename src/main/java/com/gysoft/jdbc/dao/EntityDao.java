@@ -1,7 +1,7 @@
 package com.gysoft.jdbc.dao;
 
 import com.gysoft.jdbc.bean.*;
-import com.gysoft.jdbc.multi.LoadBalance;
+import com.gysoft.jdbc.multi.balance.LoadBalance;
 import org.springframework.jdbc.core.ResultSetExtractor;
 
 import java.io.Serializable;

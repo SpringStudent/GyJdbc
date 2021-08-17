@@ -1,5 +1,6 @@
-package com.gysoft.jdbc.multi;
+package com.gysoft.jdbc.multi.balance;
 
+import com.gysoft.jdbc.multi.DataSourceBind;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Arrays;
