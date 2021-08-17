@@ -270,7 +270,9 @@ public class SqlMakeTools {
                             Pair<Object, Object> pair = (Pair<Object, Object>) value;
                             params = ArrayUtils.add(params, pair.getFirst());
                             params = ArrayUtils.add(params, pair.getSecond());
-                        } else {
+                        } else if("FIND IN SET".equals(opt)){
+                            params = ArrayUtils.add(params, value);
+                        }else {
                             if (value instanceof FieldReference) {
                                 FieldReference fieldReference = (FieldReference) value;
                                 sql.append(opt).append(" ").append(fieldReference.getField());

@@ -333,6 +333,14 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return this.where(TypeFunction.getLambdaColumnName(function), "BETWEEN ? AND ?", new Pair<>(v1, v2));
     }
 
+    public S findInSet(String key, Object value) {
+        return this.where("FIND_IN_SET(?,"+key+")","FIND IN SET",value);
+    }
+
+    public <T, R> S findInSet(TypeFunction<T, R> function, Object value) {
+        return this.findInSet(TypeFunction.getLambdaColumnName(function), value);
+    }
+
     public S andCriteria(Criteria criteria) {
         return criteria(criteria, "AND");
     }
