@@ -33,6 +33,7 @@ public class CriteriaTest {
         criteria.orBetweenAnd("btke", 1, 2);
         criteria.in("sets", new HashSet(Arrays.asList("1234567890", "111111")));
         criteria.orLike("likeKey", "thisi s p lsa");
+        criteria.findInSet("niuniuairen","ying");
         criteria.orBetweenAnd("btad", 19920928, 20190321);
         criteria.orLike("okd", "s123").orLike(Token::getTk, "sd");
         criteria.orLikeIfAbsent("dsa", "").orLikeIfAbsent(Token::getTk, "111");
