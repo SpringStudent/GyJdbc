@@ -341,6 +341,14 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return this.findInSet(TypeFunction.getLambdaColumnName(function), value);
     }
 
+    public S orFindInSet(String key, Object value) {
+        return this.or("FIND_IN_SET(?,"+key+")","FIND IN SET", value);
+    }
+
+    public <T, R> S orFindInSet(TypeFunction<T, R> function, Object value) {
+        return this.orFindInSet(TypeFunction.getLambdaColumnName(function), value);
+    }
+
     public S andCriteria(Criteria criteria) {
         return criteria(criteria, "AND");
     }
@@ -350,6 +358,70 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
             throw new IllegalArgumentException("sql error,condition \"orCriteria\" must be following after \"where\"!");
         }
         return criteria(criteria, "OR");
+    }
+
+    public S where(Where where) {
+        return criteria(where.getCriteria(), "WHERE");
+    }
+
+    public S andWhere(Opt opt, WhereParam... whereParams) {
+        return andCriteria(where(opt, whereParams).getCriteria());
+    }
+
+    public S orWhere(Opt opt, WhereParam... whereParams) {
+        return orCriteria(where(opt, whereParams).getCriteria());
+    }
+
+    public Where where(Opt opt, WhereParam... whereParams) {
+        WhereParam first = whereParams[0];
+        Where where = new Where(first.getKey());
+        where = whereParam(first,where);
+        for (int i = 1; i < whereParams.length; i++) {
+            WhereParam wp = whereParams[i];
+            if (opt.equals(Opt.AND)) {
+                where = where.and(wp.getKey());
+            } else {
+                where = where.or(wp.getKey());
+            }
+            where = whereParam(wp,where);
+        }
+        return where;
+    }
+
+    private Where whereParam(WhereParam wp,Where where){
+        if (wp.getOptEnum().equals(WhereParam.OptEnum.Equal)) {
+            where = where.equal(wp.getValue());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.BetweenAnd)) {
+            Pair pair = (Pair) wp.getValue();
+            where = where.betweenAnd(pair.getFirst(), pair.getSecond());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.NotEqual)) {
+            where = where.notEqual(wp.getValue());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.Gt)) {
+            where = where.gt(wp.getValue());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.Gte)) {
+            where = where.gte(wp.getValue());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.Lt)) {
+            where = where.lt(wp.getValue());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.Let)) {
+            where = where.let(wp.getValue());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.IsNull)) {
+            where = where.isNull();
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.IsNotNull)) {
+            where = where.isNotNull();
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.Exists)) {
+            where = where.exists((SQL) wp.getValue());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.NotExists)) {
+            where = where.notExists((SQL) wp.getValue());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.Like)) {
+            where = where.like(wp.getValue());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.In)) {
+            where = where.in((Collection<?>) wp.getValue());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.NotIn)) {
+            where = where.notIn((Collection<?>) wp.getValue());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.FindInSet)) {
+            where = where.findInSet(wp.getValue());
+        }
+        return where;
     }
 
     private S criteria(Criteria criteria, String criteriaType) {

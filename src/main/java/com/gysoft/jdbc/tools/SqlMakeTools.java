@@ -270,9 +270,9 @@ public class SqlMakeTools {
                             Pair<Object, Object> pair = (Pair<Object, Object>) value;
                             params = ArrayUtils.add(params, pair.getFirst());
                             params = ArrayUtils.add(params, pair.getSecond());
-                        } else if("FIND IN SET".equals(opt)){
+                        } else if ("FIND IN SET".equals(opt)) {
                             params = ArrayUtils.add(params, value);
-                        }else {
+                        } else {
                             if (value instanceof FieldReference) {
                                 FieldReference fieldReference = (FieldReference) value;
                                 sql.append(opt).append(" ").append(fieldReference.getField());
@@ -348,6 +348,8 @@ public class SqlMakeTools {
                             sql.append('(').append(criteriaProxy.getSql()).append(')').append(" AND ");
                         }
                     } else if (criteriaType.equals("WITH")) {
+                    } else if (criteriaType.equals("WHERE")) {
+                        sql.append(criteriaProxy.getSql()).append(" AND ");
                     } else {
                         sql.append(" ").append(criteriaType).append('(').append(criteriaProxy.getSql()).append(')').append(" AND ");
                     }
