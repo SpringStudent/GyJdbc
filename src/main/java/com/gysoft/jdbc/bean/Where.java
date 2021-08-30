@@ -115,7 +115,11 @@ public class Where {
     }
 
     public Where findInSet(Object val) {
-        criteria.findInSet(key, val);
+        if (key.indexOf(" OR ") != -1) {
+            criteria.orFindInSet(key.trim().replace("OR",""), val);
+        }else{
+            criteria.findInSet(key, val);
+        }
         return this;
     }
 

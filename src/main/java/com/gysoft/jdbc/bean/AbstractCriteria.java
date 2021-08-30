@@ -364,8 +364,16 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return criteria(where.getCriteria(), "WHERE");
     }
 
+    public S andWhere(Opt opt, List<WhereParam> whereParams) {
+        return andCriteria(where(opt, whereParams.toArray(new WhereParam[whereParams.size()])).getCriteria());
+    }
+
     public S andWhere(Opt opt, WhereParam... whereParams) {
         return andCriteria(where(opt, whereParams).getCriteria());
+    }
+
+    public S orWhere(Opt opt, List<WhereParam> whereParams) {
+        return orCriteria(where(opt, whereParams.toArray(new WhereParam[whereParams.size()])).getCriteria());
     }
 
     public S orWhere(Opt opt, WhereParam... whereParams) {

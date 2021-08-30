@@ -55,7 +55,7 @@ public class CriteriaTest {
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
-        criteria = new Criteria().where(Where.where("f1").equal(2).and("f2").in(Arrays.asList(4, 5, 67)).or("f11").betweenAnd("dd", 33)).and("key", 23)
+        criteria = new Criteria().where(Where.where("f1").equal(2).or("fisd").findInSet("findinset").and("f2").in(Arrays.asList(4, 5, 67)).or("f11").betweenAnd("dd", 33)).and("key", 23)
                 .orWhere(Opt.OR,WhereParam.where("k1").in(Arrays.asList(1,3,4)),WhereParam.where("k2").equal("k2v"),WhereParam.where("k3").isNotNull())
                 .andWhere(Opt.AND,WhereParam.where("l1").findInSet(1),WhereParam.where("l2").findInSet(2));
         pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
