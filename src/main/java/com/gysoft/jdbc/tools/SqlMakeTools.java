@@ -348,8 +348,10 @@ public class SqlMakeTools {
                             sql.append('(').append(criteriaProxy.getSql()).append(')').append(" AND ");
                         }
                     } else if (criteriaType.equals("WITH")) {
-                    } else if (criteriaType.equals("WHERE")) {
+                    } else if (criteriaType.equals("WHEREAND")) {
                         sql.append(criteriaProxy.getSql()).append(" AND ");
+                    }else if (criteriaType.equals("WHEREOR")) {
+                        sql.append(" OR ").append(criteriaProxy.getSql()).append(" AND ");
                     } else {
                         sql.append(" ").append(criteriaType).append('(').append(criteriaProxy.getSql()).append(')').append(" AND ");
                     }

@@ -100,7 +100,7 @@ public class Where {
     }
 
     public Where isNotNull() {
-        criteria.isNull(key);
+        criteria.isNotNull(key);
         return this;
     }
 

@@ -1,6 +1,5 @@
 package com.gysoft.jdbc.bean;
 
-import com.gysoft.jdbc.bean.Pair;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -361,16 +360,28 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return criteria(criteria, "OR");
     }
 
-    public S where(Where where) {
-        return criteria(where.getCriteria(), "WHERE");
+    public S and(Where where) {
+        return criteria(where.getCriteria(), "WHEREAND");
     }
 
-    public S where(Opt opt, List<WhereParam> whereParams) {
-        return where(buildWhere(opt, whereParams.toArray(new WhereParam[whereParams.size()])));
+    public S or(Where where) {
+        return criteria(where.getCriteria(), "WHEREOR");
     }
 
-    public S where(Opt opt, WhereParam... whereParams) {
-        return where(buildWhere(opt, whereParams));
+    public S and(Opt opt, List<WhereParam> whereParams) {
+        return and(buildWhere(opt, whereParams.toArray(new WhereParam[whereParams.size()])));
+    }
+
+    public S and(Opt opt, WhereParam... whereParams) {
+        return and(buildWhere(opt, whereParams));
+    }
+
+    public S or(Opt opt, List<WhereParam> whereParams) {
+        return or(buildWhere(opt, whereParams.toArray(new WhereParam[whereParams.size()])));
+    }
+
+    public S or(Opt opt, WhereParam... whereParams) {
+        return or(buildWhere(opt, whereParams));
     }
 
     public S andWhere(Opt opt, List<WhereParam> whereParams) {
