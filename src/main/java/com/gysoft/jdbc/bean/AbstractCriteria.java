@@ -1,5 +1,6 @@
 package com.gysoft.jdbc.bean;
 
+import com.gysoft.jdbc.bean.Pair;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -334,7 +335,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public S findInSet(String key, Object value) {
-        return this.where("FIND_IN_SET(?,"+key+")","FIND IN SET",value);
+        return this.where("FIND_IN_SET(?," + key + ")", "FIND IN SET", value);
     }
 
     public <T, R> S findInSet(TypeFunction<T, R> function, Object value) {
@@ -342,7 +343,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public S orFindInSet(String key, Object value) {
-        return this.or("FIND_IN_SET(?,"+key+")","FIND IN SET", value);
+        return this.or("FIND_IN_SET(?," + key + ")", "FIND IN SET", value);
     }
 
     public <T, R> S orFindInSet(TypeFunction<T, R> function, Object value) {
@@ -364,26 +365,34 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return criteria(where.getCriteria(), "WHERE");
     }
 
+    public S where(Opt opt, List<WhereParam> whereParams) {
+        return where(buildWhere(opt, whereParams.toArray(new WhereParam[whereParams.size()])));
+    }
+
+    public S where(Opt opt, WhereParam... whereParams) {
+        return where(buildWhere(opt, whereParams));
+    }
+
     public S andWhere(Opt opt, List<WhereParam> whereParams) {
-        return andCriteria(where(opt, whereParams.toArray(new WhereParam[whereParams.size()])).getCriteria());
+        return andCriteria(buildWhere(opt, whereParams.toArray(new WhereParam[whereParams.size()])).getCriteria());
     }
 
     public S andWhere(Opt opt, WhereParam... whereParams) {
-        return andCriteria(where(opt, whereParams).getCriteria());
+        return andCriteria(buildWhere(opt, whereParams).getCriteria());
     }
 
     public S orWhere(Opt opt, List<WhereParam> whereParams) {
-        return orCriteria(where(opt, whereParams.toArray(new WhereParam[whereParams.size()])).getCriteria());
+        return orCriteria(buildWhere(opt, whereParams.toArray(new WhereParam[whereParams.size()])).getCriteria());
     }
 
     public S orWhere(Opt opt, WhereParam... whereParams) {
-        return orCriteria(where(opt, whereParams).getCriteria());
+        return orCriteria(buildWhere(opt, whereParams).getCriteria());
     }
 
-    public Where where(Opt opt, WhereParam... whereParams) {
+    public Where buildWhere(Opt opt, WhereParam... whereParams) {
         WhereParam first = whereParams[0];
         Where where = new Where(first.getKey());
-        where = whereParam(first,where);
+        where = whereParam(first, where);
         for (int i = 1; i < whereParams.length; i++) {
             WhereParam wp = whereParams[i];
             if (opt.equals(Opt.AND)) {
@@ -391,12 +400,12 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
             } else {
                 where = where.or(wp.getKey());
             }
-            where = whereParam(wp,where);
+            where = whereParam(wp, where);
         }
         return where;
     }
 
-    private Where whereParam(WhereParam wp,Where where){
+    private Where whereParam(WhereParam wp, Where where) {
         if (wp.getOptEnum().equals(WhereParam.OptEnum.Equal)) {
             where = where.equal(wp.getValue());
         } else if (wp.getOptEnum().equals(WhereParam.OptEnum.BetweenAnd)) {
@@ -484,4 +493,5 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         this.offset = offset;
         return self();
     }
+
 }
