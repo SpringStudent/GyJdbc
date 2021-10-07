@@ -4,7 +4,6 @@ import java.util.List;
 
 /**
  * @author zhouning
- * @date 2021/08/17 9:53
  */
 public class SelectFirstLoadBalance extends AbstractLoadBalance{
     @Override

@@ -364,8 +364,9 @@ public class SqlMakeTools {
 
     /**
      * 使用自定义sql
-     *
+     * @param sqlObj sql对象
      * @author 周宁
+     * @return Pair pair.first sql pair.second 参数数组
      * @version 1.0
      */
     public static Pair<String, Object[]> useSql(SQL sqlObj) {

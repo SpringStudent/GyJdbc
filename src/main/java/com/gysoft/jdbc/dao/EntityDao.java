@@ -187,7 +187,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * 根据sql查询
 	 * @param sql sql拼接器
 	 * @param <E> 查询结果类型
-	 * @throws Exception
+	 * @throws Exception sql错误抛出异常
 	 */
 	<E> Result<E> queryWithSql(Class<E> clss,SQL sql)throws Exception;
 
@@ -195,7 +195,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * 根据sql更新
 	 * @param sql sql拼接器
 	 * @return int 更新条目数量
-	 * @throws Exception
+	 * @throws Exception sql错误抛出异常
 	 */
 	int updateWithSql(SQL sql)throws Exception;
 
@@ -203,7 +203,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * 根据sql删除
 	 * @param sql sql拼接器
 	 * @return int 删除条目数量
-	 * @throws Exception
+	 * @throws Exception sql错误抛出异常
 	 */
 	int deleteWithSql(SQL sql)throws Exception;
 
@@ -214,7 +214,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @param <K> 键类型
 	 * @param <V> 值类型
 	 * @return Map 返回类型Map
-	 * @throws Exception
+	 * @throws Exception sql错误抛出异常
 	 */
 	<K,V> Map<K,V> queryMapWithSql(SQL sql,ResultSetExtractor<Map<K,V>> resultSetExtractor)throws Exception;
 
@@ -230,7 +230,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * 根据sql查询一个int值
 	 * @param sql sql拼接器
 	 * @return Integer 结果类型，一般为查询数量
-	 * @throws Exception
+	 * @throws Exception sql错误抛出异常
 	 */
 	Integer queryIntegerWithSql(SQL sql)throws Exception;
 
@@ -238,7 +238,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * 根据sql插入数据
 	 * @param sql sql拼接器
 	 * @return int 更新条目数量
-	 * @throws Exception
+	 * @throws Exception sql错误抛出异常
 	 */
 	int insertWithSql(SQL sql)throws Exception;
 
@@ -246,27 +246,27 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * 根据sql创建表;如果有指定数据将数据插入
 	 * @param sql sql拼接器
 	 * @return String 表名称
-	 * @throws Exception
+	 * @throws Exception sql错误抛出异常
 	 */
 	String createWithSql(SQL sql)throws Exception;
 
 	/**
 	 * 删除表
-	 * @throws Exception
+	 * @throws Exception sql错误抛出异常
 	 */
 	void drop()throws Exception;
 
 	/**
 	 * 清除表数据和delete不同的是，该方法不需要where
 	 * 条件并且数据一旦清除不可恢复
-	 * @throws Exception
+	 * @throws Exception sql错误抛出异常
 	 */
 	void truncate()throws Exception;
 
 	/**
 	 * 喝醉了干一些犯浑的事情，比如删除表，清楚数据
 	 * @param sql sql拼接器
-	 * @throws Exception
+	 * @throws Exception sql错误抛出异常
 	 */
 	void drunk(SQL sql)throws Exception;
 
@@ -274,7 +274,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * 绑定指定key的数据源
 	 * @param bindKey 数据源dataSource
 	 * @return EntityDao 当前的dao对象
-	 * @throws Exception
+	 * @throws Exception sql错误抛出异常
 	 */
 	EntityDao<T,Id> bindKey(String bindKey)throws Exception;
 	/**
@@ -282,7 +282,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @param group 指定的数据源组
 	 * @param loadBalance 负载均衡策略
 	 * @return EntityDao 当前的dao对象
-	 * @throws Exception
+	 * @throws Exception sql错误抛出异常
 	 */
 	EntityDao<T,Id> bindGroup(String group, Class<? extends LoadBalance> loadBalance)throws Exception;
 
@@ -290,7 +290,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * 绑定指定组的数据源
 	 * @param group 指定的数据源组
 	 * @return EntityDao 当前的dao对象
-	 * @throws Exception
+	 * @throws Exception sql错误抛出异常
 	 */
 	EntityDao<T,Id> bindGroup(String group)throws Exception;
 }
