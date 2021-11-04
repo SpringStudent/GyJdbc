@@ -387,13 +387,24 @@ public class CriteriaTest {
         List<WhereParam> whereParams = new ArrayList<>();
         whereParams.add(WhereParam.where("f11").in(Arrays.asList(9,10)));
         whereParams.add(WhereParam.where("f12").notEqual("d"));
-        SQL sql = new SQL().select("*").from("table1").where("f1", 1).and(Where.where("f2").like("a").or("f3").gte(1).and("f4").in(Arrays.asList(2, 3, 4)))
+        SQL sql = new SQL().select("*").from("table1")
+                .where("f1", 1).and(Where.where("f2").like("a").or("f3").gte(1).and("f4").in(Arrays.asList(2, 3, 4)))
+                .and(Opt.AND, WhereParam.where("f9").like("c"), WhereParam.where("f10").lt(8))
                 .andWhere(Opt.AND, WhereParam.where("f5").betweenAnd(5, 6), WhereParam.where("f6").findInSet("b"))
                 .or(Opt.OR, WhereParam.where("f7").notEqual(7), WhereParam.where("f8").isNull())
-                .and(Opt.AND, WhereParam.where("f9").like("c"), WhereParam.where("f10").lt(8))
                 .orWhere(Opt.OR,whereParams);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+
+        List<WhereParam> params = new ArrayList<>();
+        params.add(WhereParam.where("f1").like("v1"));
+        params.add(WhereParam.where("f2").in(Arrays.asList(1,2,3)));
+        sql = new SQL().select("*").from("table2").and(Opt.AND,params);
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
     }
+
+
 }
