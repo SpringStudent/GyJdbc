@@ -6,7 +6,8 @@ GyJdbc基于jdbctemplate的类似JPA的持久层框架封装，使用优势：
 2. **链式SQL配合lambda表达式，既装B又简洁。**
 3. **强悍的SQL拼接，支持作者已知的所有SQL语法。**
 4. **学习成本极低，靠近SQL语法，开发者使用起来会像平时一样写SQL一样简单。**
-5. **支持多数据源，多数据源的负载均衡，仅需一个注解或者一个方法调用。**
+5. **提供类JPA语法，类MongoTemplate的SQL拼接语法**  
+6. **支持多数据源，多数据源的负载均衡，仅需一个注解或者一个方法调用。**
 
 #### 快速开始
 
@@ -118,10 +119,13 @@ new SQL().select("age", countAs("age").as("num")).from(TbUser.class).orderBy(new
 new SQL().update(TbUser.class).set(TbUser::getRealName, "元林").set(TbUser::getEmail, "13888888888@163.com").where(TbUser::getName, "Smith");
 new SQL().insertInto(TbAccount.class, "userName", "realName").values("test", "测试").values("test2", "测试2");
 new SQL().delete().from(TbUser.class).gt(TbUser::getAge,20);
+//类似MongoTemplate的Criteria拼接
 new SQL().select("*").from("table1").where("f1", 1).and(Where.where("f2").like("a").or("f3").gte(1).and("f4").in(Arrays.asList(2, 3, 4)))
-.andWhere(Opt.AND, WhereParam.where("f5").betweenAnd(5, 6), WhereParam.where("f6").findInSet("b"))
-.or(Opt.OR, WhereParam.where("f7").notEqual(7), WhereParam.where("f8").isNull())
-.and(Opt.AND, WhereParam.where("f9").like("c"), WhereParam.where("f10").lt(8))
+//类似JPA的Predict使用
+List<WhereParam> params = new ArrayList<>();
+params.add(WhereParam.where("f1").like("v1"));
+params.add(WhereParam.where("f2").in(Arrays.asList(1,2,3)));
+sql = new SQL().select("*").from("table2").and(Opt.AND,params);
 ```
 
 #### 更多用法见
