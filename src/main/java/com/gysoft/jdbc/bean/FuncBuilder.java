@@ -26,7 +26,6 @@ public class FuncBuilder {
         return lengthAs(TypeFunction.getLambdaColumnName(function));
     }
 
-
     public static <T, R> String length(TypeFunction<T, R> function) {
         return length(TypeFunction.getLambdaColumnName(function));
     }
@@ -82,7 +81,6 @@ public class FuncBuilder {
     public static <T, R> String count(TypeFunction<T, R> function) {
         return count(TypeFunction.getLambdaColumnName(function));
     }
-
 
     public static FuncBuilder maxAs(String field) {
         return new FuncBuilder(max(field));
@@ -162,12 +160,9 @@ public class FuncBuilder {
     public static String concat_ws(String joinStr, String... fields) {
         return "CONCAT_WS(" + joinStr + "," + Arrays.stream(fields).collect(Collectors.joining(",")) + ")";
     }
-
     public static <T, R> String concat_ws(String joinStr, TypeFunction<T, R>... functions) {
         return concat_ws(joinStr, Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()).toArray(new String[0]));
     }
-
-
     public static FuncBuilder upperAs(String field) {
         return new FuncBuilder(upper(field));
     }
