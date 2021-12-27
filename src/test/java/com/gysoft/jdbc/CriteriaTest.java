@@ -161,6 +161,8 @@ public class CriteriaTest {
 
         SQL s5 = new SQL().select(formatAs("10000", "2").as("a")).from(Book.class);
 
+        SQL s6 = new SQL().select(countAs("id").as("sum"),curdateAs().as("nowtime"),trimAs("name").as("name")).from(Book.class);
+
         Pair<String, Object[]> pair = SqlMakeTools.useSql(s);
         System.out.println(pair.getFirst());
         Pair<String, Object[]> pair2 = SqlMakeTools.useSql(s2);
@@ -172,6 +174,8 @@ public class CriteriaTest {
         //...more 等着你完善和探索...
         Pair<String, Object[]> pair5 = SqlMakeTools.useSql(s5);
         System.out.println(pair5.getFirst());
+        Pair<String, Object[]> pair6 = SqlMakeTools.useSql(s6);
+        System.out.println(pair6.getFirst());
     }
 
     @Test
