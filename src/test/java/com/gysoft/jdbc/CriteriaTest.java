@@ -147,16 +147,6 @@ public class CriteriaTest {
 
     }
 
-    @Table
-    public static class TableTest extends Dual{
-
-    }
-
-    @Test
-    public void testAnnotation() {
-        System.out.println(EntityTools.getTableName(TableTest.class));
-    }
-
     @Test
     public void testFunc() {
         //支持mysql函数拼接
@@ -327,11 +317,6 @@ public class CriteriaTest {
         System.out.println(Arrays.toString(pair.getSecond()));
 
         sql = new SQL().select("id,name,value", new ValueReference(1), new ValueReference(new Date())).from("test").where(Book::getId, "this is a id");
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-
-        sql = new SQL().select(new ValueReference(1)).from(Dual.class);
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
