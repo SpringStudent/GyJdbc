@@ -41,6 +41,8 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
      */
     private int size;
 
+    private Where where;
+
     public Set<String> getGroupFields() {
         return groupFields;
     }
@@ -103,7 +105,6 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         criteriaProxys = new ArrayList<>();
         groupFields = new LinkedHashSet<>();
     }
-
 
     public S where(String key, Object value) {
         return this.where(key, "=", value);

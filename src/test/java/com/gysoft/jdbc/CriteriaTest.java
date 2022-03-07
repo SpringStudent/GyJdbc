@@ -60,6 +60,10 @@ public class CriteriaTest {
         pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+        criteria = new Criteria().orderBy(new Sort("sortF1"));
+        pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
     }
 
     @Test
@@ -385,7 +389,6 @@ public class CriteriaTest {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-
         List<WhereParam> params = new ArrayList<>();
         params.add(WhereParam.where("f1").like("v1"));
         params.add(WhereParam.where("f2").in(Arrays.asList(1,2,3)));
@@ -393,6 +396,15 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+        Long start = 1646202169000L;
+        Long end = 1646461369000L;
+        sql = new SQL().select("id", "type", "name", unixTimeStamp("comTime") + "* 1000").from("member")
+                .gteIfAbsent("createTime",Optional.ofNullable(start).map(Date::new).orElse(null))
+                .letIfAbsent("createTime",Optional.ofNullable(end).map(Date::new).orElse(null));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+
     }
 
 
