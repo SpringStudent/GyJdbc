@@ -23,6 +23,10 @@ public class SQL extends AbstractCriteria<SQL> {
      */
     private String aliasName;
     /**
+     * 删除语句中表的别名
+     */
+    private String deleteAliasName;
+    /**
      * 连接
      */
     private List<Joins.BaseJoin> joins;
@@ -138,6 +142,14 @@ public class SQL extends AbstractCriteria<SQL> {
         this.subSqls = subSqls;
     }
 
+    public String getDeleteAliasName() {
+        return deleteAliasName;
+    }
+
+    public void setDeleteAliasName(String deleteAliasName) {
+        this.deleteAliasName = deleteAliasName;
+    }
+
     public SQL select(Object... fields) {
         selectFields.addAll(Arrays.asList(fields));
         this.sqlType = EntityDao.SQL_SELECT;
@@ -162,8 +174,8 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
-    public SQL delete(String aliasName) {
-        this.aliasName = aliasName;
+    public SQL delete(String deleteAliasName) {
+        this.deleteAliasName = deleteAliasName;
         this.sqlType = EntityDao.SQL_DELETE;
         return this;
     }

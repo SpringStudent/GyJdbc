@@ -442,8 +442,8 @@ public class SqlMakeTools {
             }
         } else if (sqlObj.getSqlType().equals(EntityDao.SQL_DELETE)) {
             sql.append("DELETE ");
-            if (StringUtils.isNotEmpty(sqlObj.getAliasName())) {
-                sql.append(sqlObj.getAliasName());
+            if (StringUtils.isNotEmpty(sqlObj.getDeleteAliasName())) {
+                sql.append(sqlObj.getDeleteAliasName());
                 sql.append(" ");
             }
             sql.append("FROM");

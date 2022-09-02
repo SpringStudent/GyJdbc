@@ -457,6 +457,10 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
             throw new IllegalArgumentException("unsupport doCriteria operate");
         }
+        //如果子查询中的子查询条件为空直接返回
+        if (CollectionUtils.isEmpty(criteria.getWhereParams())) {
+            return self();
+        }
         if (CollectionUtils.isEmpty(whereParams)) {
             whereParams.add(new WhereParam());
         }

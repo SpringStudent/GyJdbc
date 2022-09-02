@@ -31,7 +31,7 @@ public class CriteriaTest {
         criteria.orBetweenAnd("btke", 1, 2);
         criteria.in("sets", new HashSet(Arrays.asList("1234567890", "111111")));
         criteria.orLike("likeKey", "thisi s p lsa");
-        criteria.findInSet("niuniuairen","ying");
+        criteria.findInSet("niuniuairen", "ying");
         criteria.orBetweenAnd("btad", 19920928, 20190321);
         criteria.orLike("okd", "s123").orLike(Token::getTk, "sd");
         criteria.orLikeIfAbsent("dsa", "").orLikeIfAbsent(Token::getTk, "111");
@@ -54,9 +54,9 @@ public class CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
         criteria = new Criteria().and(Where.where("f1").equal(2).or("fisd").findInSet("findinset").and("f2").in(Arrays.asList(4, 5, 67)).or("f11").betweenAnd("dd", 33)).and("key", 23)
-                .orWhere(Opt.OR,WhereParam.where("k1").in(Arrays.asList(1,3,4)),WhereParam.where("k2").equal("k2v"),WhereParam.where("k3").isNotNull())
-                .orWhere(Opt.OR,WhereParam.where("l1").findInSet(1),WhereParam.where("l2").findInSet(2))
-                .or(Opt.AND,WhereParam.where("lx").findInSet(213),WhereParam.where("kx").findInSet("213"));
+                .orWhere(Opt.OR, WhereParam.where("k1").in(Arrays.asList(1, 3, 4)), WhereParam.where("k2").equal("k2v"), WhereParam.where("k3").isNotNull())
+                .orWhere(Opt.OR, WhereParam.where("l1").findInSet(1), WhereParam.where("l2").findInSet(2))
+                .or(Opt.AND, WhereParam.where("lx").findInSet(213), WhereParam.where("kx").findInSet("213"));
         pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
@@ -165,7 +165,7 @@ public class CriteriaTest {
 
         SQL s5 = new SQL().select(formatAs("10000", "2").as("a")).from(Book.class);
 
-        SQL s6 = new SQL().select(countAs("id").as("sum"),curdateAs().as("nowtime"),trimAs("name").as("name")).from(Book.class);
+        SQL s6 = new SQL().select(countAs("id").as("sum"), curdateAs().as("nowtime"), trimAs("name").as("name")).from(Book.class);
 
         Pair<String, Object[]> pair = SqlMakeTools.useSql(s);
         System.out.println(pair.getFirst());
@@ -367,9 +367,9 @@ public class CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
         sql = new SQL().select("a.*").from("table_a").as("a")
-                .leftJoin(new Joins().with("table_b").as("b").on("a.id","b.pid")
-                .and("a.key",new FieldReference("b.pos")).on("a.nn","b.nnns").andIfAbsent("a.null",null))
-                .in("a.ksd", Arrays.asList(1,4,65,3));
+                .leftJoin(new Joins().with("table_b").as("b").on("a.id", "b.pid")
+                        .and("a.key", new FieldReference("b.pos")).on("a.nn", "b.nnns").andIfAbsent("a.null", null))
+                .in("a.ksd", Arrays.asList(1, 4, 65, 3));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
@@ -378,32 +378,40 @@ public class CriteriaTest {
     @Test
     public void testAndSql() {
         List<WhereParam> whereParams = new ArrayList<>();
-        whereParams.add(WhereParam.where("f11").in(Arrays.asList(9,10)));
+        whereParams.add(WhereParam.where("f11").in(Arrays.asList(9, 10)));
         whereParams.add(WhereParam.where("f12").notEqual("d"));
         SQL sql = new SQL().select("*").from("table1")
                 .where("f1", 1).and(Where.where("f2").like("a").or("f3").gte(1).and("f4").in(Arrays.asList(2, 3, 4)))
                 .and(Opt.AND, WhereParam.where("f9").like("c"), WhereParam.where("f10").lt(8))
                 .andWhere(Opt.AND, WhereParam.where("f5").betweenAnd(5, 6), WhereParam.where("f6").findInSet("b"))
                 .or(Opt.OR, WhereParam.where("f7").notEqual(7), WhereParam.where("f8").isNull())
-                .orWhere(Opt.OR,whereParams);
+                .orWhere(Opt.OR, whereParams);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
         List<WhereParam> params = new ArrayList<>();
         params.add(WhereParam.where("f1").like("v1"));
-        params.add(WhereParam.where("f2").in(Arrays.asList(1,2,3)));
-        sql = new SQL().select("*").from("table2").and(Opt.AND,params);
+        params.add(WhereParam.where("f2").in(Arrays.asList(1, 2, 3)));
+        sql = new SQL().select("*").from("table2").and(Opt.AND, params);
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        Long start = 1646202169000L;
+        Long start = null;
         Long end = 1646461369000L;
         sql = new SQL().select("id", "type", "name", unixTimeStamp("comTime") + "* 1000").from("member")
-                .gteIfAbsent("createTime",Optional.ofNullable(start).map(Date::new).orElse(null))
-                .letIfAbsent("createTime",Optional.ofNullable(end).map(Date::new).orElse(null));
+                .gteIfAbsent("createTime", Optional.ofNullable(start).map(Date::new).orElse(null))
+                .letIfAbsent("createTime", Optional.ofNullable(end).map(Date::new).orElse(null));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+    }
+
+    @Test
+    public void testDeleteSql() {
+        //delete a,b from flow_instance as a inner join flow_action b on a.id=b.flowInstanceId where b.bizId = ?
+        SQL sql = new SQL().delete("a,b").from("flow_instance").as("a").innerJoin(new Joins().with("flow_action").as("b").on("a.id", "b.flowInstanceId")).where("b.bizId", "id123456");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
 
     }
 
