@@ -180,6 +180,12 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
+    public SQL delete(String... deleteAliasNames) {
+        this.deleteAliasName = Arrays.stream(deleteAliasNames).collect(Collectors.joining(","));
+        this.sqlType = EntityDao.SQL_DELETE;
+        return this;
+    }
+
     public SQL delete() {
         this.sqlType = EntityDao.SQL_DELETE;
         return this;

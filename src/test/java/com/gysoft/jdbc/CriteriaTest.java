@@ -409,7 +409,7 @@ public class CriteriaTest {
     @Test
     public void testDeleteSql() {
         //delete a,b from flow_instance as a inner join flow_action b on a.id=b.flowInstanceId where b.bizId = ?
-        SQL sql = new SQL().delete("a,b").from("flow_instance").as("a").innerJoin(new Joins().with("flow_action").as("b").on("a.id", "b.flowInstanceId")).where("b.bizId", "id123456");
+        SQL sql = new SQL().delete("a", "b").from("flow_instance").as("a").innerJoin(new Joins().with("flow_action").as("b").on("a.id", "b.flowInstanceId")).where("b.bizId", "id123456");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
 
