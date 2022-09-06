@@ -385,7 +385,9 @@ public class CriteriaTest {
                 .and(Opt.AND, WhereParam.where("f9").like("c"), WhereParam.where("f10").lt(8))
                 .andWhere(Opt.AND, WhereParam.where("f5").betweenAnd(5, 6), WhereParam.where("f6").findInSet("b"))
                 .or(Opt.OR, WhereParam.where("f7").notEqual(7), WhereParam.where("f8").isNull())
-                .orWhere(Opt.OR, whereParams);
+                .orWhere(Opt.OR, whereParams)
+                .andWhere(Where.where("m").equal("22").or("x").like("xx"))
+                .orWhere(Where.where("c").equal("111").and("key").isNotNull());
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
