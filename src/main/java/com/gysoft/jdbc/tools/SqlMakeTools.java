@@ -528,6 +528,7 @@ public class SqlMakeTools {
 
     /**
      * 递归组装子查询参数和sql
+     *
      * @param sqlTree 待构造的查询树
      * @author 周宁
      * @version 1.0
@@ -580,7 +581,7 @@ public class SqlMakeTools {
             } else {
                 if (!isRootSql) {
                     if (sqlTree.getFromAsTable()) {
-                        pair.setFirst(pair.getFirst().concat(") " + sqlTree.getAsTable() + " " + arr[1]));
+                        pair.setFirst(pair.getFirst().concat(" " + sqlTree.getAsTable() + " )" + arr[1]));
                     } else {
                         pair.setFirst(pair.getFirst().concat(")" + arr[1]));
                     }

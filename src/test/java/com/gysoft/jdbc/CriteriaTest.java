@@ -98,15 +98,7 @@ public class CriteriaTest {
         Pair<String, Object[]> p = SqlMakeTools.useSql(criteria);
         System.out.println(p.getFirst());
         System.out.println(Arrays.toString(p.getSecond()));
-        //real sql
-        SQL sql = new SQL().select("au.user_id", "au.pname").from(new SQL().select("*").from("sys_user").isNotNull("parent").and("del_flag", 0).and("status", 1).asTable("au"), new SQL().select("@parent := '1545572506026774529'").from("dual").asTable("pd")).gt("FIND_IN_SET(parent,@parent)", 0).and("@parent", ":=", new FieldReference(concat("@parent", "','", "user_id")))
-                .union().select("au.user_id", "au.pname").from(new SQL().select("*").from("sys_user").isNotNull("parent").and("del_flag", 0).and("status", 1).notEqual("'level'", 1).asTable("au"))
-                .gt("FIND_IN_SET(parent,@parent)", 0).and("@parent", ":=", new FieldReference(concat("@parent", "','", "user_id"))).union().select("user_id", "pname").from("sys_user")
-                .where("user_id", "1545572506026774529").and("status", 1).notEqual("'level'", 1).and("del_flag", 0);
-        p = SqlMakeTools.useSql(sql);
-        System.out.println(p.getFirst());
-        System.out.println(Arrays.toString(p.getSecond()));
-        sql = new SQL().select("*").from(new SQL().select("a").from("a_tb").union().select("b").from("b_tb"));
+        SQL sql = new SQL().select("*").from(new SQL().select("a").from("a_tb").union().select("b").from("b_tb"));
         p = SqlMakeTools.useSql(sql);
         System.out.println(p.getFirst());
         System.out.println(Arrays.toString(p.getSecond()));
@@ -141,6 +133,7 @@ public class CriteriaTest {
         p = SqlMakeTools.useSql(sql);
         System.out.println(p.getFirst());
         System.out.println(Arrays.toString(p.getSecond()));
+
     }
 
     @Test
@@ -458,7 +451,22 @@ public class CriteriaTest {
         SQL sql = new SQL().delete("a", "b").from("flow_instance").as("a").innerJoin(new Joins().with("flow_action").as("b").on("a.id", "b.flowInstanceId")).where("b.bizId", "id123456");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
+        sql = new SQL().select("*").from(new SQL().select("a.field1").from("tablea").as("a").where("a.id","1"),"astb");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from(new SQL().select("a").from("a_tb").asTable("aquery"), new SQL().select("b").from("b_tb").asTable("bquery"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("a.*").from("a_tb").asTable("a").where("1", 1).unionAll().select("b.*").from("b_tb").asTable("b").and("2", 2);
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from(new SQL().select("a.*").from("a_tb").as("a").where("1", 1).unionAll().select("b.*").from("b_tb").as("b").and("2", 2),"mmm").where("id","id1");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
     }
-
 
 }
