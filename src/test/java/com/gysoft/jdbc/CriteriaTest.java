@@ -110,13 +110,34 @@ public class CriteriaTest {
         p = SqlMakeTools.useSql(sql);
         System.out.println(p.getFirst());
         System.out.println(Arrays.toString(p.getSecond()));
-        sql =  new SQL().select("t1.name", "t2.username").from(Book.class).as("t1")
+        sql = new SQL().select("t1.name", "t2.username").from(Book.class).as("t1")
                 .natureJoin(new Joins().with(Book.class).as("t2"))
                 .and("sd", "in", Arrays.asList("sd1", "xg1")).gt("sdf", 12)
                 .natureJoin(new Joins().with(Book.class).as("t3"))
                 .leftJoin(new Joins().with(Book.class).as("t4").on("t4.id", "t2.id"))
                 .andCriteria(new Criteria().where("k1", "v1").or("k2", "v2")).or("k3", "k5")
                 .union().select("un.ke", "un.ke2").from(Book.class).where("un.ke", 1);
+        p = SqlMakeTools.useSql(sql);
+        System.out.println(p.getFirst());
+        System.out.println(Arrays.toString(p.getSecond()));
+        sql = new SQL().select("*").from(new SQL().select("a").from("a_tb").asTable("aquery"), new SQL().select("b").from("b_tb").asTable("bquery"));
+        p = SqlMakeTools.useSql(sql);
+        System.out.println(p.getFirst());
+        System.out.println(Arrays.toString(p.getSecond()));
+        sql = new SQL().select("a.*").from("a_tb").asTable("a").where("1", 1).unionAll().select("b.*").from("b_tb").asTable("b").and("2", 2);
+        p = SqlMakeTools.useSql(sql);
+        System.out.println(p.getFirst());
+        System.out.println(Arrays.toString(p.getSecond()));
+        sql = new SQL().select("au.user_id", "au.pname").from(
+                new SQL().select("*").from("sys_user").isNotNull("parent").and("del_flag", 0).and("status", 1).asTable("au"),
+                new SQL().select("@Parent:='154557250626774529'").from("DUAL").asTable("pd")
+        ).gt("FIND_IN_SET(parent,@parent)", 0).and("@parent:", new FieldReference("concat(@parent,',',userId)"))
+                .union()
+                .select("au.user_id", "au.pname").from(
+                        new SQL().select("*").from("sys_user").isNotNull("parent").and("del_flag", 0).and("status", 1).asTable("au")
+                ).gt("FIND_IN_SET(parent,@parent)", 0).and("@parent:", new FieldReference("concat(@parent,',',userId)"))
+                .union()
+                .select("user_id", "pname").from("sys_user").where("user_id", "154557250626774529").and("status", 1).and("level", 1).and("del_flag", 0);
         p = SqlMakeTools.useSql(sql);
         System.out.println(p.getFirst());
         System.out.println(Arrays.toString(p.getSecond()));
@@ -437,14 +458,6 @@ public class CriteriaTest {
         SQL sql = new SQL().delete("a", "b").from("flow_instance").as("a").innerJoin(new Joins().with("flow_action").as("b").on("a.id", "b.flowInstanceId")).where("b.bizId", "id123456");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
-        sql = new SQL().select("*").from(new SQL().select("a").from("a_tb").asTable("aquery"),new SQL().select("b").from("b_tb").asTable("bquery"));
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select("a.*").from("a_tb").asTable("a").where("1",1).unionAll().select("b.*").from("b_tb").asTable("b").and("2",2);
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
     }
 
 
