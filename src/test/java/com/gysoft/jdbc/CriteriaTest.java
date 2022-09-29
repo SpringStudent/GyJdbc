@@ -455,9 +455,9 @@ public class CriteriaTest {
                 new SQL().select("a.field1").from(
                         new SQL().select("a.*").from(
                                 new SQL().select("*").from(
-                                                       new SQL().select("a").from("a_tb").asTable("aquery"), new SQL().select("b").from("b_tb").asTable("bquery")),"dddd"
-                                                    ).asTable("ddd").where("1", 1).unionAll().select("b.*").from("b_tb").asTable("b").and("2", 2)
-                                                 ).where("a.id","1"),"astb");
+                                        new SQL().select("a").from("a_tb").asTable("aquery"), new SQL().select("b").from("b_tb").asTable("bquery")), "dddd"
+                        ).asTable("ddd").where("1", 1).unionAll().select("b.*").from("b_tb").asTable("b").and("2", 2)
+                ).where("a.id", "1"), "astb");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
@@ -469,7 +469,11 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select("*").from(new SQL().select("a.*").from("a_tb").as("a").where("1", 1).unionAll().select("b.*").from("b_tb").as("b").and("2", 2),"mmm").where("id","id1");
+        sql = new SQL().select("*").from(new SQL().select("a.*").from("a_tb").as("a").where("1", 1).unionAll().select("b.*").from("b_tb").as("b").and("2", 2), "mmm").where("id", "id1");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from("tablea").asTable("bb");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));

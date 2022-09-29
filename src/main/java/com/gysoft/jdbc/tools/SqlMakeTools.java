@@ -382,7 +382,7 @@ public class SqlMakeTools {
         Pair<String, Object[]> pair = recurSql(sqlTree, new Pair<>("", new Object[]{}));
         String parentSql = pair.getFirst().trim();
         //单条sql语句不保留左右两侧括号
-        if (sqlObj.getSqlPiepline().getSqlNexts().size() <= 1) {
+        if (sqlObj.getSqlPiepline().getSqlNexts().size() <= 1 && StringUtils.isEmpty(sqlObj.getAsTable())) {
             parentSql = parentSql.substring(1, parentSql.length() - 1).trim();
         }
         pair.setFirst(parentSql);
