@@ -528,7 +528,6 @@ public class SqlMakeTools {
 
     /**
      * 递归组装子查询参数和sql
-     *
      * @param sqlTree 待构造的查询树
      * @author 周宁
      * @version 1.0
@@ -536,7 +535,7 @@ public class SqlMakeTools {
     private static Pair<String, Object[]> recurSql(SQLTree sqlTree, Pair<String, Object[]> pair) {
         List<SQLTree> childs = sqlTree.getChilds();
         if (CollectionUtils.isNotEmpty(childs)) {
-            //是否为虚拟的根节点sql,虚拟根节点sql不包装子查询
+            //是否为虚拟的根节点sql,虚拟根节点sql不需要添加括号
             boolean isRootSql = sqlTree.getId().equals("0");
             String[] arr = sqlTree.getSql().split("FROM");
             if (sqlTree.getChilds().size() > 1 && sqlTree.getFromAsTable()) {

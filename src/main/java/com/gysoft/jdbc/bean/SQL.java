@@ -19,7 +19,7 @@ public class SQL extends AbstractCriteria<SQL> {
      */
     private String tbName;
     /**
-     * 别名
+     * 表的别名
      */
     private String aliasName;
     /**
@@ -28,8 +28,8 @@ public class SQL extends AbstractCriteria<SQL> {
     private String asTable;
 
     /**
-     * 标识从from(String asTable,SQL... cc)
-     * 方法传递asTable
+     * 标识从from(String asTable,SQL c)
+     * 方法传递asTable，此方法用于给子查询起别名
      */
     private boolean fromAsTable;
 
