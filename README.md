@@ -128,7 +128,7 @@ params.add(WhereParam.where("f2").in(Arrays.asList(1,2,3)));
 sql = new SQL().select("*").from("table2").and(Opt.AND,params);
 ```
 
-#### 更多用法可执行的单元测试用例
+#### 更多用法可执行单元测试
 
 #### https://github.com/hope-for/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/CriteriaTest.java
 
