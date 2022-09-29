@@ -33,7 +33,10 @@ public class SQLTree {
      * 将sql作为表的别名
      */
     private String asTable;
-
+    /**
+     * 标识从from(String asTable,SQL c)
+     * 方法传递asTable，此方法用于给子查询起别名
+     */
     private boolean fromAsTable;
 
     public String getSql() {
