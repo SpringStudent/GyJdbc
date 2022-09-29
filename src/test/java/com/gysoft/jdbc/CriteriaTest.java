@@ -27,6 +27,7 @@ public class CriteriaTest {
     @Test
     public void testCriteria() {
         Criteria criteria = new Criteria();
+        Pair<String, Object[]> pair = new Pair<>();
         criteria.isNull("filedss");
         criteria.orBetweenAnd("btke", 1, 2);
         criteria.in("sets", new HashSet(Arrays.asList("1234567890", "111111")));
@@ -50,17 +51,15 @@ public class CriteriaTest {
         criteria.orderBy(new Sort("userName"), new Sort("createTime", "ASC"));
         criteria.groupBy("userName", "id");
         criteria.having(count("asd"), "in", Arrays.asList(1, 2, 3)).limit(1);
-        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
-        System.out.println(pair.getFirst());
-        System.out.println(ArrayUtils.toString(pair.getSecond()));
-        criteria = new Criteria().and(Where.where("f1").equal(2).or("fisd").findInSet("findinset").and("f2").in(Arrays.asList(4, 5, 67)).or("f11").betweenAnd("dd", 33)).and("key", 23)
-                .orWhere(Opt.OR, WhereParam.where("k1").in(Arrays.asList(1, 3, 4)), WhereParam.where("k2").equal("k2v"), WhereParam.where("k3").isNotNull())
-                .orWhere(Opt.OR, WhereParam.where("l1").findInSet(1), WhereParam.where("l2").findInSet(2))
-                .or(Opt.AND, WhereParam.where("lx").findInSet(213), WhereParam.where("kx").findInSet("213"));
         pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        criteria = new Criteria().orderBy(new Sort("sortF1"));
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        criteria = new Criteria().and(Where.where("f1").findInSet(2).and("f2").in(Arrays.asList(4, 5, 67)).or("f11").betweenAnd("dd", 33).or("fis").findInSet(1)).and("key", 23)
+                .or(Where.where("xmld").equal("eqeual").and("andd").gt(1230).or("xsdads").like("mmmdsa"))
+                .andWhere(Opt.OR, WhereParam.where("k1").in(Arrays.asList(1, 3, 4)), WhereParam.where("k2").equal("k2v"), WhereParam.where("k3").isNotNull())
+                .orWhere(Opt.OR, WhereParam.where("l1").findInSet(1), WhereParam.where("l2").findInSet(2))
+                .or(Opt.OR, WhereParam.where("lx").findInSet(213), WhereParam.where("kx").findInSet("213"))
+                .and(Opt.AND, WhereParam.where("isnol").isNotNull(), WhereParam.where("xds").exists(new SQL().select("*").from("haobads").where("dddx", 12)));
         pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
@@ -71,6 +70,7 @@ public class CriteriaTest {
         SQL criteria = new SQL().select("t1.name", "t2.username").from(Book.class).as("t1")
                 .natureJoin(new Joins().with(Book.class).as("t2"))
                 .and("sd", "in", Arrays.asList("sd1", "xg1")).gt("sdf", 12)
+                .andWhere(Opt.OR, WhereParam.where("k1").in(Arrays.asList(1, 3, 4)), WhereParam.where("k2").equal("k2v"), WhereParam.where("k3").isNotNull())
                 .natureJoin(new Joins().with(Book.class).as("t3"))
                 .leftJoin(new Joins().with(Book.class).as("t4").on("t4.id", "t2.id").on("t4.name", "t2.name").andIfAbsent("t4.andIfAbsent", "=", "123"))
                 .andCriteria(new Criteria().where("k1", "v1").or("k2", "v2")).or("k3", "k5")
@@ -98,11 +98,33 @@ public class CriteriaTest {
         Pair<String, Object[]> p = SqlMakeTools.useSql(criteria);
         System.out.println(p.getFirst());
         System.out.println(Arrays.toString(p.getSecond()));
+        //real sql
+        SQL sql = new SQL().select("au.user_id", "au.pname").from(new SQL().select("*").from("sys_user").isNotNull("parent").and("del_flag", 0).and("status", 1).asTable("au"), new SQL().select("@parent := '1545572506026774529'").from("dual").asTable("pd")).gt("FIND_IN_SET(parent,@parent)", 0).and("@parent", ":=", new FieldReference(concat("@parent", "','", "user_id")))
+                .union().select("au.user_id", "au.pname").from(new SQL().select("*").from("sys_user").isNotNull("parent").and("del_flag", 0).and("status", 1).notEqual("'level'", 1).asTable("au"))
+                .gt("FIND_IN_SET(parent,@parent)", 0).and("@parent", ":=", new FieldReference(concat("@parent", "','", "user_id"))).union().select("user_id", "pname").from("sys_user")
+                .where("user_id", "1545572506026774529").and("status", 1).notEqual("'level'", 1).and("del_flag", 0);
+        p = SqlMakeTools.useSql(sql);
+        System.out.println(p.getFirst());
+        System.out.println(Arrays.toString(p.getSecond()));
+        sql = new SQL().select("*").from(new SQL().select("a").from("a_tb").union().select("b").from("b_tb"));
+        p = SqlMakeTools.useSql(sql);
+        System.out.println(p.getFirst());
+        System.out.println(Arrays.toString(p.getSecond()));
+        sql =  new SQL().select("t1.name", "t2.username").from(Book.class).as("t1")
+                .natureJoin(new Joins().with(Book.class).as("t2"))
+                .and("sd", "in", Arrays.asList("sd1", "xg1")).gt("sdf", 12)
+                .natureJoin(new Joins().with(Book.class).as("t3"))
+                .leftJoin(new Joins().with(Book.class).as("t4").on("t4.id", "t2.id"))
+                .andCriteria(new Criteria().where("k1", "v1").or("k2", "v2")).or("k3", "k5")
+                .union().select("un.ke", "un.ke2").from(Book.class).where("un.ke", 1);
+        p = SqlMakeTools.useSql(sql);
+        System.out.println(p.getFirst());
+        System.out.println(Arrays.toString(p.getSecond()));
     }
 
     @Test
     public void testUnionSql() {
-        SQL s1 = new SQL().select("u1.*").from(Test.class).where("u1.id", 123).union().select("u2.*").from(Test.class)
+        SQL s1 = new SQL().select("u1.*").from(Test.class).where("u1.id", 123).union().select("u2.*").from(Test.class).and("xd22", 1).or(Opt.OR, WhereParam.where("zx").isNull(), WhereParam.where("had").equal(2335))
                 .unionAll().select("u3.*").from(Book.class).where("u3", 123).leftJoin(new Joins().with(Test.class)
                         .as("u31").on("u31.id", "u3.id").and("u31.nmm", "=", "nmmm")).limit(10000);
         SQL s2 = new SQL().select("t1.*").from(Book.class).as("t1").andCriteria(new Criteria().in("t1.id", Arrays.asList(1, 2, 3)).like("t1.name", "name1")).leftJoin(new Joins().with(Book.class).as("j1").on("j1.id", "t1.id").and("j1.name", "=", "j1name"));
@@ -165,8 +187,6 @@ public class CriteriaTest {
 
         SQL s5 = new SQL().select(formatAs("10000", "2").as("a")).from(Book.class);
 
-        SQL s6 = new SQL().select(countAs("id").as("sum"), curdateAs().as("nowtime"), trimAs("name").as("name")).from(Book.class);
-
         Pair<String, Object[]> pair = SqlMakeTools.useSql(s);
         System.out.println(pair.getFirst());
         Pair<String, Object[]> pair2 = SqlMakeTools.useSql(s2);
@@ -178,8 +198,6 @@ public class CriteriaTest {
         //...more 等着你完善和探索...
         Pair<String, Object[]> pair5 = SqlMakeTools.useSql(s5);
         System.out.println(pair5.getFirst());
-        Pair<String, Object[]> pair6 = SqlMakeTools.useSql(s6);
-        System.out.println(pair6.getFirst());
     }
 
     @Test
@@ -224,7 +242,7 @@ public class CriteriaTest {
         //DELETE t1 FROM tb_table t1
         // INNER JOIN
         //tmp_table t2  ON t2.moduletype  = t1.moduletype  AND t2.unitqdkey = t1.unitqdkey  WHERE t1.unid = ? AND t1.epid = ?
-        sql = new SQL().delete("t1").from("tb_table")
+        sql = new SQL().delete("t1").from("tb_table").as("t1")
                 .innerJoin(new Joins().with("tmp_table").as("t2").on("t2.moduletype ", "t1.moduletype")
                         .on("t2.unitqdkey", "t1.unitqdkey")).where("t1.unid", "iiods").and("t1.epid", 9192);
         pair = SqlMakeTools.useSql(sql);
@@ -258,11 +276,16 @@ public class CriteriaTest {
         // WHERE orders.userid = items.userid  AND orders.orderid = items.orderid AND orders.date <= ?
         sql = new SQL().delete().from("orders,items")
                 .where("orders.userid", new FieldReference("items.userid "))
-                .and("orders.orderid", new FieldReference("items.orderid"))
+                .and("orders.orderid", new FieldReference("items.orderid+" + 2))
                 .let("orders.date", "2000/03/01");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().delete("a,b").from("flow_instance").as("a").innerJoin(new Joins().with("flow_action").as("b").on("a.id", "b.flowInstanceId")).where("b.bizId", "dddddd");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+
     }
 
     @Test
@@ -414,7 +437,10 @@ public class CriteriaTest {
         SQL sql = new SQL().delete("a", "b").from("flow_instance").as("a").innerJoin(new Joins().with("flow_action").as("b").on("a.id", "b.flowInstanceId")).where("b.bizId", "id123456");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
-
+        sql = new SQL().select("*").from(new SQL().select("a").from("a_tb").asTable("aquery"),new SQL().select("b").from("b_tb").asTable("bquery"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
     }
 
 

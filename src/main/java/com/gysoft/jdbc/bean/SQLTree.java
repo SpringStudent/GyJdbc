@@ -29,6 +29,12 @@ public class SQLTree {
      * 连接类型
      */
     private String unionType;
+    /**
+     * 将sql作为表的别名
+     */
+    private String asTable;
+
+    private boolean fromAsTable;
 
     public String getSql() {
         return sql;
@@ -66,16 +72,34 @@ public class SQLTree {
         return unionType;
     }
 
+    public String getAsTable() {
+        return asTable;
+    }
+
+    public Boolean getFromAsTable() {
+        return fromAsTable;
+    }
+
+    public void setFromAsTable(Boolean fromAsTable) {
+        this.fromAsTable = fromAsTable;
+    }
+
+    public void setAsTable(String asTable) {
+        this.asTable = asTable;
+    }
+
     public void setUnionType(String unionType) {
         this.unionType = unionType;
     }
 
-    public SQLTree(String sql, Object[] params, List<SQLTree> childs, String id,String unionType) {
+    public SQLTree(String sql, Object[] params, List<SQLTree> childs, String id,String unionType,String asTable,boolean fromAsTable) {
         this.sql = sql;
         this.params = params;
         this.childs = childs;
         this.id = id;
         this.unionType = unionType;
+        this.asTable = asTable;
+        this.fromAsTable = fromAsTable;
     }
 
     public SQLTree() {

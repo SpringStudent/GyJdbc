@@ -350,7 +350,7 @@ public class SqlMakeTools {
                     } else if (criteriaType.equals("WITH")) {
                     } else if (criteriaType.equals("WHEREAND")) {
                         sql.append(criteriaProxy.getSql()).append(" AND ");
-                    }else if (criteriaType.equals("WHEREOR")) {
+                    } else if (criteriaType.equals("WHEREOR")) {
                         sql.append(" OR ").append(criteriaProxy.getSql()).append(" AND ");
                     } else {
                         sql.append(" ").append(criteriaType).append('(').append(criteriaProxy.getSql()).append(')').append(" AND ");
@@ -364,13 +364,14 @@ public class SqlMakeTools {
 
     /**
      * 使用自定义sql
+     *
      * @param sqlObj sql对象
-     * @author 周宁
      * @return Pair pair.first sql pair.second 参数数组
+     * @author 周宁
      * @version 1.0
      */
     public static Pair<String, Object[]> useSql(SQL sqlObj) {
-        boolean needSurroundBacket = sqlObj.getSqlPiepline().getSqlNexts().size() > 1;
+        //虚拟出查询的根节点，兼容处理联合查询
         SQL parentSQL = new SQL().select("*").from(sqlObj);
         SQLTree sqlTree = new SQLTree();
         sqlTree.setId("0");
@@ -379,12 +380,12 @@ public class SqlMakeTools {
         sqlTree.setChilds(new ArrayList<>());
         buildSQLTree(parentSQL, sqlTree);
         Pair<String, Object[]> pair = recurSql(sqlTree, new Pair<>("", new Object[]{}));
-        String fuckSql = pair.getFirst().trim();
-        fuckSql = fuckSql.substring(5, fuckSql.length() - 1).trim();
-        if (!needSurroundBacket) {
-            fuckSql = fuckSql.substring(1, fuckSql.length() - 1);
+        String parentSql = pair.getFirst().trim();
+        //单条sql语句不保留左右两侧括号
+        if (sqlObj.getSqlPiepline().getSqlNexts().size() <= 1) {
+            parentSql = parentSql.substring(1, parentSql.length() - 1).trim();
         }
-        pair.setFirst(fuckSql);
+        pair.setFirst(parentSql);
         return pair;
     }
 
@@ -400,8 +401,15 @@ public class SqlMakeTools {
         List<SQL> subSqls = sql.getSubSqls();
         for (int i = 0; i < subSqls.size(); i++) {
             Pair<String, Object[]> pair = doSql(subSqls.get(i));
-            SQLTree cTree = new SQLTree(pair.getFirst(), pair.getSecond(), new ArrayList<>(),
-                    UUID.randomUUID().toString().replace("-", ""), subSqls.get(i).getUnionType());
+            SQLTree cTree = new SQLTree(
+                    pair.getFirst(),
+                    pair.getSecond(),
+                    new ArrayList<>(),
+                    UUID.randomUUID().toString().replace("-", ""),
+                    subSqls.get(i).getUnionType(),
+                    subSqls.get(i).getAsTable(),
+                    subSqls.get(i).getFromAsTable()
+            );
             sqlTree.getChilds().add(cTree);
             buildSQLTree(subSqls.get(i), cTree);
         }
@@ -528,10 +536,26 @@ public class SqlMakeTools {
     private static Pair<String, Object[]> recurSql(SQLTree sqlTree, Pair<String, Object[]> pair) {
         List<SQLTree> childs = sqlTree.getChilds();
         if (CollectionUtils.isNotEmpty(childs)) {
+            //是否为虚拟的根节点sql,虚拟根节点sql不包装子查询
+            boolean isRootSql = sqlTree.getId().equals("0");
             String[] arr = sqlTree.getSql().split("FROM");
-            pair.setFirst(pair.getFirst().concat(arr[0] + "FROM("));
-            for (SQLTree cnode : childs) {
-                pair.setFirst(pair.getFirst().concat(" " + cnode.getUnionType() + " ("));
+            if (sqlTree.getChilds().size() > 1 && sqlTree.getFromAsTable()) {
+                if (!isRootSql) {
+                    pair.setFirst(pair.getFirst().concat(arr[0] + "FROM(("));
+                }
+            } else {
+                if (!isRootSql) {
+                    pair.setFirst(pair.getFirst().concat(arr[0] + "FROM("));
+                }
+            }
+            //子查询递归拼接格式为：(sql) union|,|union all (sql)
+            for (int i = 0; i < childs.size(); i++) {
+                SQLTree cnode = childs.get(i);
+                if (i == 0) {
+                    pair.setFirst(pair.getFirst().concat(" ("));
+                } else {
+                    pair.setFirst(pair.getFirst().concat(" " + cnode.getUnionType() + " ("));
+                }
                 if (CollectionUtils.isNotEmpty(cnode.getChilds())) {
                     pair = recurSql(cnode, pair);
                 } else {
@@ -539,16 +563,35 @@ public class SqlMakeTools {
                     pair.setFirst(pair.getFirst().replace(cnode.getId(), cnode.getSql()));
                     pair.setSecond(ArrayUtils.addAll(pair.getSecond(), cnode.getParams()));
                 }
-                pair.setFirst(pair.getFirst().concat(")"));
+                if (StringUtils.isNotEmpty(cnode.getAsTable()) && !cnode.getFromAsTable()) {
+                    pair.setFirst(pair.getFirst().concat(") " + cnode.getAsTable() + ""));
+                } else {
+                    pair.setFirst(pair.getFirst().concat(")"));
+                }
             }
-            pair.setFirst(pair.getFirst().concat(")" + arr[1]));
+            if (sqlTree.getChilds().size() > 1 && sqlTree.getFromAsTable()) {
+                //rootSql不存在from(String asTable,SQL c)这种查询方式
+                if (!isRootSql) {
+                    if (sqlTree.getFromAsTable()) {
+                        pair.setFirst(pair.getFirst().concat(") " + sqlTree.getAsTable() + " )" + arr[1]));
+                    } else {
+                        pair.setFirst(pair.getFirst().concat("))" + arr[1]));
+                    }
+                }
+            } else {
+                if (!isRootSql) {
+                    if (sqlTree.getFromAsTable()) {
+                        pair.setFirst(pair.getFirst().concat(") " + sqlTree.getAsTable() + " " + arr[1]));
+                    } else {
+                        pair.setFirst(pair.getFirst().concat(")" + arr[1]));
+                    }
+                }
+            }
             pair.setSecond(ArrayUtils.addAll(pair.getSecond(), sqlTree.getParams()));
         } else {
             pair.setFirst(pair.getFirst().concat(sqlTree.getSql()));
             pair.setSecond(ArrayUtils.addAll(pair.getSecond(), sqlTree.getParams()));
         }
-        pair.setFirst(pair.getFirst().replace("( UNION ALL", "("));
-        pair.setFirst(pair.getFirst().replace("( UNION", "("));
         return pair;
     }
 

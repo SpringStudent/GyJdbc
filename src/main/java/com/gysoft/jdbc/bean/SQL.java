@@ -23,6 +23,17 @@ public class SQL extends AbstractCriteria<SQL> {
      */
     private String aliasName;
     /**
+     * 将sql作为表的别名
+     */
+    private String asTable;
+
+    /**
+     * 标识从from(String asTable,SQL... cc)
+     * 方法传递asTable
+     */
+    private boolean fromAsTable;
+
+    /**
      * 删除语句中表的别名
      */
     private String deleteAliasName;
@@ -80,11 +91,27 @@ public class SQL extends AbstractCriteria<SQL> {
                 if (sqlNext.getUnionType() != null) {
                     s.setUnionType(sqlNext.getUnionType());
                 } else {
-                    s.setUnionType("UNION ALL");
+                    s.setUnionType(",");
                 }
                 subSqls.add(s);
             });
         }
+        return this;
+    }
+
+    public SQL from(SQL c, String asTable) {
+        this.asTable = asTable;
+        this.fromAsTable = true;
+        c.getSqlPiepline().getSqlNexts().forEach(sqlNext -> {
+            SQL s = sqlNext.getSql();
+            s.setFromAsTable(true);
+            if (sqlNext.getUnionType() != null) {
+                s.setUnionType(sqlNext.getUnionType());
+            } else {
+                s.setUnionType(",");
+            }
+            subSqls.add(s);
+        });
         return this;
     }
 
@@ -148,6 +175,22 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public void setDeleteAliasName(String deleteAliasName) {
         this.deleteAliasName = deleteAliasName;
+    }
+
+    public String getAsTable() {
+        return asTable;
+    }
+
+    public void setAsTable(String asTable) {
+        this.asTable = asTable;
+    }
+
+    public boolean getFromAsTable() {
+        return fromAsTable;
+    }
+
+    public void setFromAsTable(boolean fromAsTable) {
+        this.fromAsTable = fromAsTable;
     }
 
     public SQL select(Object... fields) {
@@ -341,6 +384,11 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public SQL as(String aliasName) {
         this.aliasName = aliasName;
+        return this;
+    }
+
+    public SQL asTable(String aliasName) {
+        this.asTable = aliasName;
         return this;
     }
 
