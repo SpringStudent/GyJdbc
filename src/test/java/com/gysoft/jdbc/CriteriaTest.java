@@ -451,7 +451,7 @@ public class CriteriaTest {
         SQL sql = new SQL().delete("a", "b").from("flow_instance").as("a").innerJoin(new Joins().with("flow_action").as("b").on("a.id", "b.flowInstanceId")).where("b.bizId", "id123456");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
-        sql = new SQL().select("*").from(new SQL().select("a.field1").from("tablea").as("a").where("a.id","1"),"astb");
+        sql = new SQL().select("*").from(new SQL().select("a.field1").from(new SQL().select("a.*").from("a_tb").asTable("a").where("1", 1).unionAll().select("b.*").from("b_tb").asTable("b").and("2", 2)).as("aunion").where("a.id","1"),"astb");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));

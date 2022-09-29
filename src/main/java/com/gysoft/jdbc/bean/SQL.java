@@ -104,7 +104,7 @@ public class SQL extends AbstractCriteria<SQL> {
         this.fromAsTable = true;
         c.getSqlPiepline().getSqlNexts().forEach(sqlNext -> {
             SQL s = sqlNext.getSql();
-            s.setFromAsTable(true);
+//            s.setFromAsTable(true);
             if (sqlNext.getUnionType() != null) {
                 s.setUnionType(sqlNext.getUnionType());
             } else {

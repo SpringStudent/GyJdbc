@@ -130,7 +130,7 @@ sql = new SQL().select("*").from("table2").and(Opt.AND,params);
 
 #### 更多用法见
 
-#### https://github.com/SpringStudent/GyJdbcTest/blob/master/src/test/test/TestGyJdbc.java
+#### https://github.com/hope-for/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/CriteriaTest.java
 
 #### 多数据源支持
 
