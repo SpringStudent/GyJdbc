@@ -31,7 +31,7 @@ public class SQL extends AbstractCriteria<SQL> {
      * 标识从from(String asTable,SQL c)
      * 方法传递asTable，此方法用于给子查询起别名
      */
-    private boolean fromAsTable;
+    private boolean fromAsTable = false;
 
     /**
      * 删除语句中表的别名
