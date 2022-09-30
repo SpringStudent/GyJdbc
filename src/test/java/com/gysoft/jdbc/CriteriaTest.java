@@ -320,7 +320,7 @@ public class CriteriaTest {
     public void testUnionBug() {
         SQL sql = new SQL().select("*").from(new SQL().select("*").from("test").as("t1")
                 .unionAll().select("*").from(new SQL().select("*").from("test2")
-                        .unionAll().select("*").from("test3")).as("t2")).as("t3")
+                        .unionAll().select("*").from("test3").where("god", "pls")).as("t2")).as("t3")
                 .union().select("*").from(new SQL().select("*").from("test3")
                         .unionAll().select("*").from(new SQL().select("t5.*").from("test").as("t5")
                                 .leftJoin(new Joins().with("test").as("t6").on("t5.id", "t6.id")
@@ -455,7 +455,10 @@ public class CriteriaTest {
                 new SQL().select("a.field1").from(
                         new SQL().select("a.*").from(
                                 new SQL().select("*").from(
-                                        new SQL().select("a").from("a_tb").asTable("aquery"), new SQL().select("b").from("b_tb").asTable("bquery")), "dddd"
+                                        new SQL().select("a").from(
+                                                new SQL().select("*").from("tablea")
+                                        ).asTable("aquery").where("key", "k"), new SQL().select("b").from("b_tb").asTable("bquery")
+                                ), "dddd"
                         ).asTable("ddd").where("1", 1).unionAll().select("b.*").from("b_tb").asTable("b").and("2", 2)
                 ).where("a.id", "1"), "astb");
         pair = SqlMakeTools.useSql(sql);
@@ -474,6 +477,10 @@ public class CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
         sql = new SQL().select("*").from("tablea").asTable("bb");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("ab.*").from(new SQL().select("a.*").from("a_tb").as("a").where("id", 1).unionAll().select("b.*").from("b_tb").as("b").where("id", 2), "ab");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));

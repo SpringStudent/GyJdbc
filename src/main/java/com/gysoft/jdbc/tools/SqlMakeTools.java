@@ -220,6 +220,7 @@ public class SqlMakeTools {
      * @param criteria 查询条件
      * @param sql      sql语句
      * @return Pair sql与sql入参对
+     * @author 周宁
      */
     public static Pair<String, Object[]> doCriteria(AbstractCriteria criteria, StringBuilder sql) {
         Pair<String, Object[]> result = new Pair<>();
@@ -378,10 +379,12 @@ public class SqlMakeTools {
         sqlTree.setParams(new Object[]{});
         sqlTree.setSql(" FROM ");
         sqlTree.setChilds(new ArrayList<>());
+        //递归组装SQL树
         buildSQLTree(parentSQL, sqlTree);
+        //递归SQL树获取真正的sql和参数
         Pair<String, Object[]> pair = recurSql(sqlTree, new Pair<>("", new Object[]{}));
         String parentSql = pair.getFirst().trim();
-        //单条sql语句不保留左右两侧括号
+        //非联合查询sql语句不必保留左右两侧括号
         if (sqlObj.getSqlPiepline().getSqlNexts().size() <= 1 && StringUtils.isEmpty(sqlObj.getAsTable())) {
             parentSql = parentSql.substring(1, parentSql.length() - 1).trim();
         }
@@ -570,7 +573,7 @@ public class SqlMakeTools {
                 }
             }
             if (sqlTree.getChilds().size() > 1 && sqlTree.getFromAsTable()) {
-                //rootSql不存在from(String asTable,SQL c)这种查询方式
+                //根节点sql不会存在from(String asTable,SQL c)这种查询方式
                 if (!isRootSql) {
                     if (sqlTree.getFromAsTable()) {
                         pair.setFirst(pair.getFirst().concat(") " + sqlTree.getAsTable() + " )" + arr[1]));
