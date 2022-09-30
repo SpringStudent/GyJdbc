@@ -439,6 +439,11 @@ public class SqlMakeTools {
                     if (obj instanceof ValueReference) {
                         sql.append("?, ");
                         params = ArrayUtils.add(params, ((ValueReference) obj).getValue());
+                    } else if (obj instanceof SQL) {
+                        //兼容select字段为一条sql
+                        Pair<String, Object[]> temp = SqlMakeTools.useSql((SQL) obj);
+                        sql.append(temp.getFirst() + ", ");
+                        params = ArrayUtils.addAll(params, temp.getSecond());
                     } else {
                         sql.append(obj.toString() + ", ");
                     }

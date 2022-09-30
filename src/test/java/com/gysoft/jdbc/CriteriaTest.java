@@ -410,6 +410,47 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from(
+                new SQL().select("a.field1").from(
+                        new SQL().select("a.*").from(
+                                new SQL().select("*").from(
+                                        new SQL().select("a").from(
+                                                new SQL().select("*").from("tablea")
+                                        ).asTable("aquery").where("key", "k"), new SQL().select("b").from("b_tb").asTable("bquery")
+                                ), "dddd"
+                        ).asTable("ddd").where("1", 1).unionAll().select("b.*").from("b_tb").asTable("b").and("2", 2)
+                ).where("a.id", "1"), "astb");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from(new SQL().select("a").from("a_tb").asTable("aquery"), new SQL().select("b").from("b_tb").asTable("bquery"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("a.*").from("a_tb").asTable("a").where("1", 1).unionAll().select("b.*").from("b_tb").asTable("b").and("2", 2);
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from(new SQL().select("a.*").from("a_tb").as("a").where("1", 1).unionAll().select("b.*").from("b_tb").as("b").and("2", 2), "mmm").where("id", "id1");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from("tablea").asTable("bb");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("ab.*").from(new SQL().select("a.*").from("a_tb").as("a").where("id", 1).unionAll().select("b.*").from("b_tb").as("b").where("id", 2), "ab");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("e.name",new SQL().select("d.name").from("dept").as("d").where("e.deptno",new FieldReference("d.deptno")).as("dname").asTable("dname"),"e.testname").from("emp").as("e");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("employee_number","name").from("employees").as("emp").gt("salary",new SQL().select(avg("salary")).from("employees").where("department",new FieldReference("emp.department")).groupBy("department").having("sum(gdp)",">",10000));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
     }
 
     @Test
@@ -451,36 +492,9 @@ public class CriteriaTest {
         SQL sql = new SQL().delete("a", "b").from("flow_instance").as("a").innerJoin(new Joins().with("flow_action").as("b").on("a.id", "b.flowInstanceId")).where("b.bizId", "id123456");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
-        sql = new SQL().select("*").from(
-                new SQL().select("a.field1").from(
-                        new SQL().select("a.*").from(
-                                new SQL().select("*").from(
-                                        new SQL().select("a").from(
-                                                new SQL().select("*").from("tablea")
-                                        ).asTable("aquery").where("key", "k"), new SQL().select("b").from("b_tb").asTable("bquery")
-                                ), "dddd"
-                        ).asTable("ddd").where("1", 1).unionAll().select("b.*").from("b_tb").asTable("b").and("2", 2)
-                ).where("a.id", "1"), "astb");
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select("*").from(new SQL().select("a").from("a_tb").asTable("aquery"), new SQL().select("b").from("b_tb").asTable("bquery"));
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select("a.*").from("a_tb").asTable("a").where("1", 1).unionAll().select("b.*").from("b_tb").asTable("b").and("2", 2);
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select("*").from(new SQL().select("a.*").from("a_tb").as("a").where("1", 1).unionAll().select("b.*").from("b_tb").as("b").and("2", 2), "mmm").where("id", "id1");
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select("*").from("tablea").asTable("bb");
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select("ab.*").from(new SQL().select("a.*").from("a_tb").as("a").where("id", 1).unionAll().select("b.*").from("b_tb").as("b").where("id", 2), "ab");
+        sql = new SQL().delete().from("t_order").where(new String[]{"user_id","product_id"},"in",new SQL().select("t.user_id,t.product_id").from(new SQL().select("user_id,product_id").from("t_order").groupBy("user_id","product_id").having("count(1)",">",1).asTable("t")))
+                .notIn("id",new SQL().select("t.id").from(new SQL().select(minAs("id").as("id")).from("t_order")).groupBy("user_id","product_id").having("count(1)",">",1).asTable("t"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
