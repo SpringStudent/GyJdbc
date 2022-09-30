@@ -427,6 +427,7 @@ public class SqlMakeTools {
      * @version 1.0
      */
     private static Pair<String, Object[]> doSql(SQL sqlObj) {
+        //先拼接基础查询
         Pair<String, Object[]> pair;
         Object[] params = {};
         StringBuilder sql = new StringBuilder();
@@ -508,7 +509,7 @@ public class SqlMakeTools {
                 params = doCriteriaProxy(criteriaProxies, -2, sql, params);
             }
         }
-        //update语句的拼接
+        //update字段拼接
         if (sqlObj.getSqlType().equals(EntityDao.SQL_UPDATE)) {
             sql.append(" SET ");
             List<Pair> kvs = sqlObj.getKvs();
@@ -524,6 +525,7 @@ public class SqlMakeTools {
             }
             sql.setLength(sql.length() - 2);
         }
+        //组装条件
         pair = doCriteria(sqlObj, sql);
         params = ArrayUtils.addAll(params, pair.getSecond());
         return new Pair<>(pair.getFirst(), params);
