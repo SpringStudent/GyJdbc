@@ -524,6 +524,7 @@ public class CriteriaTest {
         System.out.println(Arrays.toString(pair.getSecond()));
         sql = new SQL().select("m.status mkStatus").from("inspection", "m")
                 .rightJoin(new SQL().select("m.inspId,max(m.modelObjId)modelObjId").from("inspection_model").as("m").and("m.projectId", "pid").groupBy("m.projectId"), "g1").on("g1.inspId", "m.id")
+                .leftJoin("b", "b").on("a.id","b.id").on("a.tb", "=","dddd")
                 .inIfAbsent("m.status", Arrays.asList(1, 2, 3));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
