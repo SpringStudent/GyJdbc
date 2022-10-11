@@ -2,6 +2,7 @@ package com.gysoft.jdbc.bean;
 
 import com.gysoft.jdbc.dao.EntityDao;
 import com.gysoft.jdbc.tools.EntityTools;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -99,6 +100,7 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
+    //此方法传参的asTable优先级高于asTable()方法
     public SQL from(SQL c, String asTable) {
         this.asTable = asTable;
         this.fromAsTable = true;
@@ -401,6 +403,16 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
+    public SQL from(String tbName, String aliasName) {
+        this.tbName = tbName;
+        return as(aliasName);
+    }
+
+    public SQL from(Class clss, String aliasName) {
+        tbName = EntityTools.getTableName(clss);
+        return as(aliasName);
+    }
+
     public SQL leftJoin(Joins.On on) {
         on.setJoinType(JoinType.LeftJoin);
         return join(on);
@@ -425,6 +437,58 @@ public class SQL extends AbstractCriteria<SQL> {
 
     private SQL join(Joins.On join) {
         joins.add(join);
+        return this;
+    }
+
+    public SQL join(JoinType joinType, Object table, String aliasName) {
+        Joins.As as = null;
+        if (table instanceof Class) {
+            as = new Joins().with((Class) table).as(aliasName);
+        } else if (table instanceof String) {
+            as = new Joins().with((String) table).as(aliasName);
+        } else if (table instanceof SQL) {
+            as = new Joins().with((SQL) table).as(aliasName);
+        }
+        as.setJoinType(joinType);
+        joins.add(as);
+        return this;
+    }
+
+    public SQL leftJoin(Object table, String aliasName) {
+        return join(JoinType.LeftJoin, table, aliasName);
+    }
+
+    public SQL rightJoin(Object table, String aliasName) {
+        return join(JoinType.RightJoin, table, aliasName);
+    }
+
+    public SQL innerJoin(Object table, String aliasName) {
+        return join(JoinType.InnerJoin, table, aliasName);
+    }
+
+    public SQL natureJoin(Object table, String aliasName) {
+        return join(JoinType.NatureJoin, table, aliasName);
+    }
+
+    public SQL on(String field, String field2) {
+        Object as = joins.get(joins.size() - 1);
+        if (as instanceof Joins.As) {
+            joins.remove(as);
+            Joins.On on = ((Joins.As) as).on(field, field2);
+            joins.add(on);
+        } else {
+            ((Joins.On) as).on(field, field2);
+        }
+        return this;
+    }
+
+    public SQL on(String field, String opt, Object field2) {
+        Object as = joins.get(joins.size() - 1);
+        if (as instanceof Joins.On) {
+            ((Joins.On) as).and(field, opt, field2);
+        } else {
+            throw new RuntimeException("the sql has no join condition");
+        }
         return this;
     }
 

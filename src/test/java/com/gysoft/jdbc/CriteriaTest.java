@@ -451,7 +451,7 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select(count("average")).from(new SQL().select("sid", avgAs("score").as("average")).from("sc").groupBy("sid"), "t1").gt("average", "t2.average").asTable("rank");
+        sql = new SQL().select(count("average")).from(new SQL().select("sid", avgAs("score").as("average")).from("sc").groupBy("sid")).gt("average", "t2.average").asTable("rank");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
@@ -511,6 +511,20 @@ public class CriteriaTest {
         sql = new SQL().select(count("average")).from(
                 new SQL().select("sid", avgAs("score").as("average")
                 ).from("sc").groupBy("sid")).gt("average", "t2.average").asTable("rank");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("a","b",new SQL().select("c").from("c1").where("c1.id",1).asTable("c2")).from("table");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from("a", "a").leftJoin("b", "b").on("a.id","b.id").on("a.tb", "=","1");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("m.status mkStatus").from("inspection", "m")
+                .rightJoin(new SQL().select("m.inspId,max(m.modelObjId)modelObjId").from("inspection_model").as("m").and("m.projectId", "pid").groupBy("m.projectId"), "g1").on("g1.inspId", "m.id")
+                .inIfAbsent("m.status", Arrays.asList(1, 2, 3));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
