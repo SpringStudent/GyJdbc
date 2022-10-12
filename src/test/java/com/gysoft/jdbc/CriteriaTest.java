@@ -497,7 +497,7 @@ public class CriteriaTest {
     }
 
     @Test
-    public void testDeleteSql() {
+    public void finalTest() {
         //delete a,b from flow_instance as a inner join flow_action b on a.id=b.flowInstanceId where b.bizId = ?
         SQL sql = new SQL().delete("a", "b").from("flow_instance").as("a").innerJoin(new Joins().with("flow_action").as("b").on("a.id", "b.flowInstanceId")).where("b.bizId", "id123456");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
@@ -514,21 +514,42 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select("a","b",new SQL().select("c").from("c1").where("c1.id",1).asTable("c2")).from("table");
+        sql = new SQL().select("a", "b", new SQL().select("c").from("c1").where("c1.id", 1).asTable("c2")).from("table");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select("*").from("a", "a").leftJoin("b", "b").on("a.id","b.id").on("a.tb", "=","1");
+        sql = new SQL().select("*").from("tablea", "a").leftJoin("tableb", "b").on("a.id", "b.id").on("a.tb", "=", "1");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
         sql = new SQL().select("m.status mkStatus").from("inspection", "m")
                 .rightJoin(new SQL().select("m.inspId,max(m.modelObjId)modelObjId").from("inspection_model").as("m").and("m.projectId", "pid").groupBy("m.projectId"), "g1").on("g1.inspId", "m.id")
-                .leftJoin("b", "b").on("a.id","b.id").on("a.tb", "=","dddd")
+                .leftJoin("b", "b").on("a.id", "b.id").on("a.tb", "=", "dddd")
                 .inIfAbsent("m.status", Arrays.asList(1, 2, 3));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("*").from(new SQL().select("*").from("test").as("t1")
+                .unionAll().select("*").from(new SQL().select("*").from("test2")
+                        .unionAll().select("*").from("test3").where("god", "pls")).as("t2")).as("t3")
+                .union().select("*").from(new SQL().select("*").from("test3")
+                        .unionAll().select("*").from(new SQL().select("t5.*").from("test").as("t5")
+                                .leftJoin("test", "t6").on("t5.id", "t6.id").on("t5.id", ">", 1)).as("t7")).as("t4");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(Arrays.toString(pair.getSecond()));
+        sql = new SQL().select("t1.name", "t2.username").from(Book.class).as("t1")
+                .natureJoin(Book.class, "t2")
+                .and("sd", "in", Arrays.asList("sd1", "xg1")).gt("sdf", 12)
+                .andWhere(Opt.OR, WhereParam.where("k1").in(Arrays.asList(1, 3, 4)), WhereParam.where("k2").equal("k2v"), WhereParam.where("k3").isNotNull())
+                .natureJoin(Book.class, "t3")
+                .leftJoin(Book.class, "t4").on("t4.id", "t2.id").on("t4.name", "t2.name").on("t4.andIfAbsent", "=", "123")
+                .andCriteria(new Criteria().where("k1", "v1").or("k2", "v2")).or("k3", "k5")
+                .limit(12222, 100)
+                .union().select("un.ke", "un.ke2").from(Book.class).where("un.ke", 1);
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
 
 }
