@@ -14,7 +14,6 @@ public interface SQLInterceptor {
      * @param criteria 组装撑的sql对象
      * @throws Exception sql错误抛出异常
      * @author ZhouNing
-     * @date 2022/10/17 16:24
      **/
     void beforeBuild(SQLType sqlType, AbstractCriteria criteria) throws Exception;
 
@@ -25,7 +24,6 @@ public interface SQLInterceptor {
      * @param args sql入参数组
      * @throws Exception sql错误抛出异常
      * @author ZhouNing
-     * @date 2022/10/17 16:28
      **/
     void afterBuild(String sql, Object[] args) throws Exception;
 
