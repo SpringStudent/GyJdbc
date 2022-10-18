@@ -198,7 +198,6 @@ public class CriteriaTest {
         SQL s3 = new SQL().select(abs(Token::getSize), ceil(Token::getSize), floor(Token::getSize)).from(Token.class);
         //时间处理函数
         SQL s4 = new SQL().select(curdate(), curtime(), now(), month(curdate()), week(curdate()), minute(curtime()));
-
         SQL s5 = new SQL().select(formatAs("10000", "2").as("a")).from(Book.class);
 
         Pair<String, Object[]> pair = SqlMakeTools.useSql(s);
@@ -538,7 +537,7 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select("t1.name", "t2.username").from(Book.class).as("t1")
+        sql = new SQL().select("t1.name", "t2.username").from(Book.class, "t1")
                 .natureJoin(Book.class, "t2")
                 .and("sd", "in", Arrays.asList("sd1", "xg1")).gt("sdf", 12)
                 .andWhere(Opt.OR, WhereParam.where("k1").in(Arrays.asList(1, 3, 4)), WhereParam.where("k2").equal("k2v"), WhereParam.where("k3").isNotNull())
@@ -551,5 +550,7 @@ public class CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
+
+
 
 }

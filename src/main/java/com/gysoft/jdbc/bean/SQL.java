@@ -1,10 +1,13 @@
 package com.gysoft.jdbc.bean;
 
 import com.gysoft.jdbc.dao.EntityDao;
+import com.gysoft.jdbc.tools.CollectionUtil;
 import com.gysoft.jdbc.tools.EntityTools;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -567,6 +570,16 @@ public class SQL extends AbstractCriteria<SQL> {
     public <T, R> SQL onDuplicateKeyUpdate(TypeFunction<T, R> function, Object value) {
         kvs.add(new Pair(TypeFunction.getLambdaColumnName(function), value));
         return this;
+    }
+
+    public Map<String,Object> getUpdates(){
+        Map<String,Object> result = new HashMap<>();
+        if(sqlType.equals(EntityDao.SQL_UPDATE)&& CollectionUtils.isNotEmpty(kvs)){
+            kvs.forEach(pair -> {
+                result.put(pair.getFirst().toString(),pair.getSecond());
+            });
+        }
+        return result;
     }
 
 }
