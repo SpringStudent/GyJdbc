@@ -2,7 +2,6 @@ package com.gysoft.jdbc.bean;
 
 /**
  * @author zhouning
- * @date 2022/10/17 16:22
  */
 public interface SQLInterceptor {
     /**
