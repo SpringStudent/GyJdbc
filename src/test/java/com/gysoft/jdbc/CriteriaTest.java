@@ -17,6 +17,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
+import static com.gysoft.jdbc.dao.EntityDao.SQL_INSERT;
 
 /**
  * Unit test for simple App.
@@ -416,8 +417,7 @@ public class CriteriaTest {
                                         new SQL().select("a").from(
                                                 new SQL().select("*").from("tablea")
                                         ).asTable("aquery").where("key", "k"), new SQL().select("b").from("b_tb").asTable("bquery")
-                                ), "dddd"
-                        ).asTable("ddd").where("1", 1).unionAll().select("b.*").from("b_tb").asTable("b").and("2", 2)
+                                )).asTable("ddd").where("1", 1).unionAll().select("b.*").from("b_tb").asTable("b").and("2", 2)
                 ).where("a.id", "1"), "astb");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
@@ -454,7 +454,6 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-
         sql = new SQL().select("t2.sid", "sutdent.sname", "t2.average", new SQL().select(count("average")).from(new SQL().select("sid", avgAs("score").as("average")).from("sc").groupBy("sid").asTable("t1")).gt("average", "t2.average").asTable("rank"))
                 .from("student").where("t2.sid", "student.sid").orderBy(new Sort("average", "desc"));
         pair = SqlMakeTools.useSql(sql);
@@ -549,8 +548,42 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
+
+        sql = new SQL().select("t0.id,t0.lon,t0.lat,t3.investmentStatus").from("project", "t0")
+                .leftJoin(
+                        new SQL().select("t1.projectId,t1.investmentStatus").from("project_progress", "t1").innerJoin(
+                                new SQL().select("projectId,max(createTime) createTime").from("project_progress").groupBy("projectId")
+                                , "t2").on("t1.createTime", "t2.createTime").and("t1.projectId", "t2.projectId")
+                        , "t3").on("t0.id", "t3.projectId");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().select("t0.id,t0.lon,t0.lat,t3.investmentStatus").from("project").as("t0")
+                .leftJoin(new Joins().with(
+                                     new SQL().select("t1.projectId,t1.investmentStatus").from("project_progress").as("t1")
+                                    .innerJoin(new Joins().with(new SQL().select("projectId,max(createTime) createTime").from("project_progress").groupBy("projectId"))
+                                            .as("t2").on("t1.createTime", "t2.createTime").and("t1.projectId", new FieldReference("t2.projectId")))
+                                )
+                        .as("t3").on("t0.id", "t3.projectId"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+
+        sql = new SQL().select("t0.investmentStatus status,count( t0.projectId ) projectCount").from(
+                new SQL().select("t1.projectId,t1.investmentStatus").from("project_progress").as("t1")
+                        .innerJoin(new Joins().with(new SQL().select("projectId,max(createTime) createTime").from("project_progress").groupBy("projectId"))
+                                .as("t2").on("t1.createTime", "t2.createTime").on("t1.projectId", "t2.projectId"))
+                        .innerJoin(new Joins().with("project").as("t3").on("t1.projectId", "t3.id").and("t3.deleteFlag", 0))
+        ).as("t0").groupBy("t0.investmentStatus");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
 
+    @Test
+    public void testMakeTools(){
+        System.out.println(SqlMakeTools.makeSql(Role.class,"role",SQL_INSERT));
 
+    }
 
 }

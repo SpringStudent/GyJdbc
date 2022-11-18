@@ -9,15 +9,23 @@ import com.gysoft.jdbc.annotation.Table;
 @Table(name = "tb_role")
 public class Role {
 
-    public static void main(String[] args) {
-        int idx = 0;
-        int num = 0;
-        while(idx<35){
-            num +=1;
-            if(num%3==0&&num%7==0){
-                idx +=1;
-            }
-        }
-        System.out.println(num);
+    private String name;
+
+    private String auths;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getAuths() {
+        return auths;
+    }
+
+    public void setAuths(String auths) {
+        this.auths = auths;
     }
 }
