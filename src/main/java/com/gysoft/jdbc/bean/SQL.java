@@ -62,9 +62,15 @@ public class SQL extends AbstractCriteria<SQL> {
      */
     private List<Object> selectFields;
     /**
-     * sql插入
+     * 插入数据
      */
-    private Pair<String, List<Object[]>> pair;
+    private List<Object[]> insertValues;
+
+    /**
+     * 插入sql
+     */
+    private Pair<String, List<String>> insert;
+
     /**
      * 待更新的字段和相应的值
      */
@@ -84,8 +90,8 @@ public class SQL extends AbstractCriteria<SQL> {
         kvs = new ArrayList<>();
         joins = new ArrayList<>();
         subSqls = new ArrayList<>();
-        pair = new Pair<>();
-        pair.setSecond(new ArrayList<>());
+        insertValues = new ArrayList<>();
+        insert = new Pair<>();
     }
 
     public SQL from(SQL... cc) {
@@ -199,13 +205,17 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public SQL select(Object... fields) {
         selectFields.addAll(Arrays.asList(fields));
-        this.sqlType = EntityDao.SQL_SELECT;
+        if (this.sqlType == null) {
+            this.sqlType = EntityDao.SQL_SELECT;
+        }
         return this;
     }
 
     public <T, R> SQL select(TypeFunction<T, R>... functions) {
         selectFields.addAll(Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()));
-        this.sqlType = EntityDao.SQL_SELECT;
+        if (this.sqlType == null) {
+            this.sqlType = EntityDao.SQL_SELECT;
+        }
         return this;
     }
 
@@ -239,52 +249,67 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public SQL insertInto(String table, String... fields) {
-        pair.setFirst(new String("INSERT INTO " + table + " ("
-                + Arrays.stream(fields).collect(Collectors.joining(","))
-                + ") "));
+        insert.setFirst(table);
+        insert.setSecond(Arrays.asList(fields));
         this.sqlType = EntityDao.SQL_INSERT;
-        pair.setSecond(new ArrayList<>());
         return this;
     }
 
     public SQL replaceInto(String table, String... fields) {
-        pair.setFirst(new String("REPLACE INTO " + table + " ("
-                + Arrays.stream(fields).collect(Collectors.joining(","))
-                + ") "));
-        this.sqlType = EntityDao.SQL_INSERT;
-        pair.setSecond(new ArrayList<>());
+        insert.setFirst(table);
+        insert.setSecond(Arrays.asList(fields));
+        this.sqlType = EntityDao.SQL_REPLACE;
         return this;
     }
 
+    public SQL insertIgnoreInto(String table, String... fields) {
+        insert.setFirst(table);
+        insert.setSecond(Arrays.asList(fields));
+        this.sqlType = EntityDao.SQL_INSERTIGNORE;
+        return this;
+    }
+
+
     public <T, R> SQL insertInto(String table, TypeFunction<T, R>... functions) {
-        pair.setFirst(new String("INSERT INTO " + table + " ("
-                + Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.joining(","))
-                + ") "));
+        insert.setFirst(table);
+        insert.setSecond(Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.toList()));
         this.sqlType = EntityDao.SQL_INSERT;
-        pair.setSecond(new ArrayList<>());
+
         return this;
     }
 
     public <T, R> SQL replaceInto(String table, TypeFunction<T, R>... functions) {
-        pair.setFirst(new String("REPLACE INTO " + table + " ("
-                + Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.joining(","))
-                + ") "));
-        this.sqlType = EntityDao.SQL_INSERT;
-        pair.setSecond(new ArrayList<>());
+        insert.setFirst(table);
+        insert.setSecond(Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.toList()));
+        this.sqlType = EntityDao.SQL_REPLACE;
         return this;
     }
 
+
+    public <T, R> SQL insertIgnoreInto(String table, TypeFunction<T, R>... functions) {
+        insert.setFirst(table);
+        insert.setSecond(Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.toList()));
+        this.sqlType = EntityDao.SQL_INSERTIGNORE;
+        return this;
+    }
+
+
     public SQL insertInto(String table) {
-        pair.setFirst(new String("INSERT INTO " + table + " "));
+        insert.setFirst(table);
         this.sqlType = EntityDao.SQL_INSERT;
-        pair.setSecond(new ArrayList<>());
         return this;
     }
 
     public SQL replaceInto(String table) {
-        pair.setFirst(new String("REPLACE INTO " + table + " "));
-        this.sqlType = EntityDao.SQL_INSERT;
-        pair.setSecond(new ArrayList<>());
+        insert.setFirst(table);
+        this.sqlType = EntityDao.SQL_REPLACE;
+        return this;
+    }
+
+
+    public SQL insertIgnoreInto(String table) {
+        insert.setFirst(table);
+        this.sqlType = EntityDao.SQL_INSERTIGNORE;
         return this;
     }
 
@@ -310,31 +335,6 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public <T, R> SQL replaceInto(Class clss) {
         return replaceInto(EntityTools.getTableName(clss));
-    }
-
-    public SQL insertIgnoreInto(String table, String... fields) {
-        pair.setFirst(new String("INSERT IGNORE INTO " + table + " ("
-                + Arrays.stream(fields).collect(Collectors.joining(","))
-                + ") "));
-        this.sqlType = EntityDao.SQL_INSERT;
-        pair.setSecond(new ArrayList<>());
-        return this;
-    }
-
-    public <T, R> SQL insertIgnoreInto(String table, TypeFunction<T, R>... functions) {
-        pair.setFirst(new String("INSERT IGNORE INTO " + table + " ("
-                + Arrays.stream(functions).map(f -> TypeFunction.getLambdaColumnName(f)).collect(Collectors.joining(","))
-                + ") "));
-        this.sqlType = EntityDao.SQL_INSERT;
-        pair.setSecond(new ArrayList<>());
-        return this;
-    }
-
-    public SQL insertIgnoreInto(String table) {
-        pair.setFirst(new String("INSERT IGNORE INTO " + table + " "));
-        this.sqlType = EntityDao.SQL_INSERT;
-        pair.setSecond(new ArrayList<>());
-        return this;
     }
 
     public <T, R> SQL insertIgnoreInto(Class clss, String... fields) {
@@ -512,17 +512,13 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public SQL values(Object... values) {
-        pair.getSecond().add(values);
+        insertValues.add(values);
         return this;
     }
 
     public SQL values(List<Object[]> values) {
-        pair.getSecond().addAll(values);
+        insertValues.addAll(values);
         return this;
-    }
-
-    public Pair<String, List<Object[]>> getPair() {
-        return pair;
     }
 
     public Table create() {
@@ -562,6 +558,22 @@ public class SQL extends AbstractCriteria<SQL> {
         this.drunk = drunk;
     }
 
+    public List<Object[]> getInsertValues() {
+        return insertValues;
+    }
+
+    public void setInsertValues(List<Object[]> insertValues) {
+        this.insertValues = insertValues;
+    }
+
+    public Pair<String, List<String>> getInsert() {
+        return insert;
+    }
+
+    public void setInsert(Pair<String, List<String>> insert) {
+        this.insert = insert;
+    }
+
     public SQL onDuplicateKeyUpdate(String key, Object value) {
         kvs.add(new Pair(key, value));
         return this;
@@ -572,11 +584,11 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
-    public Map<String,Object> getUpdates(){
-        Map<String,Object> result = new HashMap<>();
-        if(sqlType.equals(EntityDao.SQL_UPDATE)&& CollectionUtils.isNotEmpty(kvs)){
+    public Map<String, Object> getUpdates() {
+        Map<String, Object> result = new HashMap<>();
+        if (sqlType.equals(EntityDao.SQL_UPDATE) && CollectionUtils.isNotEmpty(kvs)) {
             kvs.forEach(pair -> {
-                result.put(pair.getFirst().toString(),pair.getSecond());
+                result.put(pair.getFirst().toString(), pair.getSecond());
             });
         }
         return result;

@@ -11,6 +11,7 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Types;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.gysoft.jdbc.dao.EntityDao.*;
 
@@ -504,6 +505,17 @@ public class SqlMakeTools {
             }
             return new Pair<>(sql.toString(), null);
 
+        } else if (sqlObj.getSqlType().equals(SQL_INSERT) || sqlObj.getSqlType().equals(SQL_INSERTIGNORE) || sqlObj.getSqlType().equals(SQL_REPLACE)) {
+            sql.append(sqlObj.getSqlType().toUpperCase()).append(" INTO ");
+
+            if (StringUtils.isNotEmpty(sqlObj.getInsert().getFirst())) {
+                sql.append(sqlObj.getInsert().getFirst()).append(" ");
+            }
+            List<String> insertFields = sqlObj.getInsert().getSecond();
+            if (CollectionUtils.isNotEmpty(insertFields)) {
+                sql.append("(").append(insertFields.stream().collect(Collectors.joining(","))).append(")");
+            }
+            return new Pair<>(sql.toString(), null);
         }
         //连接查询sql组装
         if (CollectionUtils.isNotEmpty(sqlObj.getJoins())) {

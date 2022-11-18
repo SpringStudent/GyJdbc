@@ -384,9 +384,12 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     public int insertWithSql(SQL sql) throws Exception {
         doBeforeBuild(SQLType.Insert, sql);
         //插入sql
-        StringBuilder insertSql = new StringBuilder(sql.getPair().getFirst());
+        String selectTbName = sql.getTbName();
+        sql.setTbName(sql.getInsert().getFirst());
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        String insertSql = pair.getFirst();
         //待插入数据
-        List<Object[]> params = sql.getPair().getSecond();
+        List<Object[]> params = sql.getInsertValues();
         List<Pair> kvs = sql.getKvs();
         int res = 0;
         if (CollectionUtils.isNotEmpty(params)) {
@@ -394,7 +397,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             for (List<Object[]> batch : batchs) {
                 List<Object> paramList = new ArrayList<>();
                 StringBuilder tempInsertSql = new StringBuilder(insertSql);
-                tempInsertSql.append("VALUES ");
+                tempInsertSql.append(" VALUES ");
                 for (Object[] param : batch) {
                     tempInsertSql.append("(");
                     for (Object obj : param) {
@@ -424,8 +427,9 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             }
         } else if (CollectionUtils.isNotEmpty(sql.getSelectFields())) {
             sql.setSqlType(EntityDao.SQL_SELECT);
+            sql.setTbName(selectTbName);
             Pair<String, Object[]> p = SqlMakeTools.useSql(sql);
-            insertSql.append(p.getFirst());
+            insertSql += " " + p.getFirst();
             doAfterBuild(insertSql.toString(), p.getSecond());
             res = jdbcTemplate.update(insertSql.toString(), p.getSecond());
         }
@@ -441,14 +445,13 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             throw new IllegalArgumentException("未指定任何字段");
         }
         StringBuilder createSql = new StringBuilder();
-        StringBuilder insertSql = new StringBuilder();
+        List<String> fileds = new ArrayList<>();
         //创建表
         String tbName =
                 StringUtils.isEmpty(tableMeta.getName()) ? "tmp_" + UUID.randomUUID().toString()
                         .toLowerCase().replace("-", "") : tableMeta.getName();
         doBeforeBuild(SQLType.Create, sql);
         createSql.append("CREATE ");
-        insertSql.append("INSERT INTO ");
         if (tableMeta.isTemporary()) {
             createSql.append("TEMPORARY ");
         }
@@ -457,12 +460,11 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             createSql.append("IF NOT EXISTS ");
         }
         createSql.append(EntityTools.transferColumnName(tbName));
-        insertSql.append(EntityTools.transferColumnName(tbName));
+        sql.getInsert().setFirst(EntityTools.transferColumnName(tbName));
         createSql.append("(");
-        insertSql.append("(");
         columns.forEach(columnMeta -> {
             createSql.append(EntityTools.transferColumnName(columnMeta.getName()));
-            insertSql.append(EntityTools.transferColumnName(columnMeta.getName()));
+            fileds.add(EntityTools.transferColumnName(columnMeta.getName()));
             createSql.append(columnMeta.getDataType());
             if (columnMeta.isNotNull()) {
                 createSql.append(" not null");
@@ -485,7 +487,6 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
                 createSql.append(String.format(" comment '%s'", columnMeta.getComment()));
             }
             createSql.append(",");
-            insertSql.append(",");
         });
         //索引
         List<IndexMeta> indexMetas = tableMeta.getIndexs();
@@ -508,17 +509,16 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             }
             createSql.append(",");
         });
-        insertSql.setLength(insertSql.length() - 1);
         createSql.setLength(createSql.length() - 1);
         createSql.append(")ENGINE = " + tableMeta.getEngine() + " CHARSET=utf8 ");
         if (StringUtils.isNotEmpty(tableMeta.getComment())) {
             createSql.append("COMMENT=" + "'" + tableMeta.getComment() + "'");
         }
-        insertSql.append(")");
         doAfterBuild(createSql.toString(), new Object[]{});
         jdbcTemplate.execute(createSql.toString());
         //保存数据
-        sql.getPair().setFirst(insertSql.toString());
+        sql.setSqlType(EntityDao.SQL_INSERT);
+        sql.getInsert().setSecond(fileds);
         insertWithSql(sql);
         return tbName;
     }

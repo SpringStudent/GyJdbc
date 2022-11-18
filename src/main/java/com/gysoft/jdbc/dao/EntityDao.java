@@ -19,6 +19,8 @@ public interface EntityDao<T,Id extends Serializable>{
 	 */
 	String SQL_SELECT = "select";
 	String SQL_INSERT = "insert";
+	String SQL_INSERTIGNORE = "insert ignore";
+	String SQL_REPLACE = "replace";
 	String SQL_UPDATE = "update";
 	String SQL_DELETE = "delete";
 	String SQL_TRUNCATE = "truncate";
