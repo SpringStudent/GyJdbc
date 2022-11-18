@@ -63,40 +63,40 @@ public class TbUserDaoImpl extends EntityDaoImpl<TbUser, String> implements TbUs
 
 ```java
 void save(T t)throws Exception;
-        void batchSave(List<T> list)throws Exception;
-        int insertWithSql(SQL sql)throws Exception;
+void batchSave(List<T> list)throws Exception;
+int insertWithSql(SQL sql)throws Exception;
 ```
 
 <u>删</u>
 
 ```java
 void delete(Id id)throws Exception;
-        void deleteWithCriteria(Criteria criteria)throws Exception;
-        void batchDelete(List<Id> ids)throws Exception;
-        int deleteWithSql(SQL sql)throws Exception;
-        void truncate()throws Exception;
-        void drop()throws Exception;
-        void drunk(SQL sql)throws Exception;
+void deleteWithCriteria(Criteria criteria)throws Exception;
+void batchDelete(List<Id> ids)throws Exception;
+int deleteWithSql(SQL sql)throws Exception;
+void truncate()throws Exception;
+void drop()throws Exception;
+void drunk(SQL sql)throws Exception;
 ```
 
 <u>改</u>
 
 ```java
 void update(T t)throws Exception;
-        void batchUpdate(List<T> list)throws Exception;
-        int updateWithSql(SQL sql)throws Exception;
+void batchUpdate(List<T> list)throws Exception;
+int updateWithSql(SQL sql)throws Exception;
 ```
 
 <u>查</u>
 
 ```java
 T queryOne(Id id)throws Exception;
-        List<T> queryAll()throws Exception;
-        PageResult<T> pageQuery(Page page)throws Exception;
-        PageResult<T> pageQueryWithCriteria(Page page,Criteria criteria)throws Exception;
-        List<T> queryWithCriteria(Criteria criteria)throws Exception;
+List<T> queryAll()throws Exception;
+PageResult<T> pageQuery(Page page)throws Exception;
+PageResult<T> pageQueryWithCriteria(Page page,Criteria criteria)throws Exception;
+List<T> queryWithCriteria(Criteria criteria)throws Exception;
 <E> Result<E> queryWithSql(Class<E> clss,SQL sql)throws Exception;
-        List<Map<String, Object>>queryMapsWithSql(SQL sql)throws Exception;
+List<Map<String, Object>>queryMapsWithSql(SQL sql)throws Exception;
 <K, V> Map<K, V> queryMapWithSql(SQL sql,ResultSetExtractor<Map<K, V>>resultSetExtractor)throws Exception;
 
 ```
@@ -107,28 +107,28 @@ T queryOne(Id id)throws Exception;
 //where name = 'zhouning'
 new Criteria().where(TbUser::getName,"zhouning").andIfAbsent(TbUser::getName,null);
 //where name in ('zhouning','yinhw')
-        new Criteria().in(TbUser::getName,Arrays.asList("zhouning","yinhw"));
+new Criteria().in(TbUser::getName,Arrays.asList("zhouning","yinhw"));
 //where age < 28 order by age desc
-        new Criteria().lt(TbUser::getAge,28).orderBy(new Sort(TbUser::getAge);
+new Criteria().lt(TbUser::getAge,28).orderBy(new Sort(TbUser::getAge);
 //where age < 20 and (name like '%zhou%' or realName like 'zhouning')
-        new Criteria().lt(TbUser::getAge,20).andCriteria(new Criteria().like(TbUser::getName,"zhou").orLike(TbUser::getRealName,"周"));
+new Criteria().lt(TbUser::getAge,20).andCriteria(new Criteria().like(TbUser::getName,"zhou").orLike(TbUser::getRealName,"周"));
 ```
 
 `SQL语法示例:`
 
 ```java
 new SQL().select(TbUser::getName,TbUser::getEmail,TbUser::getRealName,TbUser::getMobile).from(TbUser.class).where(TbUser::getIsActive,1);
-        new SQL().select("age",countAs("age").as("num")).from(TbUser.class).orderBy(new Sort(TbUser::getAge)).groupBy(TbUser::getAge);
-        new SQL().update(TbUser.class).set(TbUser::getRealName,"元林").set(TbUser::getEmail,"13888888888@163.com").where(TbUser::getName,"Smith");
-        new SQL().insertInto(TbAccount.class,"userName","realName").values("test","测试").values("test2","测试2");
-        new SQL().delete().from(TbUser.class).gt(TbUser::getAge,20);
+new SQL().select("age",countAs("age").as("num")).from(TbUser.class).orderBy(new Sort(TbUser::getAge)).groupBy(TbUser::getAge);
+new SQL().update(TbUser.class).set(TbUser::getRealName,"元林").set(TbUser::getEmail,"13888888888@163.com").where(TbUser::getName,"Smith");
+new SQL().insertInto(TbAccount.class,"userName","realName").values("test","测试").values("test2","测试2");
+new SQL().delete().from(TbUser.class).gt(TbUser::getAge,20);
 //类似MongoTemplate的Criteria拼接
-        new SQL().select("*").from("table1").where("f1",1).and(Where.where("f2").like("a").or("f3").gte(1).and("f4").in(Arrays.asList(2,3,4)))
+new SQL().select("*").from("table1").where("f1",1).and(Where.where("f2").like("a").or("f3").gte(1).and("f4").in(Arrays.asList(2,3,4)))
 //类似JPA的Predict使用
-        List<WhereParam> params=new ArrayList<>();
-        params.add(WhereParam.where("f1").like("v1"));
-        params.add(WhereParam.where("f2").in(Arrays.asList(1,2,3)));
-        sql=new SQL().select("*").from("table2").and(Opt.AND,params);
+List<WhereParam> params=new ArrayList<>();
+params.add(WhereParam.where("f1").like("v1"));
+params.add(WhereParam.where("f2").in(Arrays.asList(1,2,3)));
+sql=new SQL().select("*").from("table2").and(Opt.AND,params);
 ```
 
 #### 更多用法可执行单元测试
@@ -205,7 +205,7 @@ new SQL().select(TbUser::getName,TbUser::getEmail,TbUser::getRealName,TbUser::ge
 
 *entityDao.bindXxx* > *方法上@BindPoint* > *类上@BindPoint* > *JdbcRoutingDataSource.defaultLookUpKey*
 
-#### sql拦截添加统一条件支持
+#### sql拦截支持
 
 ```java
 
@@ -240,6 +240,7 @@ public class SQLInterceptorImpl implements SQLInterceptor {
 
     @Override
     public void afterBuild(String sql, Object[] args) throws Exception {
+        //可用于sql审计
         System.out.println("sql=" + sql + " args=" + ArrayUtils.toString(args));
     }
 }
