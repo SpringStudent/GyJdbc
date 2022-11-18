@@ -382,10 +382,10 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public int insertWithSql(SQL sql) throws Exception {
-        doBeforeBuild(SQLType.Insert, sql);
         //插入sql
         String selectTbName = sql.getTbName();
         sql.setTbName(sql.getInsert().getFirst());
+        doBeforeBuild(SQLType.Insert, sql);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         String insertSql = pair.getFirst();
         //待插入数据
