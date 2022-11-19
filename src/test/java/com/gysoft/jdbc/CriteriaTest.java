@@ -297,9 +297,9 @@ public class CriteriaTest {
         //SELECT m.status mkStatus FROM inspection m LEFT JOIN
         // (SELECT m.inspId,max(m.modelObjId)modelObjId FROM inspection_model m WHERE m.projectId = ? GROUP BY m.projectId)
         // g1  ON g1.inspId = m.id  WHERE m.status IN(?,?,?)
-        SQL sql = new SQL().select("m.status mkStatus").from("inspection").as("m")
-                .leftJoin(new Joins().with(new SQL().select("m.inspId,max(m.modelObjId)modelObjId").from("inspection_model").as("m")
-                        .and("m.projectId", "pid").groupBy("m.projectId")).as("g1").on("g1.inspId", "m.id"))
+        SQL sql = new SQL().select("m.status mkStatus").from("inspection","m")
+                .leftJoin(new SQL().select("m.inspId,max(m.modelObjId)modelObjId").from("inspection_model").as("m")
+                        .and("m.projectId", "pid").groupBy("m.projectId"),"g1").on("g1.inspId", "m.id")
                 .inIfAbsent("m.status", Arrays.asList(1, 2, 3));
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
