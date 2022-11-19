@@ -131,9 +131,13 @@ new SQL().select(TbUser::getName,TbUser::getEmail,TbUser::getRealName,TbUser::ge
         sql=new SQL().select("*").from("table2").and(Opt.AND,params);
 ```
 
-#### 更多用法可执行单元测试
+#### sql语法
 
 #### https://github.com/hope-for/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/CriteriaTest.java
+
+#### 集成测试
+
+#### https://github.com/SpringStudent/GyJdbcTest
 
 #### 多数据源支持
 
