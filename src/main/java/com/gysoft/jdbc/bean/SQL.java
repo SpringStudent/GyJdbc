@@ -204,7 +204,7 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public SQL select(Object... fields) {
-        selectFields.addAll(Arrays.asList(fields));
+        selectFields.addAll(Arrays.stream(fields).collect(Collectors.toList()));
         if (this.sqlType == null) {
             this.sqlType = EntityDao.SQL_SELECT;
         }
@@ -250,21 +250,21 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public SQL insertInto(String table, String... fields) {
         insert.setFirst(table);
-        insert.setSecond(Arrays.asList(fields));
+        insert.setSecond(Arrays.stream(fields).collect(Collectors.toList()));
         this.sqlType = EntityDao.SQL_INSERT;
         return this;
     }
 
     public SQL replaceInto(String table, String... fields) {
         insert.setFirst(table);
-        insert.setSecond(Arrays.asList(fields));
+        insert.setSecond(Arrays.stream(fields).collect(Collectors.toList()));
         this.sqlType = EntityDao.SQL_REPLACE;
         return this;
     }
 
     public SQL insertIgnoreInto(String table, String... fields) {
         insert.setFirst(table);
-        insert.setSecond(Arrays.asList(fields));
+        insert.setSecond(Arrays.stream(fields).collect(Collectors.toList()));
         this.sqlType = EntityDao.SQL_INSERTIGNORE;
         return this;
     }

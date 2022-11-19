@@ -483,7 +483,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public S groupBy(String... fields) {
-        groupFields.addAll(Arrays.asList(fields));
+        groupFields.addAll(Arrays.stream(fields).collect(Collectors.toList()));
         return self();
     }
 
@@ -503,7 +503,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public S orderBy(Sort... sort) {
-        sorts.addAll(Arrays.asList(sort));
+        sorts.addAll(Arrays.stream(sort).collect(Collectors.toList()));
         return self();
     }
 
