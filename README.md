@@ -212,40 +212,49 @@ sql=new SQL().select("*").from("table2").and(Opt.AND,params);
 #### sql拦截支持
 
 ```java
-
 @Component
-public class SQLInterceptorImpl implements SQLInterceptor {
+public class CusSQLInterceptor implements SQLInterceptor {
+
+    private static final Logger logger = LogManager.getLogger(CusSQLInterceptor.class);
+
+    private static final List<String> commonFields = Arrays.asList("createTime", "createUser", "updateTime", "updateUser");
 
     @Override
     public void beforeBuild(SQLType sqlType, AbstractCriteria abstractCriteria) throws Exception {
         if (abstractCriteria != null) {
-            //拦截查询添加统一的条件，比如标删字段
-            if (sqlType.equals(SQLType.Select)) {
-                abstractCriteria.where("1", 1);
-            }
             if (abstractCriteria instanceof SQL) {
                 SQL sql = (SQL) abstractCriteria;
-                //拦截update类型sql，实现统一更新时间,操作人等
-                if (sqlType.equals(SQLType.Update) && sql.getTbName().equals("tb_user")) {
-                    sql.set("birth", new Date());
-                }
-                if (sqlType.equals(SQLType.Insert) && sql.getTbName().equals("tb_account")) {
-                    //拦截insert类型sql，修改插入数据
+                //对于insert统一添加creatTime createUser,updateTime,updateUser的插入逻辑
+                if (sqlType.equals(SQLType.Insert)) {
+                    Pair<String, List<String>> pair = sql.getInsert();
+                    pair.getSecond().addAll(commonFields);
+                    List<Object[]> newValues = new ArrayList<>();
                     List<Object[]> values = sql.getInsertValues();
-                    int i = 0;
                     for (Object[] arr : values) {
-                        arr[1] = "username" + i;
-                        i++;
+                        Object[] tmp = new Object[arr.length + commonFields.size()];
+                        for (int i = 0; i < arr.length; i++) {
+                            tmp[i] = arr[i];
+                        }
+                        tmp[arr.length] = new Date();
+                        tmp[arr.length + 1] = SubjectUtils.loginUserName();
+                        tmp[arr.length + 2] = new Date();
+                        tmp[arr.length + 3] = SubjectUtils.loginUserName();
+                        newValues.add(tmp);
                     }
+                    sql.setInsertValues(newValues);
+                    //对于update统一添加updateTime,updateUser的更新逻辑
+                } else if (sqlType.equals(SQLType.Update)) {
+                    sql.set("updateTime", new Date());
+                    sql.set("updateUser", SubjectUtils.loginUserName());
                 }
             }
         }
     }
 
     @Override
-    public void afterBuild(String sql, Object[] args) throws Exception {
+    public void afterBuild(String s, Object[] objects) throws Exception {
         //可用于sql审计
-        System.out.println("sql=" + sql + " args=" + ArrayUtils.toString(args));
+        logger.info("###########Execute sql={},args={}", s, ArrayUtils.toString(objects));
     }
 }
 ```
