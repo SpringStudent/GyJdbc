@@ -576,14 +576,18 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     public void doBeforeBuild(SQLType sqlType, AbstractCriteria criteria) throws Exception {
-        for (SQLInterceptor sqlInterceptor : sqlInterceptors) {
-            sqlInterceptor.beforeBuild(sqlType, criteria);
+        if(CollectionUtils.isNotEmpty(sqlInterceptors)){
+            for (SQLInterceptor sqlInterceptor : sqlInterceptors) {
+                sqlInterceptor.beforeBuild(sqlType, criteria);
+            }
         }
     }
 
     public void doAfterBuild(String sql, Object[] args) throws Exception {
-        for (SQLInterceptor sqlInterceptor : sqlInterceptors) {
-            sqlInterceptor.afterBuild(sql, args);
+        if(CollectionUtils.isNotEmpty(sqlInterceptors)){
+            for (SQLInterceptor sqlInterceptor : sqlInterceptors) {
+                sqlInterceptor.afterBuild(sql, args);
+            }
         }
     }
 
