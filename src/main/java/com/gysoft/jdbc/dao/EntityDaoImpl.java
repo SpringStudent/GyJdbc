@@ -430,8 +430,8 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             sql.setTbName(selectTbName);
             Pair<String, Object[]> p = SqlMakeTools.useSql(sql);
             insertSql += " " + p.getFirst();
-            doAfterBuild(insertSql.toString(), p.getSecond());
-            res = jdbcTemplate.update(insertSql.toString(), p.getSecond());
+            doAfterBuild(insertSql, p.getSecond());
+            res = jdbcTemplate.update(insertSql, p.getSecond());
         }
         return res;
     }
@@ -576,7 +576,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     public void doBeforeBuild(SQLType sqlType, AbstractCriteria criteria) throws Exception {
-        if(CollectionUtils.isNotEmpty(sqlInterceptors)){
+        if (CollectionUtils.isNotEmpty(sqlInterceptors)) {
             for (SQLInterceptor sqlInterceptor : sqlInterceptors) {
                 sqlInterceptor.beforeBuild(sqlType, criteria);
             }
@@ -584,7 +584,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     public void doAfterBuild(String sql, Object[] args) throws Exception {
-        if(CollectionUtils.isNotEmpty(sqlInterceptors)){
+        if (CollectionUtils.isNotEmpty(sqlInterceptors)) {
             for (SQLInterceptor sqlInterceptor : sqlInterceptors) {
                 sqlInterceptor.afterBuild(sql, args);
             }
