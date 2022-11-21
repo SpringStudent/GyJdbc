@@ -573,7 +573,17 @@ public class CriteriaTest {
     @Test
     public void testMakeTools(){
         System.out.println(SqlMakeTools.makeSql(Role.class,"role",SQL_INSERT));
-
+        SQL sql = new SQL().update("a").set("(a1,a2,a3)",new SQL().select("B1,B2,B3").from("B").where("B1",2));
+        Pair<String ,Object[]>pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().update("test001","a")
+                .innerJoin("test002","b").on("a.id","b.id")
+                .set("a.name",new FieldReference("b.name")).set("a.age",new FieldReference("b.age"))
+                .gt("b.age",30);
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
 
 }

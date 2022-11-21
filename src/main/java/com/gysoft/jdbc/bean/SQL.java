@@ -225,10 +225,20 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
+    public SQL update(String table,String aliasName){
+        this.aliasName = aliasName;
+        return update(table);
+    }
+
     public SQL update(Class clss) {
         this.tbName = EntityTools.getTableName(clss);
         this.sqlType = EntityDao.SQL_UPDATE;
         return this;
+    }
+
+    public SQL update(Class clss,String aliasName){
+        this.aliasName = aliasName;
+        return update( EntityTools.getTableName(clss));
     }
 
     public SQL delete(String deleteAliasName) {

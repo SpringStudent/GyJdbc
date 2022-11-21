@@ -535,6 +535,10 @@ public class SqlMakeTools {
                 if (p.getSecond() instanceof FieldReference) {
                     FieldReference fieldReference = (FieldReference) p.getSecond();
                     sql.append(p.getFirst() + " = " + fieldReference.getField() + ", ");
+                } else if (p.getSecond() instanceof SQL) {
+                    Pair<String, Object[]> updatePair = useSql((SQL) p.getSecond());
+                    sql.append(p.getFirst() + " = (" + updatePair.getFirst() + "), ");
+                    params = ArrayUtils.addAll(params, updatePair.getSecond());
                 } else {
                     sql.append(p.getFirst() + " = ?, ");
                     params = ArrayUtils.add(params, p.getSecond());
