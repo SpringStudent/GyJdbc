@@ -1,5 +1,6 @@
 package com.gysoft.jdbc.bean;
 
+import com.gysoft.jdbc.annotation.Column;
 import com.gysoft.jdbc.tools.EntityTools;
 
 import java.beans.Introspector;
@@ -17,6 +18,7 @@ public interface TypeFunction<T, R> extends Serializable, Function<T, R> {
 
     /**
      * 获取列名称
+     *
      * @param lambda lamda表达式
      * @return String 列名称
      */
@@ -33,8 +35,12 @@ public interface TypeFunction<T, R> extends Serializable, Function<T, R> {
                     Class.forName(serializedLambda.getImplClass().replace("/", "."))
                             .getDeclaredField(fieldName);
 
-            // 获取字段上的Column注解
-            return EntityTools.getColumnName(field);
+            com.gysoft.jdbc.annotation.Column anno = field.getAnnotation(Column.class);
+            if (anno != null) {
+                return EntityTools.getColumnName(field);
+            } else {
+                return EntityTools.transferColumnName(fieldName);
+            }
         } catch (ReflectiveOperationException e) {
             throw new IllegalArgumentException(e);
         }

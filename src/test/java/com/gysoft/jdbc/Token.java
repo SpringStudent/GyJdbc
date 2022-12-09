@@ -1,5 +1,6 @@
 package com.gysoft.jdbc;
 
+import com.gysoft.jdbc.annotation.Column;
 import com.gysoft.jdbc.annotation.Table;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 
@@ -12,7 +13,7 @@ public class Token {
     private Integer id;
 
     private Integer size;
-
+    @Column(name = "ddd")
     private String tk;
 
     public Integer getId() {

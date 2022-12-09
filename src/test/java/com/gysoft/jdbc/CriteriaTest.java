@@ -297,9 +297,9 @@ public class CriteriaTest {
         //SELECT m.status mkStatus FROM inspection m LEFT JOIN
         // (SELECT m.inspId,max(m.modelObjId)modelObjId FROM inspection_model m WHERE m.projectId = ? GROUP BY m.projectId)
         // g1  ON g1.inspId = m.id  WHERE m.status IN(?,?,?)
-        SQL sql = new SQL().select("m.status mkStatus").from("inspection","m")
+        SQL sql = new SQL().select("m.status mkStatus").from("inspection", "m")
                 .leftJoin(new SQL().select("m.inspId,max(m.modelObjId)modelObjId").from("inspection_model").as("m")
-                        .and("m.projectId", "pid").groupBy("m.projectId"),"g1").on("g1.inspId", "m.id")
+                        .and("m.projectId", "pid").groupBy("m.projectId"), "g1").on("g1.inspId", "m.id")
                 .inIfAbsent("m.status", Arrays.asList(1, 2, 3));
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
@@ -550,10 +550,10 @@ public class CriteriaTest {
         System.out.println(ArrayUtils.toString(pair.getSecond()));
         sql = new SQL().select("t0.id,t0.lon,t0.lat,t3.investmentStatus").from("project").as("t0")
                 .leftJoin(new Joins().with(
-                                     new SQL().select("t1.projectId,t1.investmentStatus").from("project_progress").as("t1")
-                                    .innerJoin(new Joins().with(new SQL().select("projectId,max(createTime) createTime").from("project_progress").groupBy("projectId"))
-                                            .as("t2").on("t1.createTime", "t2.createTime").and("t1.projectId", new FieldReference("t2.projectId")))
-                                )
+                        new SQL().select("t1.projectId,t1.investmentStatus").from("project_progress").as("t1")
+                                .innerJoin(new Joins().with(new SQL().select("projectId,max(createTime) createTime").from("project_progress").groupBy("projectId"))
+                                        .as("t2").on("t1.createTime", "t2.createTime").and("t1.projectId", new FieldReference("t2.projectId")))
+                )
                         .as("t3").on("t0.id", "t3.projectId"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
@@ -571,16 +571,35 @@ public class CriteriaTest {
     }
 
     @Test
-    public void testMakeTools(){
-        System.out.println(SqlMakeTools.makeSql(Role.class,"role",SQL_INSERT));
-        SQL sql = new SQL().update("a").set("(a1,a2,a3)",new SQL().select("B1,B2,B3").from("B").where("B1",2));
-        Pair<String ,Object[]>pair = SqlMakeTools.useSql(sql);
+    public void testMakeTools() {
+        System.out.println(SqlMakeTools.makeSql(Role.class, "role", SQL_INSERT));
+        SQL sql = new SQL().update("a").set("(a1,a2,a3)", new SQL().select("B1,B2,B3").from("B").where("B1", 2));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
-        sql = new SQL().update("test001","a")
-                .innerJoin("test002","b").on("a.id","b.id")
-                .set("a.name",new FieldReference("b.name")).set("a.age",new FieldReference("b.age"))
-                .gt("b.age",30);
+        sql = new SQL().update("test001", "a")
+                .innerJoin("test002", "b").on("a.id", "b.id")
+                .set("a.name", new FieldReference("b.name")).set("a.age", new FieldReference("b.age"))
+                .gt("b.age", 30);
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().select("t1.progressPhoto").from("project_progress").as("t1")
+                .innerJoin(new Joins().with(new SQL().select("projectId,max(createTime) createTime").from("project_progress").groupBy("projectId"))
+                        .as("t2").on("t1.createTime", "t2.createTime").on("t1.projectId", "t2.projectId"))
+                .where("t1.projectId", "1");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().select("*").from("a").union().select("*").from("b");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().select("*").from("b").asTable("t");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().select(Role::getName).from(Role.class);
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));

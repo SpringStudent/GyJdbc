@@ -205,6 +205,7 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public SQL select(Object... fields) {
         selectFields.addAll(Arrays.stream(fields).collect(Collectors.toList()));
+        //复合查询insert select语法BUG修复
         if (this.sqlType == null) {
             this.sqlType = EntityDao.SQL_SELECT;
         }
@@ -213,6 +214,7 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public <T, R> SQL select(TypeFunction<T, R>... functions) {
         selectFields.addAll(Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()));
+        //复合查询insert select语法BUG修复
         if (this.sqlType == null) {
             this.sqlType = EntityDao.SQL_SELECT;
         }
