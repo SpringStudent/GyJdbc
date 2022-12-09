@@ -5,6 +5,7 @@ import com.gysoft.jdbc.tools.EntityTools;
 import java.beans.Introspector;
 import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.function.Function;
 
@@ -26,7 +27,14 @@ public interface TypeFunction<T, R> extends Serializable, Function<T, R> {
             SerializedLambda serializedLambda = (SerializedLambda) method.invoke(lambda);
             String getter = serializedLambda.getImplMethodName();
             String fieldName = Introspector.decapitalize(getter.replace("get", ""));
-            return EntityTools.transferColumnName(fieldName);
+
+            // 通过字段名获取字段
+            Field field =
+                    Class.forName(serializedLambda.getImplClass().replace("/", "."))
+                            .getDeclaredField(fieldName);
+
+            // 获取字段上的Column注解
+            return EntityTools.getColumnName(field);
         } catch (ReflectiveOperationException e) {
             throw new IllegalArgumentException(e);
         }
