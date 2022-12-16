@@ -11,6 +11,7 @@ public class JdbcDataType {
 
     /**
      * 数据类型转换
+     *
      * @param meta 一行对应的元数据
      * @return String 将java的行类型转换为mysql认识的类型
      */
@@ -22,7 +23,7 @@ public class JdbcDataType {
             return "varchar(" + meta.getLength() + ")";
         }
         if (meta.getJdbcType().equals(JDBCType.TIMESTAMP)) {
-            return "datetime("+meta.getLength()+")";
+            return "datetime(" + meta.getLength() + ")";
         }
         if (meta.getJdbcType().equals(JDBCType.TIME)) {
             return "time";
@@ -43,10 +44,25 @@ public class JdbcDataType {
             return "blob";
         }
         if (meta.getJdbcType().equals(JDBCType.BIGINT)) {
-            return "bigint";
+            if (meta.getLength() > 0) {
+                return "bigint(" + meta.getLength() + ")";
+            } else {
+                return "bigint";
+            }
         }
         if (meta.getJdbcType().equals(JDBCType.INTEGER)) {
-            return "int";
+            if (meta.getLength() > 0) {
+                return "int(" + meta.getLength() + ")";
+            } else {
+                return "int";
+            }
+        }
+        if (meta.getJdbcType().equals(JDBCType.TINYINT)) {
+            if (meta.getLength() > 0) {
+                return "tinyint(" + meta.getLength() + ")";
+            } else {
+                return "tinyint";
+            }
         }
         if (meta.getJdbcType().equals(JDBCType.NUMERIC)) {
             return "decimal(" + meta.getPrecision() + "," + meta.getScale() + ")";
@@ -57,9 +73,7 @@ public class JdbcDataType {
         if (meta.getJdbcType().equals(JDBCType.DOUBLE)) {
             return "double(" + meta.getPrecision() + "," + meta.getScale() + ")";
         }
-        if (meta.getJdbcType().equals(JDBCType.TINYINT)) {
-            return "tinyint";
-        }
+
         if (meta.getJdbcType().equals(JDBCType.OTHER)) {
             return "other";
         }
