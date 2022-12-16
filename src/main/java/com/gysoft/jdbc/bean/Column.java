@@ -47,6 +47,7 @@ public class Column {
 
     public Column length(int length) {
         columnMeta.setLength(length);
+        columnMeta.setPrecision(length);
         return this;
     }
 

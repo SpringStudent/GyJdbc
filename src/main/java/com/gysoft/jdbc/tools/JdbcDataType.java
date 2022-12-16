@@ -45,9 +45,6 @@ public class JdbcDataType {
         if (meta.getJdbcType().equals(JDBCType.BIGINT)) {
             return "bigint";
         }
-        if (meta.getJdbcType().equals(JDBCType.DOUBLE)) {
-            return "double";
-        }
         if (meta.getJdbcType().equals(JDBCType.INTEGER)) {
             return "int";
         }
@@ -56,6 +53,9 @@ public class JdbcDataType {
         }
         if (meta.getJdbcType().equals(JDBCType.DECIMAL)) {
             return "decimal(" + meta.getPrecision() + "," + meta.getScale() + ")";
+        }
+        if (meta.getJdbcType().equals(JDBCType.DOUBLE)) {
+            return "double(" + meta.getPrecision() + "," + meta.getScale() + ")";
         }
         if (meta.getJdbcType().equals(JDBCType.TINYINT)) {
             return "tinyint";

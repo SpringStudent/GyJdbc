@@ -603,6 +603,12 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().select(Role::getName).select(Token::getId).from(Role.class).innerJoin(Token.class,"ddd").on("id","b").on("a.ud","=","dd")
+                .leftJoin("Tobsd","d").on("dd","dxx").on("dds","=",new FieldReference("xxs"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+
     }
 
 }
