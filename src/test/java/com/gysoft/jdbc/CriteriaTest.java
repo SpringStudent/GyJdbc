@@ -17,7 +17,7 @@ import static com.gysoft.jdbc.dao.EntityDao.SQL_INSERT;
 /**
  * Unit test for simple App.
  */
-public class CriteriaTest {
+public class    CriteriaTest {
     private String baseSql = "SELECT * FROM tb_test";
 
     @Test

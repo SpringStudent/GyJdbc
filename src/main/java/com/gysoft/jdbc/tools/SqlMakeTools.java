@@ -404,6 +404,7 @@ public class SqlMakeTools {
     private static void buildSQLTree(SQL sql, SQLTree sqlTree) {
         List<SQL> subSqls = sql.getSubSqls();
         for (int i = 0; i < subSqls.size(); i++) {
+            //单个sql对象对应的sql和参数组装
             Pair<String, Object[]> pair = doSql(subSqls.get(i));
             SQLTree cTree = new SQLTree(
                     pair.getFirst(),
@@ -414,6 +415,7 @@ public class SqlMakeTools {
                     subSqls.get(i).getAsTable(),
                     subSqls.get(i).getFromAsTable()
             );
+            //加入子查询列表
             sqlTree.getChilds().add(cTree);
             buildSQLTree(subSqls.get(i), cTree);
         }
