@@ -182,7 +182,7 @@ public class Column {
         if (meta.getJdbcType().equals(JDBCType.OTHER)) {
             return "other";
         }
-        throw new IllegalArgumentException("不合法的jdbcType");
+        throw new IllegalArgumentException("unknown jdbcType");
     }
 
 
