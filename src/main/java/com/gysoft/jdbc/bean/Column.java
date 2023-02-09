@@ -163,7 +163,7 @@ public class Column {
                 return "tinyint";
             }
         }
-        if(meta.getJdbcType().equals(JDBCType.BOOLEAN)){
+        if (meta.getJdbcType().equals(JDBCType.BOOLEAN)) {
             return "tinyint";
         }
         if (meta.getJdbcType().equals(JDBCType.NUMERIC)) {
@@ -173,7 +173,11 @@ public class Column {
             return "decimal(" + meta.getPrecision() + "," + meta.getScale() + ")";
         }
         if (meta.getJdbcType().equals(JDBCType.DOUBLE)) {
-            return "double(" + meta.getPrecision() + "," + meta.getScale() + ")";
+            if (meta.getLength() > 0) {
+                return "double(" + meta.getPrecision() + "," + meta.getScale() + ")";
+            } else {
+                return "double";
+            }
         }
         if (meta.getJdbcType().equals(JDBCType.OTHER)) {
             return "other";
