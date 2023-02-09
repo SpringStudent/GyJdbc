@@ -1,7 +1,5 @@
 package com.gysoft.jdbc.bean;
 
-import com.gysoft.jdbc.tools.JdbcDataType;
-
 import java.sql.JDBCType;
 
 /**
@@ -100,19 +98,88 @@ public class Column {
         return this;
     }
 
-    public Column comment(String comment){
+    public Column comment(String comment) {
         columnMeta.setComment(comment);
         return this;
     }
 
-    public Column autoIncrement(){
+    public Column autoIncrement() {
         columnMeta.setAutoIncr(true);
         return this;
     }
 
     public Table commit() {
-        columnMeta.setDataType(JdbcDataType.dataType(this.columnMeta));
+        columnMeta.setDataType(dataType(this.columnMeta));
         table.getTableMeta().getColumns().add(this.columnMeta);
         return table;
     }
+
+    private String dataType(ColumnMeta meta) {
+        if (meta.getJdbcType().equals(JDBCType.CHAR)) {
+            return "char(" + meta.getLength() + ")";
+        }
+        if (meta.getJdbcType().equals(JDBCType.VARCHAR)) {
+            return "varchar(" + meta.getLength() + ")";
+        }
+        if (meta.getJdbcType().equals(JDBCType.TIMESTAMP)) {
+            return "datetime(" + Math.min(6, meta.getLength()) + ")";
+        }
+        if (meta.getJdbcType().equals(JDBCType.TIME)) {
+            return "time";
+        }
+        if (meta.getJdbcType().equals(JDBCType.DATE)) {
+            return "date";
+        }
+        if (meta.getJdbcType().equals(JDBCType.CLOB)) {
+            return "text";
+        }
+        if (meta.getJdbcType().equals(JDBCType.LONGVARBINARY)) {
+            return "longblob";
+        }
+        if (meta.getJdbcType().equals(JDBCType.LONGVARCHAR)) {
+            return "longtext";
+        }
+        if (meta.getJdbcType().equals(JDBCType.BLOB)) {
+            return "blob";
+        }
+        if (meta.getJdbcType().equals(JDBCType.BIGINT)) {
+            if (meta.getLength() > 0) {
+                return "bigint(" + meta.getLength() + ")";
+            } else {
+                return "bigint";
+            }
+        }
+        if (meta.getJdbcType().equals(JDBCType.INTEGER)) {
+            if (meta.getLength() > 0) {
+                return "int(" + meta.getLength() + ")";
+            } else {
+                return "int";
+            }
+        }
+        if (meta.getJdbcType().equals(JDBCType.TINYINT)) {
+            if (meta.getLength() > 0) {
+                return "tinyint(" + meta.getLength() + ")";
+            } else {
+                return "tinyint";
+            }
+        }
+        if(meta.getJdbcType().equals(JDBCType.BOOLEAN)){
+            return "tinyint";
+        }
+        if (meta.getJdbcType().equals(JDBCType.NUMERIC)) {
+            return "decimal(" + meta.getPrecision() + "," + meta.getScale() + ")";
+        }
+        if (meta.getJdbcType().equals(JDBCType.DECIMAL)) {
+            return "decimal(" + meta.getPrecision() + "," + meta.getScale() + ")";
+        }
+        if (meta.getJdbcType().equals(JDBCType.DOUBLE)) {
+            return "double(" + meta.getPrecision() + "," + meta.getScale() + ")";
+        }
+        if (meta.getJdbcType().equals(JDBCType.OTHER)) {
+            return "other";
+        }
+        throw new IllegalArgumentException("不合法的jdbcType");
+    }
+
+
 }

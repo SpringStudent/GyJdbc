@@ -10,6 +10,9 @@ import org.junit.Test;
 
 import java.sql.JDBCType;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
 import static com.gysoft.jdbc.dao.EntityDao.SQL_INSERT;
@@ -608,7 +611,6 @@ public class    CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
-
     }
 
 }
