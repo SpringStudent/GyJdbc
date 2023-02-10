@@ -373,7 +373,7 @@ public class SqlMakeTools {
      * @version 1.0
      */
     public static Pair<String, Object[]> useSql(SQL sqlObj) {
-        //虚拟出查询的根节点，兼容处理联合查询
+        //虚拟出查询的根节点，兼容处理联合查询和子查询
         SQL parentSQL = new SQL().select("*").from(sqlObj);
         SQLTree sqlTree = new SQLTree();
         sqlTree.setId("0");
