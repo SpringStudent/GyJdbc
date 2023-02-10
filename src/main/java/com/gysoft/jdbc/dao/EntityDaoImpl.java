@@ -516,10 +516,12 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         }
         doAfterBuild(createSql.toString(), new Object[]{});
         jdbcTemplate.execute(createSql.toString());
-        //保存数据
-        sql.setSqlType(EntityDao.SQL_INSERT);
-        sql.getInsert().setSecond(fileds);
-        insertWithSql(sql);
+        //判断是否有数据需要插入
+        if (CollectionUtils.isNotEmpty(sql.getInsertValues()) || CollectionUtils.isNotEmpty(sql.getSelectFields())) {
+            sql.setSqlType(EntityDao.SQL_INSERT);
+            sql.getInsert().setSecond(fileds);
+            insertWithSql(sql);
+        }
         return tbName;
     }
 
