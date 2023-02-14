@@ -409,8 +409,8 @@ public class CriteriaTest {
                                 new SQL().select("*").from(
                                         new SQL().select("a").from(
                                                 new SQL().select("*").from("tablea")
-                                        ).asTable("aquery").where("key", "k"), new SQL().select("b").from("b_tb").asTable("bquery")
-                                )).asTable("ddd").where("1", 1).unionAll().select("b.*").from("b_tb").asTable("b").and("2", 2)
+                                        ).where("key", "k").asTable("aquery"), new SQL().select("b").from("b_tb").asTable("bquery")
+                                )).where("1", 1).asTable("ddd").unionAll().select("b.*").from("b_tb").asTable("b").and("2", 2)
                 ).where("a.id", "1"), "astb");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
