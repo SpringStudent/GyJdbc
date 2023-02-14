@@ -20,7 +20,7 @@ import static com.gysoft.jdbc.dao.EntityDao.SQL_INSERT;
 /**
  * Unit test for simple App.
  */
-public class    CriteriaTest {
+public class CriteriaTest {
     private String baseSql = "SELECT * FROM tb_test";
 
     @Test
@@ -322,8 +322,8 @@ public class    CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
         sql = new SQL().select("*").from("test").as("t5")
-                .leftJoin(new Joins().with("test").as("t6").on("t5.id", "t6.id")
-                        .andIfAbsent("t5.id", ">", 1).and("t5.pid", "=", new FieldReference("field")));
+                .leftJoin("test", "t6").on("t5.id", "t6.id")
+                .on("t5.id", ">", 1).on("t5.pid", "=", new FieldReference("field"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
@@ -606,8 +606,14 @@ public class    CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
-        sql = new SQL().select(Role::getName).select(Token::getId).from(Role.class).innerJoin(Token.class,"ddd").on("id","b").on("a.ud","=","dd")
-                .leftJoin("Tobsd","d").on("dd","dxx").on("dds","=",new FieldReference("xxs"));
+        sql = new SQL().select(Role::getName).select(Token::getId).from(Role.class).innerJoin(Token.class, "ddd").on("id", "b").on("a.ud", "=", "dd")
+                .leftJoin("Tobsd", "d").on("dd", "dxx").on("dds", "=", new FieldReference("xxs"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        String pid = "7";
+        sql = new SQL().select("t1.id,t1.name").from(new SQL().select("*").from("office_folder").asTable("t1"), new SQL().select("@parent:=" + pid).from("dual").asTable("t2"))
+                .gt("FIND_IN_SET(parentId, @parent)", new FieldReference("0")).and("@parent:=","", new FieldReference("concat(@parent, ',', id )"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
