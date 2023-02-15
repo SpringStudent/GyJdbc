@@ -617,6 +617,15 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().delete().from("a,b");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().delete("t1,t2").from("t1").natureJoin(new Joins().with("t2")).natureJoin(new Joins().with("t3"))
+                .where("t1.id",new FieldReference("t2.id")).and("t2.id",new FieldReference("t3.id"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
 
 }
