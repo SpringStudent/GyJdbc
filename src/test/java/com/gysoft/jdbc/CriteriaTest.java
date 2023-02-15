@@ -613,7 +613,7 @@ public class CriteriaTest {
         System.out.println(ArrayUtils.toString(pair.getSecond()));
         String pid = "7";
         sql = new SQL().select("t1.id,t1.name").from(new SQL().select("*").from("office_folder").asTable("t1"), new SQL().select("@parent:=" + pid).from("dual").asTable("t2"))
-                .gt("FIND_IN_SET(parentId, @parent)", new FieldReference("0")).and("@parent:=","", new FieldReference("concat(@parent, ',', id )"));
+                .gt("FIND_IN_SET(parentId, @parent)", new FieldReference("0")).and("@parent:=", "", new FieldReference("concat(@parent, ',', id )"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
@@ -622,7 +622,14 @@ public class CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
         sql = new SQL().delete("t1,t2").from("t1").natureJoin(new Joins().with("t2")).natureJoin(new Joins().with("t3"))
-                .where("t1.id",new FieldReference("t2.id")).and("t2.id",new FieldReference("t3.id"));
+                .where("t1.id", new FieldReference("t2.id")).and("t2.id", new FieldReference("t3.id"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().select("project.id", "project.projectName", "t2.id", "t2.actualTime")
+                .from("project")
+                .natureJoin(new Joins().with(new SQL().select("t1.id", "max(t2.actualTime) actualTime").from("project").as("t1").leftJoin("inspect", "t2").on("t1.id", "t2.projectId").groupBy("t1.id").asTable("t2")))
+                .where("project.id", new FieldReference("t2.id")).and("project.deleteFlag", 0);
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
