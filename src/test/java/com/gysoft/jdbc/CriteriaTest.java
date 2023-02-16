@@ -633,6 +633,14 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().select("*").from(new SQL().select("d").from("t_d").union().select("c").from("t_c"),"cd");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().select("*").from(new SQL().select("1").from("a").union().select("2").from(new SQL().select("3").from("b").leftJoin(new SQL().select("4").from("c"),"c").on("b.id","c.id"),"t1"),"t2").where("a.id","1000");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
 
 }
