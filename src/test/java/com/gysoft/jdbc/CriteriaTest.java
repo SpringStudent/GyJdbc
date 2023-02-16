@@ -606,8 +606,8 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
-        sql = new SQL().select(Role::getName).select(Token::getId).from(Role.class).innerJoin(Token.class, "ddd").on("id", "b").on("a.ud", "=", "dd")
-                .leftJoin("Tobsd", "d").on("dd", "dxx").on("dds", "=", new FieldReference("xxs"));
+        sql = new SQL().select(Role::getName).select(Token::getId).from(Role.class).innerJoin(Token.class).on("id", "b").on("a.ud", "=", "dd")
+                .leftJoin("Tobsd").on("dd", "dxx").on("dds", "=", new FieldReference("xxs"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
@@ -638,6 +638,14 @@ public class CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
         sql = new SQL().select("*").from(new SQL().select("1").from("a").union().select("2").from(new SQL().select("3").from("b").leftJoin(new SQL().select("4").from("c"),"c").on("b.id","c.id"),"t1").asTable("mock"),"t2").where("a.id","1000");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().select("*").from("a").leftJoin(new Joins().with("b").on("a.id","b.id").and("a.name","123"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().select("*").from("a").leftJoin("b").on("a.id","b.id").on("a.name","=","123");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
