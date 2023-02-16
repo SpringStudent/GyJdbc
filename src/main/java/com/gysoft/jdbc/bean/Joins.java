@@ -36,6 +36,11 @@ public class Joins {
             joinSql.append(" " + aliasName + " ");
             return getAs();
         }
+
+        public On on(String field, String field2) {
+            joinSql.append(" ON " + field + " = " + field2 + " ");
+            return getOn();
+        }
     }
 
     public class As extends BaseJoin {

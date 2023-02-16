@@ -30,13 +30,10 @@ public class SQL extends AbstractCriteria<SQL> {
      * 将sql作为表的别名
      */
     private String asTable;
-
     /**
-     * 标识从from(String asTable,SQL c)
-     * 方法传递asTable，此方法用于给子查询起别名
+     * 标识从from(SQL c,String fromAsTable)
      */
-    private boolean fromAsTable = false;
-
+    private String fromAsTable;
     /**
      * 删除语句中表的别名
      */
@@ -109,10 +106,8 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
-    //此方法传参的asTable优先级高于asTable()方法
-    public SQL from(SQL c, String asTable) {
-        this.asTable = asTable;
-        this.fromAsTable = true;
+    public SQL from(SQL c, String fromAsTable) {
+        this.fromAsTable = fromAsTable;
         c.getSqlPiepline().getSqlNexts().forEach(sqlNext -> {
             SQL s = sqlNext.getSql();
             if (sqlNext.getUnionType() != null) {
@@ -195,11 +190,11 @@ public class SQL extends AbstractCriteria<SQL> {
         this.asTable = asTable;
     }
 
-    public boolean getFromAsTable() {
+    public String getFromAsTable() {
         return fromAsTable;
     }
 
-    public void setFromAsTable(boolean fromAsTable) {
+    public void setFromAsTable(String fromAsTable) {
         this.fromAsTable = fromAsTable;
     }
 
@@ -227,7 +222,7 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
-    public SQL update(String table,String aliasName){
+    public SQL update(String table, String aliasName) {
         this.aliasName = aliasName;
         return update(table);
     }
@@ -238,9 +233,9 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
-    public SQL update(Class clss,String aliasName){
+    public SQL update(Class clss, String aliasName) {
         this.aliasName = aliasName;
-        return update( EntityTools.getTableName(clss));
+        return update(EntityTools.getTableName(clss));
     }
 
     public SQL delete(String deleteAliasName) {
@@ -469,30 +464,64 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
+    public SQL join(JoinType joinType, Object table) {
+        Joins.With with = null;
+        if (table instanceof Class) {
+            with = new Joins().with((Class) table);
+        } else if (table instanceof String) {
+            with = new Joins().with((String) table);
+        } else if (table instanceof SQL) {
+            with = new Joins().with((SQL) table);
+        }
+        with.setJoinType(joinType);
+        joins.add(with);
+        return this;
+    }
+
     public SQL leftJoin(Object table, String aliasName) {
         return join(JoinType.LeftJoin, table, aliasName);
+    }
+
+    public SQL leftJoin(Object table) {
+        return join(JoinType.LeftJoin, table);
     }
 
     public SQL rightJoin(Object table, String aliasName) {
         return join(JoinType.RightJoin, table, aliasName);
     }
 
+    public SQL rightJoin(Object table) {
+        return join(JoinType.RightJoin, table);
+    }
+
     public SQL innerJoin(Object table, String aliasName) {
         return join(JoinType.InnerJoin, table, aliasName);
+    }
+
+    public SQL innerJoin(Object table) {
+        return join(JoinType.InnerJoin, table);
     }
 
     public SQL natureJoin(Object table, String aliasName) {
         return join(JoinType.NatureJoin, table, aliasName);
     }
 
+    public SQL natureJoin(Object table) {
+        return join(JoinType.NatureJoin, table);
+    }
+
     public SQL on(String field, String field2) {
-        Object as = joins.get(joins.size() - 1);
-        if (as instanceof Joins.As) {
-            joins.remove(as);
-            Joins.On on = ((Joins.As) as).on(field, field2);
+        Object obj = joins.get(joins.size() - 1);
+        if (obj instanceof Joins.With) {
+            joins.remove(obj);
+            Joins.On on = ((Joins.With) obj).on(field, field2);
+            joins.add(on);
+        } else if (obj instanceof Joins.As) {
+            joins.remove(obj);
+            Joins.On on = ((Joins.As) obj).on(field, field2);
             joins.add(on);
         } else {
-            ((Joins.On) as).on(field, field2);
+            ((Joins.On) obj).on(field, field2);
         }
         return this;
     }

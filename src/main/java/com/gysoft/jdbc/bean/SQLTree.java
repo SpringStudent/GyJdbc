@@ -1,11 +1,11 @@
 package com.gysoft.jdbc.bean;
 
 
-
 import java.util.List;
 
 /**
  * 查询条件节点抽象
+ *
  * @author 周宁
  */
 public class SQLTree {
@@ -34,10 +34,9 @@ public class SQLTree {
      */
     private String asTable;
     /**
-     * 标识从from(String asTable,SQL c)
-     * 方法传递asTable，此方法用于给子查询起别名
+     * 将整条sql作为表别名
      */
-    private boolean fromAsTable;
+    private String fromAsTable;
 
     public String getSql() {
         return sql;
@@ -79,11 +78,11 @@ public class SQLTree {
         return asTable;
     }
 
-    public Boolean getFromAsTable() {
+    public String getFromAsTable() {
         return fromAsTable;
     }
 
-    public void setFromAsTable(Boolean fromAsTable) {
+    public void setFromAsTable(String fromAsTable) {
         this.fromAsTable = fromAsTable;
     }
 
@@ -95,7 +94,7 @@ public class SQLTree {
         this.unionType = unionType;
     }
 
-    public SQLTree(String sql, Object[] params, List<SQLTree> childs, String id,String unionType,String asTable,boolean fromAsTable) {
+    public SQLTree(String sql, Object[] params, List<SQLTree> childs, String id, String unionType, String asTable, String fromAsTable) {
         this.sql = sql;
         this.params = params;
         this.childs = childs;

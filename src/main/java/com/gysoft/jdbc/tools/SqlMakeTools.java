@@ -567,7 +567,7 @@ public class SqlMakeTools {
             //是否为虚拟的根节点sql,虚拟根节点sql不需要添加括号
             boolean isRootSql = sqlTree.getId().equals("0");
             String[] arr = sqlTree.getSql().split("FROM");
-            if (sqlTree.getChilds().size() > 1 && sqlTree.getFromAsTable()) {
+            if (sqlTree.getChilds().size() > 1 && StringUtils.isNotEmpty(sqlTree.getFromAsTable())) {
                 if (!isRootSql) {
                     pair.setFirst(pair.getFirst().concat(arr[0] + "FROM(("));
                 }
@@ -591,25 +591,25 @@ public class SqlMakeTools {
                     pair.setFirst(pair.getFirst().replace(cnode.getId(), cnode.getSql()));
                     pair.setSecond(ArrayUtils.addAll(pair.getSecond(), cnode.getParams()));
                 }
-                if (StringUtils.isNotEmpty(cnode.getAsTable()) && !cnode.getFromAsTable()) {
+                if (StringUtils.isNotEmpty(cnode.getAsTable())) {
                     pair.setFirst(pair.getFirst().concat(") " + cnode.getAsTable() + ""));
                 } else {
                     pair.setFirst(pair.getFirst().concat(")"));
                 }
             }
-            if (sqlTree.getChilds().size() > 1 && sqlTree.getFromAsTable()) {
+            if (sqlTree.getChilds().size() > 1 && StringUtils.isNotEmpty(sqlTree.getFromAsTable())) {
                 //根节点sql不会存在from(String asTable,SQL c)这种查询方式
                 if (!isRootSql) {
-                    if (sqlTree.getFromAsTable()) {
-                        pair.setFirst(pair.getFirst().concat(") " + sqlTree.getAsTable() + " )" + arr[1]));
+                    if (StringUtils.isNotEmpty(sqlTree.getFromAsTable())) {
+                        pair.setFirst(pair.getFirst().concat(") " + sqlTree.getFromAsTable() + " )" + arr[1]));
                     } else {
                         pair.setFirst(pair.getFirst().concat("))" + arr[1]));
                     }
                 }
             } else {
                 if (!isRootSql) {
-                    if (sqlTree.getFromAsTable()) {
-                        pair.setFirst(pair.getFirst().concat(" " + sqlTree.getAsTable() + " )" + arr[1]));
+                    if (StringUtils.isNotEmpty(sqlTree.getFromAsTable())) {
+                        pair.setFirst(pair.getFirst().concat(" " + sqlTree.getFromAsTable() + " )" + arr[1]));
                     } else {
                         pair.setFirst(pair.getFirst().concat(")" + arr[1]));
                     }
