@@ -633,19 +633,62 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
-        sql = new SQL().select("*").from(new SQL().select("d").from("t_d").union().select("c").from("t_c"),"cd");
+        sql = new SQL().select("*").from(new SQL().select("d").from("t_d").union().select("c").from("t_c"), "cd");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
-        sql = new SQL().select("*").from(new SQL().select("1").from("a").union().select("2").from(new SQL().select("3").from("b").leftJoin(new SQL().select("4").from("c"),"c").on("b.id","c.id"),"t1").asTable("mock"),"t2").where("a.id","1000");
+        sql = new SQL().select("*").from(new SQL().select("1").from("a").union().select("2").from(new SQL().select("3").from("b").leftJoin(new SQL().select("4").from("c"), "c").on("b.id", "c.id"), "t1").asTable("mock"), "t2").where("a.id", "1000");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
-        sql = new SQL().select("*").from("a").leftJoin(new Joins().with("b").on("a.id","b.id").and("a.name","123"));
+        sql = new SQL().select("*").from("a").leftJoin(new Joins().with("b").on("a.id", "b.id").and("a.name", "123"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
-        sql = new SQL().select("*").from("a").leftJoin("b").on("a.id","b.id").on("a.name","=","123");
+        sql = new SQL().select("*").from("a").rightJoin("b").on("a.id", "b.id").on("a.name", "=", "123").asTable("xxxxc");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+
+        sql = new SQL().select("a.dangerStatus dangerStatus,a.level level,a.dangerDesc dangerDesc,a.dangerLocation dangerLocation,a.engineering engineering,a.parts parts,a.risk risk,1000*unix_timestamp(a.deadline) deadline")
+                .from("inspect_danger").as("a")
+                .innerJoin(new Joins().with("inspect").as("b").on("a.inspectId", "b.id").and("b.inspectStatus", 1))
+                .innerJoin(new Joins().with(
+                        new SQL().select("c.id id,max(d.actionTime) actionTime").from("inspect_danger").as("c").leftJoin(new Joins().with("inspect_danger_action").as("d").on("c.id", "d.dangerId").and("d.actionComment", "SUBMIT_RECT")).where("c.dangerStatus", 1).groupBy("c.id")).as("e").on("e.id", "a.id")
+                )
+                .where("a.projectId", 1);
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().select("t1.id AS id,t1.projectName as projectName,t1.lon as lon,t1.lat as lat,t2.`name` AS departmentName,MAX(t3.actualTime) AS lastInspectTime,100 - SUM(t4.score) AS score,count(t4.id) AS dangerCount,t5.investmentStatus AS investmentStatus")
+                .from("project").as("t1")
+                .innerJoin(new Joins().with("department").as("t2").on("t1.departmentId", "t2.id").andIfAbsent("t2.id", "deptId"))
+                .leftJoin(new Joins().with("inspect").as("t3").on("t1.id", "t3.projectId"))
+                .leftJoin(new Joins().with("inspect_danger").as("t4").on("t3.id", "t4.inspectId").and("t4.dangerStatus", "<>", 2).and("t3.inspectStatus", 1))
+                .leftJoin(new Joins().with(
+                        new SQL().select("t6.projectId,t6.investmentStatus").from("project_progress").as("t6")
+                                .innerJoin(new Joins().with(
+                                        new SQL().select("projectId,MAX(createTime) AS lastProgressTime").from("project_progress").groupBy("projectId")
+                                ).as("t7").on("t6.createTime", "t7.lastProgressTime"))
+                ).as("t5").on("t1.id", "t5.projectId").andIfAbsent("t5.investmentStatus", 1))
+                .where("t1.deleteFlag", 0).likeIfAbsent("t1.projectName", "projName")
+                .groupBy("t1.id", "t1.projectName", "t1.lon", "t1.lat", "t2.`name`", "t5.investmentStatus")
+                .orderBy(new Sort("score", "asc"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().select("t1.id AS id,t1.projectName as projectName,t1.lon as lon,t1.lat as lat,t2.`name` AS departmentName,MAX(t3.actualTime) AS lastInspectTime,100 - SUM(t4.score) AS score,count(t4.id) AS dangerCount,t5.investmentStatus AS investmentStatus")
+                .from("project").as("t1")
+                .innerJoin("department", "t2").on("t1.departmentId", "t2.id").on("t2.id", "=", "deptId")
+                .leftJoin("inspect", "t3").on("t1.id", "t3.projectId")
+                .leftJoin("inspect_danger", "t4").on("t3.id", "t4.inspectId").on("t4.dangerStatus", "<>", 2).on("t3.inspectStatus","=", 1)
+                .leftJoin(new SQL().select("t6.projectId,t6.investmentStatus").from("project_progress").as("t6")
+                                .innerJoin(new SQL().select("projectId,MAX(createTime) AS lastProgressTime").from("project_progress").groupBy("projectId")
+                                        , "t7").on("t6.createTime", "t7.lastProgressTime")
+                        , "t5").on("t1.id", "t5.projectId").on("t5.investmentStatus","=", 1)
+                .where("t1.deleteFlag", 0).likeIfAbsent("t1.projectName", "projName")
+                .groupBy("t1.id", "t1.projectName", "t1.lon", "t1.lat", "t2.`name`", "t5.investmentStatus")
+                .orderBy(new Sort("score", "asc"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
