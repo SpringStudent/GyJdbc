@@ -335,7 +335,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public S findInSet(String key, Object value) {
-        return this.where("FIND_IN_SET(?," + key + ")", "FIND IN SET", value);
+        return this.where(key, "FIND IN SET", value);
     }
 
     public <T, R> S findInSet(TypeFunction<T, R> function, Object value) {
@@ -343,7 +343,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public S orFindInSet(String key, Object value) {
-        return this.or("FIND_IN_SET(?," + key + ")", "FIND IN SET", value);
+        return this.and(key, "OR FIND IN SET", value);
     }
 
     public <T, R> S orFindInSet(TypeFunction<T, R> function, Object value) {

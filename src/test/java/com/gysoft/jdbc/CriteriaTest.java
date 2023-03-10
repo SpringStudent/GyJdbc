@@ -692,6 +692,16 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
+
+        sql = new SQL().select("t.*").from(new SQL().select("@id idlist",
+                new SQL().select("@id := GROUP_CONCAT(parentId SEPARATOR ',')").from("office_folder").findInSet("@id",new FieldReference("id")).asTable("sub")).from("office_folder")
+                .natureJoin(new SQL().select("@id := 'ade121cf8e2740438b83f75daa609266'").from("dual").asTable("vars")).isNotNull("@id"),"t1")
+                .natureJoin("office_folder","t").findInSet("tl.idlist",new FieldReference("t.id"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+
+
     }
 
 

@@ -243,7 +243,9 @@ public class SqlMakeTools {
                         String key = whereParam.getKey();
                         String opt = whereParam.getOpt();
                         Object value = whereParam.getValue();
-                        sql.append(key).append(" ");
+                        if (opt.toUpperCase().indexOf("FIND IN SET") == -1) {
+                            sql.append(key).append(" ");
+                        }
                         if ("IN".equals(opt.toUpperCase()) || "NOT IN".equals(opt.toUpperCase())) {
                             sql.append(opt).append('(');
                             if (value instanceof Collection) {
@@ -272,8 +274,21 @@ public class SqlMakeTools {
                             Pair<Object, Object> pair = (Pair<Object, Object>) value;
                             params = ArrayUtils.add(params, pair.getFirst());
                             params = ArrayUtils.add(params, pair.getSecond());
-                        } else if ("FIND IN SET".equals(opt.toUpperCase())) {
-                            params = ArrayUtils.add(params, value);
+                        } else if (opt.toUpperCase().indexOf("FIND IN SET") != -1) {
+                            if ("OR FIND IN SET".equals(opt.toUpperCase())) {
+                                sql.append(" OR ");
+                            }
+                            if (value instanceof FieldReference) {
+                                sql.append("FIND_IN_SET(").append(((FieldReference) value).getField()).append(",").append(key).append(")");
+                            } else if (value instanceof SQL) {
+                                SQL whereSql = (SQL) value;
+                                Pair<String, Object[]> wherePair = useSql(whereSql);
+                                sql.append("FIND_IN_SET(").append(wherePair.getFirst()).append(",").append(key).append(")");
+                                params = ArrayUtils.addAll(params, wherePair.getSecond());
+                            } else {
+                                sql.append("FIND_IN_SET(?").append(",").append(key).append(")");
+                                params = ArrayUtils.add(params, value);
+                            }
                         } else {
                             if (value instanceof FieldReference) {
                                 FieldReference fieldReference = (FieldReference) value;
