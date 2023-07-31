@@ -295,4 +295,5 @@ public interface EntityDao<T,Id extends Serializable>{
 	 * @throws Exception sql错误抛出异常
 	 */
 	EntityDao<T,Id> bindGroup(String group)throws Exception;
+
 }
