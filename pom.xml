@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.github.springstudent</groupId>
     <artifactId>GyJdbc</artifactId>
-    <version>1.3.1.RELEASE</version>
+    <version>1.3.2.RELEASE</version>
     <packaging>jar</packaging>
     <url>https://github.com/SpringStudent/GyJdbc</url>
     <description>a nice sql maker</description>
