@@ -2,14 +2,16 @@ package com.gysoft.jdbc.bean;
 
 import com.gysoft.jdbc.dao.EntityDao;
 import org.apache.commons.collections.CollectionUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
+ * sql对象编辑器，可用于给sql统一添加查询条件、添加更新字段、添加插入字段等
+ *
  * @author zhouning
- * @date 2024/01/25 15:38
  */
 public class SqlModifier {
     private final SQL sql;
