@@ -99,6 +99,27 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     @Override
+    public S likeR(String key, Object value) {
+        return this.where(key, "LIKE", value + "%");
+
+    }
+
+    @Override
+    public S likeL(String key, Object value) {
+        return this.where(key, "LIKE", "%" + value);
+    }
+
+    @Override
+    public <T, R> S likeR(TypeFunction<T, R> function, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "LIKE", value + "%");
+    }
+
+    @Override
+    public <T, R> S likeL(TypeFunction<T, R> function, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "LIKE", "%" + value);
+    }
+
+    @Override
     public S gt(String key, Object value) {
         return this.where(key, ">", value);
     }

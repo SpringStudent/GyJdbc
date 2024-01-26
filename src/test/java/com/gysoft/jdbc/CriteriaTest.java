@@ -49,6 +49,15 @@ public class CriteriaTest {
         criteria.orBetweenAnd("sss", "orsdsd", "sda1231").orBetweenAnd("sedTime", "2018-12-02", "2019-11-22");
         criteria.orderBy(new Sort("userName"), new Sort("createTime", "ASC"));
         criteria.groupBy("userName", "id");
+        criteria.likeL("likeL","毛弹头");
+        criteria.likeLIfAbsent("likeL","毛弹头");
+        criteria.likeLIfAbsent(Token::getTk,"毛弹头");
+        criteria.likeLIfAbsent("likeL","");
+        criteria.likeR("likeR","毛弹头");
+        criteria.likeRIfAbsent("likeR","毛弹头");
+        criteria.likeRIfAbsent(Token::getTk,"毛弹头");
+        criteria.likeRIfAbsent("likeR","");
+
         criteria.having(count("asd"), "in", Arrays.asList(1, 2, 3)).limit(1);
         pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());

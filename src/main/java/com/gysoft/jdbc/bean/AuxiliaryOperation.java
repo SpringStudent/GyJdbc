@@ -15,7 +15,15 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
 
     S like(String key, Object value);
 
+    S likeR(String key, Object value);
+
+    S likeL(String key, Object value);
+
     <T, R> S like(TypeFunction<T, R> function, Object value);
+
+    <T, R> S likeR(TypeFunction<T, R> function, Object value);
+
+    <T, R> S likeL(TypeFunction<T, R> function, Object value);
 
     S and(String key, Object value);
 
@@ -66,6 +74,28 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
         return doNothing();
     }
 
+    default S likeLIfAbsent(String key, Object value) {
+        return likeLIfAbsent(key, value, getDefaultPredicate(value));
+    }
+
+    default S likeLIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return likeL(key, value);
+        }
+        return doNothing();
+    }
+
+    default S likeRIfAbsent(String key, Object value) {
+        return likeRIfAbsent(key, value, getDefaultPredicate(value));
+    }
+
+    default S likeRIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return likeR(key, value);
+        }
+        return doNothing();
+    }
+
     default <T, R> S likeIfAbsent(TypeFunction<T, R> function, Object value) {
         return likeIfAbsent(function, value, getDefaultPredicate(value));
     }
@@ -73,6 +103,28 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
     default <T, R> S likeIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
         if (predicate.test(value)) {
             return like(function, value);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S likeLIfAbsent(TypeFunction<T, R> function, Object value) {
+        return likeLIfAbsent(function, value, getDefaultPredicate(value));
+    }
+
+    default <T, R> S likeLIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return likeL(function, value);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S likeRIfAbsent(TypeFunction<T, R> function, Object value) {
+        return likeRIfAbsent(function, value, getDefaultPredicate(value));
+    }
+
+    default <T, R> S likeRIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return likeR(function, value);
         }
         return doNothing();
     }
@@ -277,7 +329,7 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
         return doNothing();
     }
 
-    static  <T> Predicate<T> getDefaultPredicate(T value) {
+    static <T> Predicate<T> getDefaultPredicate(T value) {
         return (t) -> {
             if (Objects.isNull(value)) {
                 return false;
