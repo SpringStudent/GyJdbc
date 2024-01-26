@@ -19,4 +19,8 @@ public class ValueReference {
         this.value = value;
     }
 
+    @Override
+    public String toString() {
+        return "ValueReference(" + value + ")";
+    }
 }

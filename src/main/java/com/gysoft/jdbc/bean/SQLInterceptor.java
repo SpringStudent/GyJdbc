@@ -11,11 +11,11 @@ public interface SQLInterceptor {
      * 在真正构建sql和参数之前执行，该方法会影响最终的sql和参数
      * 对于EntityDao无Criteria、Sql参数的方法第二个参数为null，需要自行非空判断
      *
-     * @param criteria 组装撑的sql对象
+     * @param sqlModifier sql修改器
      * @throws Exception sql错误抛出异常
      * @author ZhouNing
      **/
-    void beforeBuild(SQLType sqlType, AbstractCriteria criteria) throws Exception;
+    void beforeBuild(SQLType sqlType, SqlModifier sqlModifier) throws Exception;
 
     /**
      * 成功构建sql和参数后执行，该方法执行不能够影响sql

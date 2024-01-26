@@ -658,6 +658,7 @@ public class CriteriaTest {
                 )
                 .where("a.projectId", 1);
         pair = SqlMakeTools.useSql(sql);
+
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
         sql = new SQL().select("t1.id AS id,t1.projectName as projectName,t1.lon as lon,t1.lat as lat,t2.`name` AS departmentName,MAX(t3.actualTime) AS lastInspectTime,100 - SUM(t4.score) AS score,count(t4.id) AS dangerCount,t5.investmentStatus AS investmentStatus")
@@ -700,7 +701,6 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
-
     }
 
 

@@ -2,6 +2,7 @@ package com.gysoft.jdbc.bean;
 
 /**
  * 代表字段的引用
+ *
  * @author 周宁
  */
 public class FieldReference {
@@ -20,5 +21,10 @@ public class FieldReference {
 
     public void setField(String field) {
         this.field = field;
+    }
+
+    @Override
+    public String toString() {
+        return "FieldReference(" + field + ")";
     }
 }

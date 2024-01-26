@@ -82,6 +82,8 @@ public class SQL extends AbstractCriteria<SQL> {
      */
     private Drunk drunk;
 
+    private SqlModifier sqlModifier = new SqlModifier(this);
+
     public SQL() {
         selectFields = new ArrayList<>();
         kvs = new ArrayList<>();
@@ -132,70 +134,6 @@ public class SQL extends AbstractCriteria<SQL> {
         sqlPiepline.add(next, "UNION ALL");
         next.setSqlPiepline(sqlPiepline);
         return next;
-    }
-
-    public List<Object> getSelectFields() {
-        return selectFields;
-    }
-
-    public void setSelectFields(List<Object> selectFields) {
-        this.selectFields = selectFields;
-    }
-
-    public List<Pair> getKvs() {
-        return kvs;
-    }
-
-    public void setKvs(List<Pair> kvs) {
-        this.kvs = kvs;
-    }
-
-    public void setAliasName(String aliasName) {
-        this.aliasName = aliasName;
-    }
-
-    public void setJoins(List<Joins.BaseJoin> joins) {
-        this.joins = joins;
-    }
-
-    public SQLPiepline getSqlPiepline() {
-        return sqlPiepline;
-    }
-
-    public void setSqlPiepline(SQLPiepline sqlPiepline) {
-        this.sqlPiepline = sqlPiepline;
-    }
-
-    public List<SQL> getSubSqls() {
-        return subSqls;
-    }
-
-    public void setSubSqls(List<SQL> subSqls) {
-        this.subSqls = subSqls;
-    }
-
-    public String getDeleteAliasName() {
-        return deleteAliasName;
-    }
-
-    public void setDeleteAliasName(String deleteAliasName) {
-        this.deleteAliasName = deleteAliasName;
-    }
-
-    public String getAsTable() {
-        return asTable;
-    }
-
-    public void setAsTable(String asTable) {
-        this.asTable = asTable;
-    }
-
-    public String getFromAsTable() {
-        return fromAsTable;
-    }
-
-    public void setFromAsTable(String fromAsTable) {
-        this.fromAsTable = fromAsTable;
     }
 
     public SQL select(Object... fields) {
@@ -536,22 +474,6 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
-    public String getTbName() {
-        return tbName;
-    }
-
-    public void setTbName(String tbName) {
-        this.tbName = tbName;
-    }
-
-    public String getAliasName() {
-        return aliasName;
-    }
-
-    public List<Joins.BaseJoin> getJoins() {
-        return joins;
-    }
-
     public SQL values(Object... values) {
         insertValues.add(values);
         return this;
@@ -563,56 +485,8 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public Table create() {
+        this.sqlType = EntityDao.SQL_CREATE;
         return new Table(this);
-    }
-
-    public void setTableMeta(TableMeta tableMeta) {
-        this.tableMeta = tableMeta;
-    }
-
-    public TableMeta getTableMeta() {
-        return tableMeta;
-    }
-
-
-    public String getSqlType() {
-        return sqlType;
-    }
-
-    public void setSqlType(String sqlType) {
-        this.sqlType = sqlType;
-    }
-
-    public String getUnionType() {
-        return unionType;
-    }
-
-    public void setUnionType(String unionType) {
-        this.unionType = unionType;
-    }
-
-    public Drunk getDrunk() {
-        return drunk;
-    }
-
-    public void setDrunk(Drunk drunk) {
-        this.drunk = drunk;
-    }
-
-    public List<Object[]> getInsertValues() {
-        return insertValues;
-    }
-
-    public void setInsertValues(List<Object[]> insertValues) {
-        this.insertValues = insertValues;
-    }
-
-    public Pair<String, List<String>> getInsert() {
-        return insert;
-    }
-
-    public void setInsert(Pair<String, List<String>> insert) {
-        this.insert = insert;
     }
 
     public SQL onDuplicateKeyUpdate(String key, Object value) {
@@ -625,14 +499,96 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
-    public Map<String, Object> getUpdates() {
-        Map<String, Object> result = new HashMap<>();
-        if (sqlType.equals(EntityDao.SQL_UPDATE) && CollectionUtils.isNotEmpty(kvs)) {
-            kvs.forEach(pair -> {
-                result.put(pair.getFirst().toString(), pair.getSecond());
-            });
-        }
-        return result;
+    void setTableMeta(TableMeta tableMeta) {
+        this.tableMeta = tableMeta;
     }
 
+    void setInsertValues(List<Object[]> insertValues) {
+        this.insertValues = insertValues;
+    }
+
+    void setTbName(String tbName) {
+        this.tbName = tbName;
+    }
+
+    void setSqlType(String sqlType) {
+        this.sqlType = sqlType;
+    }
+
+    void setSqlPiepline(SQLPiepline sqlPiepline) {
+        this.sqlPiepline = sqlPiepline;
+    }
+
+    void setUnionType(String unionType) {
+        this.unionType = unionType;
+    }
+
+
+    public SqlModifier getModifier() {
+        return this.sqlModifier;
+    }
+
+    public String getSqlType() {
+        return sqlType;
+    }
+
+    public String getTbName() {
+        return tbName;
+    }
+
+    public String getAliasName() {
+        return aliasName;
+    }
+
+    public String getAsTable() {
+        return asTable;
+    }
+
+    public String getFromAsTable() {
+        return fromAsTable;
+    }
+
+    public String getDeleteAliasName() {
+        return deleteAliasName;
+    }
+
+    public List<Joins.BaseJoin> getJoins() {
+        return joins;
+    }
+
+    public List<SQL> getSubSqls() {
+        return subSqls;
+    }
+
+    public SQLPiepline getSqlPiepline() {
+        return sqlPiepline;
+    }
+
+    public TableMeta getTableMeta() {
+        return tableMeta;
+    }
+
+    public List<Object> getSelectFields() {
+        return selectFields;
+    }
+
+    public List<Object[]> getInsertValues() {
+        return insertValues;
+    }
+
+    public Pair<String, List<String>> getInsert() {
+        return insert;
+    }
+
+    public List<Pair> getKvs() {
+        return kvs;
+    }
+
+    public String getUnionType() {
+        return unionType;
+    }
+
+    public Drunk getDrunk() {
+        return drunk;
+    }
 }

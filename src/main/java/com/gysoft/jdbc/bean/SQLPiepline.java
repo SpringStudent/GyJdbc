@@ -9,20 +9,26 @@ import java.util.List;
 public class SQLPiepline {
 
     private List<SQLNext> sqlNexts = new ArrayList<>();
+    private SQL head;
 
-    public SQLPiepline(SQL head) {
-        sqlNexts.add(new SQLNext(head,null));
+    SQL getHead() {
+        return head;
     }
 
-    public void add(SQL sql, String type){
-        sqlNexts.add(new SQLNext(sql,type));
+    public SQLPiepline(SQL head) {
+        this.head = head;
+        sqlNexts.add(new SQLNext(head, null));
+    }
+
+    public void add(SQL sql, String type) {
+        sqlNexts.add(new SQLNext(sql, type));
     }
 
     public List<SQLNext> getSqlNexts() {
         return sqlNexts;
     }
 
-    public static class SQLNext{
+    public static class SQLNext {
 
         private SQL sql;
 

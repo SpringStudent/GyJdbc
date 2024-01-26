@@ -25,6 +25,7 @@ public interface EntityDao<T,Id extends Serializable>{
 	String SQL_DELETE = "delete";
 	String SQL_TRUNCATE = "truncate";
 	String SQL_DROP = "drop";
+	String SQL_CREATE = "create";
 
 	/**
 	 * 插入指定的持久化对象

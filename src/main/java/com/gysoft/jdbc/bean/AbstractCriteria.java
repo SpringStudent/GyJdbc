@@ -41,64 +41,6 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
      */
     private int size;
 
-    private Where where;
-
-    public Set<String> getGroupFields() {
-        return groupFields;
-    }
-
-    public void setGroupFields(Set<String> groupFields) {
-        this.groupFields = groupFields;
-    }
-
-    public List<WhereParam> getWhereParams() {
-        return whereParams;
-    }
-
-    public void setWhereParams(List<WhereParam> whereParams) {
-        this.whereParams = whereParams;
-    }
-
-    public Set<Sort> getSorts() {
-        return sorts;
-    }
-
-    public void setSorts(Set<Sort> sorts) {
-        this.sorts = sorts;
-    }
-
-    public List<CriteriaProxy> getCriteriaProxys() {
-        return criteriaProxys;
-    }
-
-    public void setCriteriaProxys(List<CriteriaProxy> criteriaProxys) {
-        this.criteriaProxys = criteriaProxys;
-    }
-
-    public Pair<String, Object[]> getHaving() {
-        return having;
-    }
-
-    public void setHaving(Pair<String, Object[]> having) {
-        this.having = having;
-    }
-
-    public int getOffset() {
-        return offset;
-    }
-
-    public void setOffset(int offset) {
-        this.offset = offset;
-    }
-
-    public int getSize() {
-        return size;
-    }
-
-    public void setSize(int size) {
-        this.size = size;
-    }
-
     public AbstractCriteria() {
         whereParams = new ArrayList<>();
         sorts = new LinkedHashSet<>();
@@ -518,4 +460,31 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return self();
     }
 
+    public List<WhereParam> getWhereParams() {
+        return whereParams;
+    }
+
+    public Set<Sort> getSorts() {
+        return sorts;
+    }
+
+    public List<CriteriaProxy> getCriteriaProxys() {
+        return criteriaProxys;
+    }
+
+    public Set<String> getGroupFields() {
+        return groupFields;
+    }
+
+    public Pair<String, Object[]> getHaving() {
+        return having;
+    }
+
+    public int getOffset() {
+        return offset;
+    }
+
+    public int getSize() {
+        return size;
+    }
 }
