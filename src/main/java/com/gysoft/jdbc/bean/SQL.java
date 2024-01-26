@@ -49,7 +49,7 @@ public class SQL extends AbstractCriteria<SQL> {
     /**
      * sql管道拼接
      */
-    private SQLPiepline sqlPiepline = new SQLPiepline(this);
+    private SQLPiepline sqlPiepline;
     /**
      * 表元数据
      */
@@ -82,15 +82,24 @@ public class SQL extends AbstractCriteria<SQL> {
      */
     private Drunk drunk;
 
-    private SqlModifier sqlModifier = new SqlModifier(this);
+    private SqlModifier sqlModifier;
+
+    private String id;
 
     public SQL() {
+        this(null);
+    }
+
+    public SQL(String id) {
+        sqlModifier = new SqlModifier(this);
+        sqlPiepline = new SQLPiepline(this);
         selectFields = new ArrayList<>();
         kvs = new ArrayList<>();
         joins = new ArrayList<>();
         subSqls = new ArrayList<>();
         insertValues = new ArrayList<>();
         insert = new Pair<>();
+        this.id = id;
     }
 
     public SQL from(SQL... cc) {
@@ -523,11 +532,6 @@ public class SQL extends AbstractCriteria<SQL> {
         this.unionType = unionType;
     }
 
-
-    public SqlModifier getModifier() {
-        return this.sqlModifier;
-    }
-
     public String getSqlType() {
         return sqlType;
     }
@@ -590,5 +594,17 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public Drunk getDrunk() {
         return drunk;
+    }
+
+    public SqlModifier getModifier() {
+        return sqlModifier;
+    }
+
+    public String getId() {
+        if (StringUtils.isNotEmpty(id)) {
+            return id;
+        } else {
+            return sqlModifier.sqlType() + ":" + sqlModifier.tableName() + ":" + System.currentTimeMillis();
+        }
     }
 }
