@@ -604,7 +604,7 @@ public class SQL extends AbstractCriteria<SQL> {
         if (StringUtils.isNotEmpty(id)) {
             return id;
         } else {
-            return sqlModifier.sqlType() + ":" + sqlModifier.tableName() + ":" + System.currentTimeMillis();
+            return System.currentTimeMillis() + ":" + sqlModifier.sqlType() + ":" + sqlModifier.tableName();
         }
     }
 }
