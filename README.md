@@ -209,7 +209,7 @@ tbUserDao.bindGroup("masterGroup",RoundbinLoadBalance.class).updateWithSql(new S
 *entityDao.bindXxx* > *方法上@BindPoint* > *类上@BindPoint* > *JdbcRoutingDataSource.defaultLookUpKey*
 
 #### SQLInterceptor.java
-1.4.0.RELEASE中加入了该类，影响entityDao.xxxSql方法(即方法参数传入的是SQL)，在真正构建sql和参数之前和构建sql之后执行，可以通过实现该接口方便的给sql批量添加一些通用的查询字段、更新字段，和sql审计，以下是一个具体点的demo
+最终拦截的方法的签名为entityDao.xxxSql(即方法参数传入的是SQL)，在真正构建sql和参数之前和构建sql之后执行，可以通过实现该接口方便的给sql批量添加一些通用的查询字段、更新字段，和sql审计，以下是一个具体点的demo
 ```java
 @Component
 public class SQLInterceptorImpl implements SQLInterceptor {
