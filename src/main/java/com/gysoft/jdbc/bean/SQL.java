@@ -607,4 +607,5 @@ public class SQL extends AbstractCriteria<SQL> {
             return System.currentTimeMillis() + ":" + sqlModifier.sqlType() + ":" + sqlModifier.tableName();
         }
     }
+
 }
