@@ -18,10 +18,10 @@ public class CustomResultSetExractorFactory {
     /**
      * 两列结果值得映射Mapper类
      */
-    private static final ResultSetExtractor DOUBLE_COLUMN_VALUE_RESULTSETEXRACTOR =(rs) -> {
-        Map<Object,Object> result = new LinkedHashMap<>();
-        while(rs.next()){
-            result.put(rs.getObject(1),rs.getObject(2));
+    private static final ResultSetExtractor DOUBLE_COLUMN_VALUE_RESULTSETEXRACTOR = (rs) -> {
+        Map<Object, Object> result = new LinkedHashMap<>();
+        while (rs.next()) {
+            result.put(rs.getObject(1), rs.getObject(2));
         }
         return result;
     };
@@ -29,19 +29,23 @@ public class CustomResultSetExractorFactory {
 
     /**
      * 创建两列结果值得Map集合的RowMapper
+     * 注意：这个方法可能会导致类型转换BUG，已过时，建议使用重载方法
+     *
      * @return ResultSetExtractor 两列结果值得映射抽取器
      */
-    public static ResultSetExtractor createDoubleColumnValueResultSetExractor(){
+    @Deprecated
+    public static ResultSetExtractor createDoubleColumnValueResultSetExractor() {
         return DOUBLE_COLUMN_VALUE_RESULTSETEXRACTOR;
     }
 
-    public static <A,B> ResultSetExtractor createDoubleColumnValueResultSetExtractor(Class<A> kCls, Class<B> vCls){
+    public static <A, B> ResultSetExtractor createDoubleColumnValueResultSetExtractor(Class<A> kCls, Class<B> vCls) {
         return new ResultSetExtractor() {
             Map result = new LinkedHashMap<>(1);
+
             @Override
             public Object extractData(ResultSet rs) throws SQLException, DataAccessException {
-                while(rs.next()){
-                    result.put(getColumVal(kCls,rs,1),getColumVal(vCls,rs,2));
+                while (rs.next()) {
+                    result.put(getColumVal(kCls, rs, 1), getColumVal(vCls, rs, 2));
                 }
                 return result;
             }
@@ -49,7 +53,7 @@ public class CustomResultSetExractorFactory {
     }
 
 
-    private static <T> Object getColumVal(Class<T> cls, ResultSet rs, int i) throws SQLException {
+    public static <T> Object getColumVal(Class<T> cls, ResultSet rs, int i) throws SQLException {
         if (String.class.equals(cls)) {
             return rs.getString(i);
         } else if (int.class.equals(cls) || Integer.class.equals(cls)) {
