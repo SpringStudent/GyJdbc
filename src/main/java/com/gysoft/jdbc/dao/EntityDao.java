@@ -238,6 +238,14 @@ public interface EntityDao<T,Id extends Serializable>{
 	Integer queryIntegerWithSql(SQL sql)throws Exception;
 
 	/**
+	 * 根据sql判断是否有满足条件的数据
+	 * @param sql sql拼接器
+	 * @return boolean 结果类型，数据是否存在
+	 * @throws Exception sql错误抛出异常
+	 */
+	boolean existsWithSql(SQL sql)throws Exception;
+
+	/**
 	 * 根据sql插入数据
 	 * @param sql sql拼接器
 	 * @return int 更新条目数量

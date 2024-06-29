@@ -35,6 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.sql.JDBCType;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -359,6 +361,14 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         doAfterBuild(pair.getFirst(), pair.getSecond());
         return jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), Integer.class);
+    }
+
+    @Override
+    public boolean existsWithSql(SQL sql) throws Exception {
+        doBeforeBuild(SQLType.Select, sql);
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        doAfterBuild(pair.getFirst(), pair.getSecond());
+        return jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), (rs, rowNum) -> rs.next());
     }
 
     @Override
