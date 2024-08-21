@@ -3,6 +3,7 @@ package com.gysoft.jdbc.tools;
 import com.gysoft.jdbc.annotation.Column;
 import com.gysoft.jdbc.annotation.Table;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -14,7 +15,7 @@ import java.lang.reflect.Method;
  * @author 彭佳佳
  */
 public class EntityTools {
-	
+
     /**
      * 根据实体类名，获取表名称
      *
@@ -23,11 +24,11 @@ public class EntityTools {
      */
     public static String getTableName(Class<?> entity) {
         Table table = entity.getAnnotation(Table.class);
-        if (null != table&&!StringUtils.isEmpty(table.name())) {
-    		 return table.name();
-        }else {
-        	StringBuffer tableName = new StringBuffer();
-        	String entityName = entity.getSimpleName();
+        if (null != table && !StringUtils.isEmpty(table.name())) {
+            return table.name();
+        } else {
+            StringBuffer tableName = new StringBuffer();
+            String entityName = entity.getSimpleName();
             StringBuilder str = new StringBuilder();
             char[] subStr = entityName.toCharArray();
             int i = 0;
@@ -71,10 +72,12 @@ public class EntityTools {
         return "id";
     }
 
+
     /**
      * 判断是否为主键
+     *
      * @param entity 实体类型
-     * @param field 属性
+     * @param field  属性
      * @return boolean true代表主键 false反之
      */
     public static boolean isPk(Class<?> entity, Field field) {
@@ -115,8 +118,8 @@ public class EntityTools {
         return columnName;
     }
 
-    public static String transferColumnName(String columnName){
-        if(!columnName.startsWith("`")||!columnName.endsWith("`")){
+    public static String transferColumnName(String columnName) {
+        if (!columnName.startsWith("`") || !columnName.endsWith("`")) {
             return "`" + columnName + "`";
         }
         return columnName;

@@ -20,6 +20,7 @@ import com.gysoft.jdbc.multi.balance.RoundRobinLoadBalance;
 import com.gysoft.jdbc.tools.CollectionUtil;
 import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
+import org.apache.commons.beanutils.MethodUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -31,8 +32,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ReflectionUtils;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.sql.JDBCType;
 import java.sql.ResultSet;
@@ -122,6 +125,18 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             }
         }
         jdbcTemplate.batchUpdate(sql, batchArgs, argTypes);
+    }
+
+    @Override
+    public void saveOrUpdate(T t) throws Exception {
+        Field field = ReflectionUtils.findField(entityClass, primaryKey);
+        field.setAccessible(true);
+        Id id = (Id) ReflectionUtils.getField(field, t);
+        if (this.queryOne(id) != null) {
+            this.save(t);
+        } else {
+            this.update(t);
+        }
     }
 
     @Override

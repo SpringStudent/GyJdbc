@@ -7,7 +7,9 @@ import com.gysoft.jdbc.dao.EntityDaoImpl;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.lang.ArrayUtils;
 import org.junit.Test;
+import org.springframework.util.ReflectionUtils;
 
+import java.lang.reflect.Field;
 import java.sql.JDBCType;
 import java.util.*;
 import java.util.concurrent.Executors;
