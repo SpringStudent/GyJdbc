@@ -37,6 +37,7 @@ import org.springframework.util.ReflectionUtils;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
+import java.security.InvalidParameterException;
 import java.sql.JDBCType;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -132,7 +133,10 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         Field field = ReflectionUtils.findField(entityClass, primaryKey);
         field.setAccessible(true);
         Id id = (Id) ReflectionUtils.getField(field, t);
-        if (this.queryOne(id) != null) {
+        if (id == null) {
+            throw new InvalidParameterException("entity primary key must be not null");
+        }
+        if (this.queryOne(id) == null) {
             this.save(t);
         } else {
             this.update(t);
