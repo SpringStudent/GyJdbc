@@ -387,7 +387,8 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         doBeforeBuild(SQLType.Select, sql);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         doAfterBuild(pair.getFirst(), pair.getSecond());
-        return jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), (rs, rowNum) -> rs.next());
+        List<Object> results = jdbcTemplate.query(pair.getFirst(), pair.getSecond(), (rs, rowNum) -> rs.getObject(1));
+        return !results.isEmpty();
     }
 
     @Override
