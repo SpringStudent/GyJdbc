@@ -299,6 +299,11 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
+    public boolean existsWithCriteria(Criteria criteria) throws Exception {
+        return !queryWithCriteria(criteria, rowMapper).isEmpty();
+    }
+
+    @Override
     public List<T> queryWithCriteria(Criteria criteria, RowMapper<T> tRowMapper) throws Exception {
         String sql = "SELECT * FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));

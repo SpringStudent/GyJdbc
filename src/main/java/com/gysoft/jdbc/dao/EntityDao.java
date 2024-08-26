@@ -187,6 +187,15 @@ public interface EntityDao<T, Id extends Serializable> {
     List<T> queryWithCriteria(Criteria criteria) throws Exception;
 
     /**
+     * 根据criteria判断是否有满足条件的数据
+     *
+     * @param criteria 查询条件
+     * @return boolean 结果类型，数据是否存在
+     * @throws Exception sql错误抛出异常
+     */
+    boolean existsWithCriteria(Criteria criteria) throws Exception;
+
+    /**
      * 条件查询
      *
      * @param criteria   查询条件
