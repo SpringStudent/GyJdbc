@@ -10,7 +10,6 @@ import java.util.Map;
  * @author 周宁
  */
 public class DataSourceBind {
-
     private static final Map<Class, LoadBalance> LoadBalanceMap = new HashMap<>();
 
     static {
@@ -18,7 +17,6 @@ public class DataSourceBind {
         LoadBalanceMap.put(RandomLoadBalance.class, new RandomLoadBalance());
         LoadBalanceMap.put(SelectFirstLoadBalance.class, new SelectFirstLoadBalance());
         LoadBalanceMap.put(SelectLastLoadBalance.class, new SelectLastLoadBalance());
-
     }
 
     enum BindType {

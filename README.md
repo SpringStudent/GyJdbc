@@ -182,6 +182,8 @@ public class SQLInterceptorImpl implements SQLInterceptor {
 
 **数据源配置文件**
 
+通过spring的xml配置
+
 ```xml
 
 <bean id="sourceDs" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
@@ -217,8 +219,55 @@ public class SQLInterceptorImpl implements SQLInterceptor {
 <property name="dataSource" ref="dataSource"/>
 </bean>
 ```
+通过spring的bean配置
 
-**@Bindpoint注解绑定数据源(依赖于spring aop)**
+```java
+@Configuration
+public class DatasourceConf {
+    @Bean(name = "primary")
+    @Primary
+    @ConfigurationProperties(prefix = "spring.datasource.primary")
+    public HikariDataSource primary() {
+        return new HikariDataSource();
+    }
+
+    @Bean(name = "secondry")
+    @ConfigurationProperties(prefix = "spring.datasource.secondry")
+    public HikariDataSource secondry() {
+        return new HikariDataSource();
+    }
+
+    @Bean(name = "thrid")
+    @ConfigurationProperties(prefix = "spring.datasource.thrid")
+    public HikariDataSource thrid() {
+        return new HikariDataSource();
+    }
+
+    @Bean(name = "dataSource")
+    public DataSource dataSource() {
+        JdbcRoutingDataSource jdbcRoutingDataSource = new JdbcRoutingDataSource();
+        jdbcRoutingDataSource.setDefaultLookUpKey("primary");
+
+        Map<Object, Object> targetDataSources = new HashMap<>();
+        targetDataSources.put("primary", primary());
+        targetDataSources.put("secondry", secondry());
+        targetDataSources.put("third", thrid());
+        jdbcRoutingDataSource.setTargetDataSources(targetDataSources);
+        //配置分组用于负载均衡
+        Map<String, String> dataSourceKeysGroup = new HashMap<>();
+        dataSourceKeysGroup.put("master","primary");
+        dataSourceKeysGroup.put("slave","secondry,thrid");
+        jdbcRoutingDataSource.setDataSourceKeysGroup(dataSourceKeysGroup);
+        return jdbcRoutingDataSource;
+    }
+
+    @Bean(name = "jdbcTemplate")
+    public JdbcTemplate jdbcTemplate() {
+        return new JdbcTemplate(dataSource());
+    }
+}
+```
+**注意@Bindpoint注解绑定数据源**
 
 <u>绑定方法或者类级别的数据源</u>
 
