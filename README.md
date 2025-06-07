@@ -265,9 +265,9 @@ public class DatasourceConf {
     }
 }
 ```
-**注意@Bindpoint注解绑定数据源**
+**@Bindpoint注解绑定数据源**
 
-<u>绑定方法或者类级别的数据源</u>
+<u>绑定方法或者类级别的数据源,依赖于Spring Aop</u>
 
 ```java
 //绑定数据源slaveGroup组，采用RandomLoadBalance策略（随机）的负载均衡策略选取数据源
