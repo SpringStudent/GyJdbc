@@ -180,8 +180,6 @@ public class SQLInterceptorImpl implements SQLInterceptor {
 
 #### 多数据源支持
 
-**数据源配置文件**
-
 通过spring的xml配置
 
 ```xml
