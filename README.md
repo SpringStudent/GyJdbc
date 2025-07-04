@@ -180,6 +180,21 @@ public class SQLInterceptorImpl implements SQLInterceptor {
 
 #### 多数据源支持
 
+开启AOP和引入切面增强类
+
+```java
+@SpringBootApplication
+@EnableAspectJAutoProxy(proxyTargetClass = true)
+@Import(BindPointAspectRegistar.class)
+public class SystemApp {
+
+	public static void main(String[] args) {
+		SpringApplication.run(SystemApp.class, args);
+	}
+
+}
+```
+
 通过spring的xml配置
 
 ```xml
