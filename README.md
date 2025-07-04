@@ -266,7 +266,7 @@ public class DatasourceConf {
         targetDataSources.put("secondry", secondry());
         targetDataSources.put("third", thrid());
         jdbcRoutingDataSource.setTargetDataSources(targetDataSources);
-        //配置分组用于负载均衡
+        //配置分组用于负载均衡，如果无需负载均衡则可忽略
         Map<String, String> dataSourceKeysGroup = new HashMap<>();
         dataSourceKeysGroup.put("master","primary");
         dataSourceKeysGroup.put("slave","secondry,thrid");
