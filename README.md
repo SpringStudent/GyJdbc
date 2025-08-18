@@ -101,12 +101,6 @@ List<Map<String, Object>>queryMapsWithSql(SQL sql)throws Exception;
 
 ```
 
-`谁在集成Gyjdbc`
-
-https://github.com/SpringStudent/remote-desktop-control
-
-https://github.com/SpringStudent/webrtc-meetings
-
 `Criteria语法示例:`
 
 ```java
@@ -136,6 +130,12 @@ params.add(WhereParam.where("f1").like("v1"));
 params.add(WhereParam.where("f2").in(Arrays.asList(1,2,3)));
 sql=new SQL().select("*").from("table2").and(Opt.AND,params);
 ```
+
+#### 谁在用Gyjdbc
+
+https://github.com/SpringStudent/remote-desktop-control
+
+https://github.com/SpringStudent/webrtc-meetings
 
 #### SQLInterceptor.java
 最终拦截的方法的签名为entityDao.xxxSql，即方法参数传入的是SQL，beforeBuild在构建sql和参数之前执行，而afterSql在构建sql之后执行。可以通过实现该接口方便的给sql批量添加一些通用的查询字段、更新字段sql审计的逻辑，以下是一个具体点的demo
