@@ -101,6 +101,12 @@ List<Map<String, Object>>queryMapsWithSql(SQL sql)throws Exception;
 
 ```
 
+`谁在集成Gyjdbc`
+
+https://github.com/SpringStudent/remote-desktop-control
+
+https://github.com/SpringStudent/webrtc-meetings
+
 `Criteria语法示例:`
 
 ```java
