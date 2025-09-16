@@ -17,6 +17,7 @@ public class DataSourceBind {
         LoadBalanceMap.put(RandomLoadBalance.class, new RandomLoadBalance());
         LoadBalanceMap.put(SelectFirstLoadBalance.class, new SelectFirstLoadBalance());
         LoadBalanceMap.put(SelectLastLoadBalance.class, new SelectLastLoadBalance());
+        LoadBalanceMap.put(LeastActiveLoadBalance.class, new LeastActiveLoadBalance());
     }
 
     enum BindType {
