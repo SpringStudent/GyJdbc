@@ -25,7 +25,7 @@ public class LeastActiveLoadBalance extends AbstractLoadBalance {
         if (leastActiveKeys.size() == 1) {
             return leastActiveKeys.get(0);
         }
-        // 如果有多个活跃连接数相同的数据源，使用权重随机选择
+        // 如果有多个活跃连接数相同的数据源,则随机选择
         return selectRandomFromCandidates(leastActiveKeys);
     }
 
