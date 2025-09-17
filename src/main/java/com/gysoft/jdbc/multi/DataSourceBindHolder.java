@@ -22,7 +22,6 @@ public abstract class DataSourceBindHolder {
             decreaseActiveCount(dataSourceBind);
         }
         DataSourceBindHolder.remove();
-        System.out.println("clearDataSource" + activeCountMap);
     }
 
     public static String getDataSource() {
