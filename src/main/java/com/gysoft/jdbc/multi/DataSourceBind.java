@@ -34,6 +34,8 @@ public class DataSourceBind {
 
     private String select;
 
+    private Integer active;
+
     private DataSourceBind prev;
 
     public DataSourceBind(String key, BindType bindType, String group, Class<? extends LoadBalance> loadBalance) {
@@ -41,7 +43,7 @@ public class DataSourceBind {
         this.bindType = bindType;
         this.group = group;
         this.loadBalance = loadBalance;
-
+        this.active = 0;
     }
 
 
@@ -64,7 +66,10 @@ public class DataSourceBind {
         return null;
     }
 
-    public String select() {
+    public String select(boolean updateActive) {
+        if (updateActive) {
+            active = active + 1;
+        }
         if (StringUtils.isNotEmpty(this.select)) {
             return select;
         }
@@ -102,6 +107,10 @@ public class DataSourceBind {
         return bindType;
     }
 
+    public int getActive() {
+        return active;
+    }
+
     @Override
     public String toString() {
         return "DataSourceBind{" +
@@ -109,6 +118,7 @@ public class DataSourceBind {
                 ", key='" + key + '\'' +
                 ", group='" + group + '\'' +
                 ", loadBalance=" + loadBalance +
+                ", active='" + active + '\'' +
                 '}';
     }
 }
