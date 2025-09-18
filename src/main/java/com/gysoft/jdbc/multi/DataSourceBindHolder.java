@@ -22,6 +22,7 @@ public abstract class DataSourceBindHolder {
             decreaseActiveCount(dataSourceBind);
         }
         DataSourceBindHolder.remove();
+        System.out.println("clear DataSourceBind" + activeCountMap);
     }
 
     public static String getDataSource() {
@@ -46,23 +47,15 @@ public abstract class DataSourceBindHolder {
     }
 
     private static void increaseActiveCount(String key) {
-        Integer count = activeCountMap.get(key);
-        if (count == null) {
-            count = 0;
+        if (key != null) {
+            activeCountMap.compute(key, (k, v) -> v == null ? 1 : v + 1);
         }
-        activeCountMap.put(key, count + 1);
     }
 
     private static void decreaseActiveCount(DataSourceBind dataSourceBind) {
         String key = dataSourceBind.select(false);
         if (key != null) {
-            Integer count = activeCountMap.get(key);
-            if (count == null) {
-                count = 0;
-            }
-            if (count > 0) {
-                activeCountMap.put(key, count - dataSourceBind.getActive());
-            }
+            activeCountMap.computeIfPresent(key, (k, v) -> v - dataSourceBind.getActive());
         }
     }
 
