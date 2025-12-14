@@ -33,7 +33,6 @@ public class CriteriaTest {
         criteria.orBetweenAnd("btke", 1, 2);
         criteria.in("sets", new HashSet(Arrays.asList("1234567890", "111111")));
         criteria.orLike("likeKey", "thisi s p lsa");
-        criteria.findInSet("niuniuairen", "ying");
         criteria.orBetweenAnd("btad", 19920928, 20190321);
         criteria.orLike("okd", "s123").orLike(Token::getTk, "sd");
         criteria.orLikeIfAbsent("dsa", "").orLikeIfAbsent(Token::getTk, "111");
@@ -64,11 +63,9 @@ public class CriteriaTest {
         pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
-        criteria = new Criteria().and(Where.where("f1").findInSet(2).and("f2").in(Arrays.asList(4, 5, 67)).or("f11").betweenAnd("dd", 33).or("fis").findInSet(1)).and("key", 23)
+        criteria = new Criteria().and(Where.where("f2").in(Arrays.asList(4, 5, 67)).or("f11").betweenAnd("dd", 33)).and("key", 23)
                 .or(Where.where("xmld").equal("eqeual").and("andd").gt(1230).or("xsdads").like("mmmdsa"))
                 .andWhere(Opt.OR, WhereParam.where("k1").in(Arrays.asList(1, 3, 4)), WhereParam.where("k2").equal("k2v"), WhereParam.where("k3").isNotNull())
-                .orWhere(Opt.OR, WhereParam.where("l1").findInSet(1), WhereParam.where("l2").findInSet(2))
-                .or(Opt.OR, WhereParam.where("lx").findInSet(213), WhereParam.where("kx").findInSet("213"))
                 .and(Opt.AND, WhereParam.where("isnol").isNotNull(), WhereParam.where("xds").exists(new SQL().select("*").from("haobads").where("dddx", 12)));
         pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
         System.out.println(pair.getFirst());
@@ -473,7 +470,7 @@ public class CriteriaTest {
         SQL sql = new SQL().select("*").from("table1")
                 .where("f1", 1).and(Where.where("f2").like("a").or("f3").gte(1).and("f4").in(Arrays.asList(2, 3, 4)))
                 .and(Opt.AND, WhereParam.where("f9").like("c"), WhereParam.where("f10").lt(8))
-                .andWhere(Opt.AND, WhereParam.where("f5").betweenAnd(5, 6), WhereParam.where("f6").findInSet("b"))
+                .andWhere(Opt.AND, WhereParam.where("f5").betweenAnd(5, 6))
                 .or(Opt.OR, WhereParam.where("f7").notEqual(7), WhereParam.where("f8").isNull())
                 .orWhere(Opt.OR, whereParams)
                 .andWhere(Where.where("m").equal("22").or("x").like("xx"))
@@ -701,14 +698,6 @@ public class CriteriaTest {
                 .where("t1.deleteFlag", 0).likeIfAbsent("t1.projectName", "projName")
                 .groupBy("t1.id", "t1.projectName", "t1.lon", "t1.lat", "t2.`name`", "t5.investmentStatus")
                 .orderBy(new Sort("score", "asc"));
-        pair = SqlMakeTools.useSql(sql);
-        System.out.println(pair.getFirst());
-        System.out.println(ArrayUtils.toString(pair.getSecond()));
-
-        sql = new SQL().select("t.*").from(new SQL().select("@id idlist",
-                new SQL().select("@id := GROUP_CONCAT(parentId SEPARATOR ',')").from("office_folder").findInSet("@id",new FieldReference("id")).asTable("sub")).from("office_folder")
-                .natureJoin(new SQL().select("@id := 'ade121cf8e2740438b83f75daa609266'").from("dual").asTable("vars")).isNotNull("@id"),"t1")
-                .natureJoin("office_folder","t").findInSet("tl.idlist",new FieldReference("t.id"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));

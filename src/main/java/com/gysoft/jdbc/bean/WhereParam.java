@@ -9,7 +9,7 @@ public class WhereParam {
 
     public enum OptEnum {
         Like, Gt, Gte, Lt, Let, NotEqual, IsNull, IsNotNull,
-        Equal, Exists, NotExists, BetweenAnd, In, NotIn, FindInSet;
+        Equal, Exists, NotExists, BetweenAnd, In, NotIn;
     }
 
     private String key;
@@ -154,12 +154,6 @@ public class WhereParam {
     public WhereParam notExists(SQL sql) {
         this.optEnum = OptEnum.NotExists;
         this.value =sql;
-        return this;
-    }
-
-    public WhereParam findInSet(Object val) {
-        this.optEnum = OptEnum.FindInSet;
-        this.value =val;
         return this;
     }
 

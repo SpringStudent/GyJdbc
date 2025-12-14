@@ -113,15 +113,6 @@ public class Where {
         return this;
     }
 
-    public Where findInSet(Object val) {
-        if (key.indexOf(" OR ") != -1) {
-            criteria.orFindInSet(key.trim().replace("OR",""), val);
-        }else{
-            criteria.findInSet(key, val);
-        }
-        return this;
-    }
-
     public Where betweenAnd(Object v1, Object v2) {
         criteria.betweenAnd(key, v1, v2);
         return this;

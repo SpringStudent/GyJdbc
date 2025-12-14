@@ -297,22 +297,6 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return this.where(TypeFunction.getLambdaColumnName(function), "BETWEEN ? AND ?", new Pair<>(v1, v2));
     }
 
-    public S findInSet(String key, Object value) {
-        return this.where(key, "FIND IN SET", value);
-    }
-
-    public <T, R> S findInSet(TypeFunction<T, R> function, Object value) {
-        return this.findInSet(TypeFunction.getLambdaColumnName(function), value);
-    }
-
-    public S orFindInSet(String key, Object value) {
-        return this.and(key, "OR FIND IN SET", value);
-    }
-
-    public <T, R> S orFindInSet(TypeFunction<T, R> function, Object value) {
-        return this.orFindInSet(TypeFunction.getLambdaColumnName(function), value);
-    }
-
     public S andCriteria(Criteria criteria) {
         return criteria(criteria, "AND");
     }
@@ -418,8 +402,6 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
             where = where.in((Collection<?>) wp.getValue());
         } else if (wp.getOptEnum().equals(WhereParam.OptEnum.NotIn)) {
             where = where.notIn((Collection<?>) wp.getValue());
-        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.FindInSet)) {
-            where = where.findInSet(wp.getValue());
         }
         return where;
     }
