@@ -324,8 +324,7 @@ public class SqlMakeTools {
                 }
             }
         }
-        String realSql = sql.toString().replace(", WHERE", " WHERE").replace("AND  OR", "OR");
-        result.setFirst(realSql);
+        result.setFirst(sql.toString().replace("AND  OR", "OR"));
         result.setSecond(params);
         return result;
     }
