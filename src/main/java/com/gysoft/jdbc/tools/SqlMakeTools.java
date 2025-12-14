@@ -29,7 +29,7 @@ public class SqlMakeTools {
      * @return String 创建的sql
      */
     public static <E> String makeSql(Class clazz, String tbName, String sqlFlag) {
-        StringBuffer sql = new StringBuffer();
+        StringBuilder sql = new StringBuilder();
         Field[] fields = clazz.getDeclaredFields();
         if (sqlFlag.equals(SQL_INSERT)) {
             sql.append(" INSERT INTO " + tbName);
@@ -240,6 +240,7 @@ public class SqlMakeTools {
                         if (StringUtils.isEmpty(whereParam.getKey())) {
                             continue;
                         }
+
                         String key = whereParam.getKey();
                         String opt = whereParam.getOpt();
                         Object value = whereParam.getValue();
@@ -573,69 +574,88 @@ public class SqlMakeTools {
      * 递归组装子查询参数和sql
      *
      * @param sqlTree 待构造的查询树
+     * @return Pair 第一个值为Sql,第二个为参数数组
      * @author 周宁
-     * @version 1.0
+     * @version 2.0 优化版本：使用StringBuilder提升性能，修复replace占位符bug，简化逻辑
      */
     private static Pair<String, Object[]> recurSql(SQLTree sqlTree, Pair<String, Object[]> pair) {
         List<SQLTree> childs = sqlTree.getChilds();
+        StringBuilder sqlBuilder = new StringBuilder(pair.getFirst());
+        List<Object> paramsList = new ArrayList<>();
+        // 将现有参数添加到列表中
+        if (pair.getSecond() != null) {
+            Collections.addAll(paramsList, pair.getSecond());
+        }
         if (CollectionUtils.isNotEmpty(childs)) {
             //是否为虚拟的根节点sql,虚拟根节点sql不需要添加括号
-            boolean isRootSql = sqlTree.getId().equals("0");
-            String[] arr = sqlTree.getSql().split("FROM");
-            if (sqlTree.getChilds().size() > 1 && StringUtils.isNotEmpty(sqlTree.getFromAsTable())) {
-                if (!isRootSql) {
-                    pair.setFirst(pair.getFirst().concat(arr[0] + "FROM(("));
-                }
-            } else {
-                if (!isRootSql) {
-                    pair.setFirst(pair.getFirst().concat(arr[0] + "FROM("));
+            boolean isRootSql = "0".equals(sqlTree.getId());
+            // 安全地分割FROM子句
+            String parentSql = sqlTree.getSql();
+            int fromIndex = parentSql.indexOf("FROM");
+            String beforeFrom = fromIndex >= 0 ? parentSql.substring(0, fromIndex) : parentSql;
+            String afterFrom = fromIndex >= 0 && fromIndex + 4 < parentSql.length()
+                    ? parentSql.substring(fromIndex + 4) : "";
+            boolean hasMultipleChildren = childs.size() > 1;
+            boolean hasFromAsTable = StringUtils.isNotEmpty(sqlTree.getFromAsTable());
+            // 处理FROM之前的SQL部分
+            if (!isRootSql) {
+                sqlBuilder.append(beforeFrom);
+                if (hasMultipleChildren && hasFromAsTable) {
+                    sqlBuilder.append("FROM((");
+                } else {
+                    sqlBuilder.append("FROM(");
                 }
             }
-            //子查询递归拼接格式为：(sql) union|,|union all (sql)
+            // 递归处理子查询
             for (int i = 0; i < childs.size(); i++) {
-                SQLTree cnode = childs.get(i);
-                if (i == 0) {
-                    pair.setFirst(pair.getFirst().concat(" ("));
-                } else {
-                    pair.setFirst(pair.getFirst().concat(" " + cnode.getUnionType() + " ("));
+                SQLTree childNode = childs.get(i);
+                // 添加UNION类型（第一个子查询不需要）
+                if (i > 0 && StringUtils.isNotEmpty(childNode.getUnionType())) {
+                    sqlBuilder.append(" ").append(childNode.getUnionType());
                 }
-                if (CollectionUtils.isNotEmpty(cnode.getChilds())) {
-                    pair = recurSql(cnode, pair);
+                sqlBuilder.append(" (");
+                // 递归处理子节点
+                if (CollectionUtils.isNotEmpty(childNode.getChilds())) {
+                    Pair<String, Object[]> childPair = recurSql(childNode, new Pair<>("", new Object[]{}));
+                    sqlBuilder.append(childPair.getFirst());
+                    if (childPair.getSecond() != null) {
+                        Collections.addAll(paramsList, childPair.getSecond());
+                    }
                 } else {
-                    pair.setFirst(pair.getFirst().concat(cnode.getId()));
-                    pair.setFirst(pair.getFirst().replace(cnode.getId(), cnode.getSql()));
-                    pair.setSecond(ArrayUtils.addAll(pair.getSecond(), cnode.getParams()));
-                }
-                if (StringUtils.isNotEmpty(cnode.getAsTable())) {
-                    pair.setFirst(pair.getFirst().concat(") " + cnode.getAsTable() + ""));
-                } else {
-                    pair.setFirst(pair.getFirst().concat(")"));
-                }
-            }
-            if (sqlTree.getChilds().size() > 1 && StringUtils.isNotEmpty(sqlTree.getFromAsTable())) {
-                //根节点sql不会存在from(String asTable,SQL c)这种查询方式
-                if (!isRootSql) {
-                    if (StringUtils.isNotEmpty(sqlTree.getFromAsTable())) {
-                        pair.setFirst(pair.getFirst().concat(") " + sqlTree.getFromAsTable() + " )" + arr[1]));
-                    } else {
-                        pair.setFirst(pair.getFirst().concat("))" + arr[1]));
+                    sqlBuilder.append(childNode.getSql());
+                    if (childNode.getParams() != null) {
+                        Collections.addAll(paramsList, childNode.getParams());
                     }
                 }
-            } else {
-                if (!isRootSql) {
-                    if (StringUtils.isNotEmpty(sqlTree.getFromAsTable())) {
-                        pair.setFirst(pair.getFirst().concat(" " + sqlTree.getFromAsTable() + " )" + arr[1]));
-                    } else {
-                        pair.setFirst(pair.getFirst().concat(")" + arr[1]));
-                    }
+                sqlBuilder.append(")");
+                if (StringUtils.isNotEmpty(childNode.getAsTable())) {
+                    sqlBuilder.append(" ").append(childNode.getAsTable());
                 }
             }
-            pair.setSecond(ArrayUtils.addAll(pair.getSecond(), sqlTree.getParams()));
+            // 处理FROM之后的SQL部分
+            if (!isRootSql) {
+                if (hasMultipleChildren && hasFromAsTable) {
+                    sqlBuilder.append(") ").append(sqlTree.getFromAsTable()).append(" )");
+                } else if (hasFromAsTable) {
+                    sqlBuilder.append(" ").append(sqlTree.getFromAsTable()).append(" )");
+                } else {
+                    sqlBuilder.append(")");
+                }
+                sqlBuilder.append(afterFrom);
+            }
+            // 添加当前节点的参数
+            if (sqlTree.getParams() != null) {
+                Collections.addAll(paramsList, sqlTree.getParams());
+            }
         } else {
-            pair.setFirst(pair.getFirst().concat(sqlTree.getSql()));
-            pair.setSecond(ArrayUtils.addAll(pair.getSecond(), sqlTree.getParams()));
+            // 叶子节点：直接添加SQL和参数
+            sqlBuilder.append(sqlTree.getSql());
+            if (sqlTree.getParams() != null) {
+                Collections.addAll(paramsList, sqlTree.getParams());
+            }
         }
-        return pair;
+        // 转换为数组返回
+        return new Pair<>(sqlBuilder.toString(), paramsList.toArray());
     }
 
 }
