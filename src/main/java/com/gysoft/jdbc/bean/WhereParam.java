@@ -56,11 +56,6 @@ public class WhereParam {
         this.value = value;
     }
 
-    WhereParam(String key, OptEnum optEnum, Object value) {
-        this.key = key;
-        this.optEnum = optEnum;
-        this.value = value;
-    }
 
     WhereParam(String key) {
         this.key = key;

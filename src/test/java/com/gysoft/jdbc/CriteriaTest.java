@@ -701,6 +701,11 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
+
+        sql = new SQL().select("*").from("table_1123").and(Where.where("a").equal(1).and("b").equal(2).or("c").equal(3).and("d").equal(4));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
 
 
