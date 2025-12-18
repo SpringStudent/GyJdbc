@@ -35,7 +35,7 @@ public class CriteriaTest {
         criteria.orLike("likeKey", "thisi s p lsa");
         criteria.orBetweenAnd("btad", 19920928, 20190321);
         criteria.orLike("okd", "s123").orLike(Token::getTk, "sd");
-        criteria.orLikeIfAbsent("dsa", "").orLikeIfAbsent(Token::getTk, "111");
+        criteria.orLikeIfAbsent("dsa", "11").orLikeIfAbsent(Token::getTk, "111");
         criteria.in("password", Arrays.asList("1234567890", "111111"));
         criteria.andCriteria(new Criteria().betweenAnd("stdate", "2019-01-02", "2019-04-09").and("realName", "like", "%" + "周宁" + "%").or("userName", "in", Arrays.asList("zhou", "he")));
         criteria.orCriteria(new Criteria().where("ppid", "12305").orBetweenAnd("birt", "2019-12-02", "2020-12-11").and("special", "TJ").andCriteria(new Criteria().where("roleId", 123).and("pid", 1119).andCriteria(new Criteria().where("key", 123).orCriteria(new Criteria().where("hh", 3).or("mm", 4231)))));
@@ -53,7 +53,7 @@ public class CriteriaTest {
         criteria.likeL("likeL","毛弹头");
         criteria.likeLIfAbsent("likeL","毛弹头");
         criteria.likeLIfAbsent(Token::getTk,"毛弹头");
-        criteria.likeLIfAbsent("likeL","");
+        criteria.likeLIfAbsent("likeLL","xxx");
         criteria.likeR("likeR","毛弹头");
         criteria.likeRIfAbsent("likeR","毛弹头");
         criteria.likeRIfAbsent(Token::getTk,"毛弹头");

@@ -76,7 +76,7 @@ public class Joins {
         }
 
         public On andIfAbsent(String key, String opt, Object value) {
-            if (AuxiliaryOperation.getDefaultPredicate(value).test(value)) {
+            if (AuxiliaryOperation.getDefaultPredicate().test(value)) {
                 return and(key, opt, value);
             }
             return this;
