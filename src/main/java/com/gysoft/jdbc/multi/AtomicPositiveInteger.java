@@ -1,5 +1,7 @@
 package com.gysoft.jdbc.multi;
 
+import com.gysoft.jdbc.bean.GyjdbcException;
+
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
@@ -29,7 +31,7 @@ public class AtomicPositiveInteger extends Number {
 
     public final void set(int newValue) {
         if (newValue < 0) {
-            throw new IllegalArgumentException("new value " + newValue + " < 0");
+            throw new GyjdbcException("new value " + newValue + " < 0");
         }
         indexUpdater.set(this, newValue);
     }

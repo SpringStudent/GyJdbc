@@ -42,7 +42,7 @@ public interface TypeFunction<T, R> extends Serializable, Function<T, R> {
                 return EntityTools.transferColumnName(fieldName);
             }
         } catch (ReflectiveOperationException e) {
-            throw new IllegalArgumentException(e);
+            throw new GyjdbcException(e);
         }
     }
 }

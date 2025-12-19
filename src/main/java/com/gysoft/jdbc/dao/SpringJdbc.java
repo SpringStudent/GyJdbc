@@ -1,21 +1,18 @@
 package com.gysoft.jdbc.dao;
 
+import com.gysoft.jdbc.bean.GyjdbcException;
 import com.gysoft.jdbc.bean.Page;
 import com.gysoft.jdbc.bean.PageResult;
-import java.math.BigDecimal;
-import java.sql.*;
-import java.util.*;
-import java.util.Date;
 import org.apache.commons.lang.ArrayUtils;
 import org.springframework.dao.support.DataAccessUtils;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.ConnectionCallback;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.ResultSetExtractor;
-import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.*;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterUtils;
-import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.sql.*;
+import java.util.Date;
+import java.util.*;
 
 /**
  * @author 周宁
@@ -94,7 +91,7 @@ public class SpringJdbc implements ISpringJdbc {
         }
         int index = sql.toLowerCase().indexOf("values");
         if (index == -1) {
-            throw new RuntimeException("此sql语句不能执行批量插入操作");
+            throw new GyjdbcException("此sql语句不能执行批量插入操作");
         }
         index = sql.indexOf("(", index);// 查找values后第一个左括号位置
         String sqlLeft = sql.substring(0, index);
@@ -355,7 +352,7 @@ public class SpringJdbc implements ISpringJdbc {
             if (arg.getClass().isArray()) {
                 Object[] array = (Object[]) arg;
                 if (array.length == 0) {
-                    throw new RuntimeException("Array param can not be empty!");
+                    throw new GyjdbcException("Array param can not be empty!");
                 }
                 Integer type = null;
                 for (Object obj : array) {
@@ -371,7 +368,7 @@ public class SpringJdbc implements ISpringJdbc {
             } else if (Collection.class.isAssignableFrom(arg.getClass())) {
                 Collection<?> list = (Collection<?>) arg;
                 if (list.size() == 0) {
-                    throw new RuntimeException("Collection param can not be empty!");
+                    throw new GyjdbcException("Collection param can not be empty!");
                 }
                 Integer type = null;
                 for (Object obj : list) {
@@ -401,7 +398,7 @@ public class SpringJdbc implements ISpringJdbc {
                     count++;
                     index = sqls.indexOf("?", index + 1);
                     if (index == -1) {
-                        throw new RuntimeException("Paramater size > '?' size!");
+                        throw new GyjdbcException("Paramater size > '?' size!");
                     }
                     if (paramIndex == count) {
                         sqlb.append(sqls.substring(0, index)).append((String) obj[1]);
@@ -470,7 +467,7 @@ public class SpringJdbc implements ISpringJdbc {
         } else if (BigDecimal.class.equals(arg.getClass())) {
             ps.setBigDecimal(i, (BigDecimal) arg);
         } else {
-            throw new SQLException("参数" + i + "属于未知的参数类型！");
+            throw new GyjdbcException("参数" + i + "属于未知的参数类型！");
         }
     }
 

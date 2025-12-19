@@ -182,7 +182,7 @@ public class Column {
         if (meta.getJdbcType().equals(JDBCType.OTHER)) {
             return "other";
         }
-        throw new IllegalArgumentException("unknown jdbcType");
+        throw new GyjdbcException("unknown jdbcType");
     }
 
 

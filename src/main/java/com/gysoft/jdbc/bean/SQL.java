@@ -478,7 +478,7 @@ public class SQL extends AbstractCriteria<SQL> {
         if (as instanceof Joins.On) {
             ((Joins.On) as).and(field, opt, field2);
         } else {
-            throw new RuntimeException("the sql has no join condition");
+            throw new GyjdbcException("the sql has no join condition");
         }
         return this;
     }

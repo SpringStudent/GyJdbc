@@ -1,5 +1,6 @@
 package com.gysoft.jdbc.tools;
 
+import com.gysoft.jdbc.bean.GyjdbcException;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ public class CollectionUtil {
      */
     public static <T> List<T>[] slice(List<T> c, int size) {
         if (size < 1) {
-            throw new IllegalArgumentException("无效的size:" + size);
+            throw new GyjdbcException("无效的size:" + size);
         }
         if (CollectionUtils.isEmpty(c)) {
             return new List[0];
