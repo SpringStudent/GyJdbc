@@ -93,7 +93,7 @@ public class SqlMakeTools {
                     fields[i].setAccessible(true); // 暴力反射
                     args[i] = fields[i].get(entity);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    throw new GyjdbcException(e);
                 }
             }
             return args;
@@ -111,7 +111,7 @@ public class SqlMakeTools {
                     args[j] = fields[i].get(entity);
                     j++;
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    throw new GyjdbcException(e);
                 }
             }
             args[args.length - 1] = primaryValue;
@@ -126,14 +126,14 @@ public class SqlMakeTools {
                         break;
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    throw new GyjdbcException(e);
                 }
             }
             Object[] args = new Object[1]; // 长度是1
             try {
                 args[0] = primaryValue;
             } catch (Exception e) {
-                e.printStackTrace();
+                throw new GyjdbcException(e);
             }
             return args;
         }
@@ -158,7 +158,7 @@ public class SqlMakeTools {
                     argTypes[i] = getTypes(fields[i]);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                throw new GyjdbcException(e);
             }
             return argTypes;
         } else if (sqlFlag.equals(SQL_UPDATE)) {
@@ -172,7 +172,7 @@ public class SqlMakeTools {
                 argTypes[argTypes.length - 1] = tempArgTypes[0];
 
             } catch (Exception e) {
-                e.printStackTrace();
+                throw new GyjdbcException(e);
             }
             return argTypes;
 
@@ -181,7 +181,7 @@ public class SqlMakeTools {
             try {
                 argTypes[0] = getTypes(fields[0]);
             } catch (Exception e) {
-                e.printStackTrace();
+                throw new GyjdbcException(e);
             }
             return argTypes;
         }

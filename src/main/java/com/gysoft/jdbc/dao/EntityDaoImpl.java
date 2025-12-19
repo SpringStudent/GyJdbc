@@ -1,18 +1,7 @@
 package com.gysoft.jdbc.dao;
 
 
-import com.gysoft.jdbc.bean.ColumnMeta;
-import com.gysoft.jdbc.bean.Criteria;
-import com.gysoft.jdbc.bean.FieldReference;
-import com.gysoft.jdbc.bean.IndexMeta;
-import com.gysoft.jdbc.bean.Page;
-import com.gysoft.jdbc.bean.PageResult;
-import com.gysoft.jdbc.bean.Pair;
-import com.gysoft.jdbc.bean.Result;
-import com.gysoft.jdbc.bean.SQL;
-import com.gysoft.jdbc.bean.SQLInterceptor;
-import com.gysoft.jdbc.bean.SQLType;
-import com.gysoft.jdbc.bean.TableMeta;
+import com.gysoft.jdbc.bean.*;
 import com.gysoft.jdbc.multi.DataSourceBind;
 import com.gysoft.jdbc.multi.DataSourceBindHolder;
 import com.gysoft.jdbc.multi.balance.LoadBalance;
@@ -134,7 +123,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         field.setAccessible(true);
         Id id = (Id) ReflectionUtils.getField(field, t);
         if (id == null) {
-            throw new InvalidParameterException("entity primary key must be not null");
+            throw new GyjdbcException("entity primary key must be not null");
         }
         if (this.queryOne(id) == null) {
             this.save(t);
@@ -313,7 +302,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @Override
     public int deleteWithCriteria(Criteria criteria) throws Exception {
         if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
-            throw new RuntimeException("不支持的操作!");
+            throw new GyjdbcException("不支持的操作!");
         }
         String sql = "delete FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
@@ -340,7 +329,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             try {
                 EntityDaoImpl.this.doAfterBuild(s, objects);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new GyjdbcException(e);
             }
         });
     }
@@ -458,7 +447,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         TableMeta tableMeta = sql.getTableMeta();
         List<ColumnMeta> columns = tableMeta.getColumns();
         if (columns.isEmpty()) {
-            throw new IllegalArgumentException("未指定任何字段");
+            throw new GyjdbcException("未指定任何字段");
         }
         StringBuilder createSql = new StringBuilder();
         List<String> fileds = new ArrayList<>();
@@ -566,7 +555,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             doAfterBuild(dropSql, new Object[]{});
             jdbcTemplate.execute(dropSql);
         } else {
-            throw new RuntimeException("method drunk only support `DROP` AND `TRUNCATE`");
+            throw new GyjdbcException("method drunk only support `DROP` AND `TRUNCATE`");
         }
     }
 

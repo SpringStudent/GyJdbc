@@ -2,6 +2,7 @@ package com.gysoft.jdbc.tools;
 
 import com.gysoft.jdbc.annotation.Column;
 import com.gysoft.jdbc.annotation.Table;
+import com.gysoft.jdbc.bean.GyjdbcException;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.util.ReflectionUtils;
 
@@ -104,12 +105,8 @@ public class EntityTools {
                         if (me.getName().equals("name")) {
                             columnName = me.invoke(anno, null).toString();
                         }
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    } catch (IllegalArgumentException e) {
-                        e.printStackTrace();
-                    } catch (InvocationTargetException e) {
-                        e.printStackTrace();
+                    } catch (Exception e) {
+                        throw new GyjdbcException(e);
                     }
                 }
             }

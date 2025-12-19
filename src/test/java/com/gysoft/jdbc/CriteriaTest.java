@@ -563,7 +563,7 @@ public class CriteriaTest {
                 .leftJoin(new Joins().with(
                         new SQL().select("t1.projectId,t1.investmentStatus").from("project_progress").as("t1")
                                 .innerJoin(new Joins().with(new SQL().select("projectId,max(createTime) createTime").from("project_progress").groupBy("projectId"))
-                                        .as("t2").on("t1.createTime", "t2.createTime").and("t1.projectId", new FieldReference("t2.projectId")))
+                                        .as("t2").on("t1.createTime", "t2.createTime").and("t1.projectId", new FieldReference("t2.projectId")).and("tt",111))
                 )
                         .as("t3").on("t0.id", "t3.projectId"));
         pair = SqlMakeTools.useSql(sql);

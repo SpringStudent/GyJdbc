@@ -58,7 +58,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     public S where(String[] keys, String opt, Object value) {
         if (keys == null || keys.length == 0) {
-            throw new IllegalArgumentException("keys cannot be null or []");
+            throw new GyjdbcException("keys cannot be null or []");
         }
         if (keys.length == 1) {
             return this.where(keys[0], opt, value);
@@ -228,7 +228,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     public S or(String key, String opt, Object value) {
         if (CollectionUtils.isEmpty(this.whereParams)) {
-            throw new IllegalArgumentException("sql error,condition \"or\" must be following after \"where\"!");
+            throw new GyjdbcException("sql error,condition \"or\" must be following after \"where\"!");
         }
         return this.where(" OR " + key, opt, value);
     }
@@ -303,7 +303,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     public S orCriteria(Criteria criteria) {
         if (CollectionUtils.isEmpty(whereParams)) {
-            throw new IllegalArgumentException("sql error,condition \"orCriteria\" must be following after \"where\"!");
+            throw new GyjdbcException("sql error,condition \"orCriteria\" must be following after \"where\"!");
         }
         return criteria(criteria, "OR");
     }
@@ -408,7 +408,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     private S criteria(Criteria criteria, String criteriaType) {
         if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
-            throw new IllegalArgumentException("unsupport doCriteria operate");
+            throw new GyjdbcException("unsupport doCriteria operate");
         }
         //如果子查询中的子查询条件为空直接返回
         if (CollectionUtils.isEmpty(criteria.getWhereParams())) {
