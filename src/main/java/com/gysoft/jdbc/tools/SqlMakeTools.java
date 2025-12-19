@@ -529,21 +529,23 @@ public class SqlMakeTools {
         if (sqlObj.getSqlType().equals(EntityDao.SQL_UPDATE)) {
             sql.append(" SET ");
             List<Pair> kvs = sqlObj.getKvs();
-            for (int i = 0; i < kvs.size(); i++) {
-                Pair p = kvs.get(i);
-                if (p.getSecond() instanceof FieldReference) {
-                    FieldReference fieldReference = (FieldReference) p.getSecond();
-                    sql.append(p.getFirst() + " = " + fieldReference.getField() + ", ");
-                } else if (p.getSecond() instanceof SQL) {
-                    Pair<String, Object[]> updatePair = useSql((SQL) p.getSecond());
-                    sql.append(p.getFirst() + " = (" + updatePair.getFirst() + "), ");
-                    params = ArrayUtils.addAll(params, updatePair.getSecond());
-                } else {
-                    sql.append(p.getFirst() + " = ?, ");
-                    params = ArrayUtils.add(params, p.getSecond());
+            if (CollectionUtils.isNotEmpty(kvs)) {
+                for (int i = 0; i < kvs.size(); i++) {
+                    Pair p = kvs.get(i);
+                    if (p.getSecond() instanceof FieldReference) {
+                        FieldReference fieldReference = (FieldReference) p.getSecond();
+                        sql.append(p.getFirst() + " = " + fieldReference.getField() + ", ");
+                    } else if (p.getSecond() instanceof SQL) {
+                        Pair<String, Object[]> updatePair = useSql((SQL) p.getSecond());
+                        sql.append(p.getFirst() + " = (" + updatePair.getFirst() + "), ");
+                        params = ArrayUtils.addAll(params, updatePair.getSecond());
+                    } else {
+                        sql.append(p.getFirst() + " = ?, ");
+                        params = ArrayUtils.add(params, p.getSecond());
+                    }
                 }
+                sql.setLength(sql.length() - 2);
             }
-            sql.setLength(sql.length() - 2);
         }
         //组装条件
         pair = doCriteria(sqlObj, sql);
