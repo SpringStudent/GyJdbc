@@ -115,6 +115,9 @@ public class Column {
     }
 
     private String dataType(ColumnMeta meta) {
+        if (meta.getJdbcType() == null) {
+            throw new GyjdbcException("JDBCType is null");
+        }
         if (meta.getJdbcType().equals(JDBCType.CHAR)) {
             return "char(" + meta.getLength() + ")";
         }
@@ -131,7 +134,7 @@ public class Column {
             return "date";
         }
         if (meta.getJdbcType().equals(JDBCType.CLOB)) {
-            return "text";
+            return "longtext";
         }
         if (meta.getJdbcType().equals(JDBCType.LONGVARBINARY)) {
             return "longblob";
@@ -164,12 +167,12 @@ public class Column {
             }
         }
         if (meta.getJdbcType().equals(JDBCType.BOOLEAN)) {
-            return "tinyint";
+            return "tinyint(1)";
         }
-        if (meta.getJdbcType().equals(JDBCType.NUMERIC)) {
-            return "decimal(" + meta.getPrecision() + "," + meta.getScale() + ")";
-        }
-        if (meta.getJdbcType().equals(JDBCType.DECIMAL)) {
+        if (meta.getJdbcType().equals(JDBCType.NUMERIC) || meta.getJdbcType().equals(JDBCType.DECIMAL)) {
+            if (meta.getPrecision() <= 0 || meta.getScale() < 0) {
+                return "decimal(10,0)";
+            }
             return "decimal(" + meta.getPrecision() + "," + meta.getScale() + ")";
         }
         if (meta.getJdbcType().equals(JDBCType.DOUBLE)) {
@@ -180,7 +183,7 @@ public class Column {
             }
         }
         if (meta.getJdbcType().equals(JDBCType.OTHER)) {
-            return "other";
+            return "json";
         }
         throw new GyjdbcException("unknown jdbcType");
     }
