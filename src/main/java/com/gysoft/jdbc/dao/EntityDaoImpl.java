@@ -468,7 +468,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         columns.forEach(columnMeta -> {
             createSql.append(EntityTools.transferColumnName(columnMeta.getName()));
             fileds.add(EntityTools.transferColumnName(columnMeta.getName()));
-            createSql.append(columnMeta.getDataType());
+            createSql.append(" ").append(columnMeta.getDataType());
             if (columnMeta.isNotNull()) {
                 createSql.append(" not null");
             }
@@ -494,10 +494,10 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         //索引
         List<IndexMeta> indexMetas = tableMeta.getIndexs();
         indexMetas.forEach(indexMeta -> {
-            createSql.append((indexMeta.isUnique() ? "unique" : "") + " key" + (
+            createSql.append((indexMeta.isUnique() ? "unique" : "") + " key " + (
                     indexMeta.getIndexName() == null ? EntityTools
                             .transferColumnName(indexMeta.getColumnNames().iterator().next())
-                            : EntityTools.transferColumnName(indexMeta.getIndexName())) + "(");
+                            : EntityTools.transferColumnName(indexMeta.getIndexName())) + " (");
             indexMeta.getColumnNames().forEach(cc -> {
                 createSql.append(EntityTools.transferColumnName(cc));
                 createSql.append(",");
