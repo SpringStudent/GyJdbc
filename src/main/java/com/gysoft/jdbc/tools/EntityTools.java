@@ -121,4 +121,11 @@ public class EntityTools {
         }
         return columnName;
     }
+
+    public static String transferFieldName(String fieldName) {
+        if (fieldName.startsWith("`") && fieldName.endsWith("`")) {
+            return fieldName.substring(1, fieldName.length() - 1);
+        }
+        return fieldName;
+    }
 }

@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -496,7 +497,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         indexMetas.forEach(indexMeta -> {
             createSql.append((indexMeta.isUnique() ? "unique" : "") + " key " + (
                     indexMeta.getIndexName() == null ? EntityTools
-                            .transferColumnName(indexMeta.getColumnNames().iterator().next())
+                            .transferColumnName("ix_" + indexMeta.getColumnNames().stream().map(cName -> EntityTools.transferFieldName(cName)).collect(Collectors.joining("_")))
                             : EntityTools.transferColumnName(indexMeta.getIndexName())) + " (");
             indexMeta.getColumnNames().forEach(cc -> {
                 createSql.append(EntityTools.transferColumnName(cc));
