@@ -19,7 +19,7 @@ public class TableMeta {
     /**
      * 引擎类型
      */
-    private TableEngine engine;
+    private TableEnum.Engine engine;
     /**
      * 是否为临时表
      */
@@ -28,6 +28,30 @@ public class TableMeta {
      * 是否判断表的存在与否
      */
     private boolean ifNotExists;
+
+    /**
+     * 字符集 (例如: utf8mb4)
+     * 对应 SQL: DEFAULT CHARSET=utf8mb4
+     */
+    private String characterSet;
+
+    /**
+     * 排序规则 (例如: utf8mb4_general_ci)
+     * 对应 SQL: COLLATE=utf8mb4_general_ci
+     */
+    private String collation;
+
+    /**
+     * 自增主键起始值
+     * 对应 SQL: AUTO_INCREMENT=1000
+     */
+    private Long autoIncrement;
+
+    /**
+     * 行格式 (例如: DYNAMIC, COMPRESSED, FIXED)
+     * 对应 SQL: ROW_FORMAT=DYNAMIC
+     */
+    private TableEnum.RowFormat rowFormat;
 
     private List<ColumnMeta> columns = new ArrayList<>();
 
@@ -49,11 +73,11 @@ public class TableMeta {
         this.comment = comment;
     }
 
-    public TableEngine getEngine() {
+    public TableEnum.Engine getEngine() {
         return engine;
     }
 
-    public void setEngine(TableEngine engine) {
+    public void setEngine(TableEnum.Engine engine) {
         this.engine = engine;
     }
 
@@ -87,5 +111,37 @@ public class TableMeta {
 
     public void setIfNotExists(boolean ifNotExists) {
         this.ifNotExists = ifNotExists;
+    }
+
+    public String getCharacterSet() {
+        return characterSet;
+    }
+
+    public void setCharacterSet(String characterSet) {
+        this.characterSet = characterSet;
+    }
+
+    public String getCollation() {
+        return collation;
+    }
+
+    public void setCollation(String collation) {
+        this.collation = collation;
+    }
+
+    public Long getAutoIncrement() {
+        return autoIncrement;
+    }
+
+    public void setAutoIncrement(Long autoIncrement) {
+        this.autoIncrement = autoIncrement;
+    }
+
+    public TableEnum.RowFormat getRowFormat() {
+        return rowFormat;
+    }
+
+    public void setRowFormat(TableEnum.RowFormat rowFormat) {
+        this.rowFormat = rowFormat;
     }
 }

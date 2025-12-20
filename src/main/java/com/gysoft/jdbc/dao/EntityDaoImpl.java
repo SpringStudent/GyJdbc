@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -465,37 +466,43 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             createSql.append("IF NOT EXISTS ");
         }
         createSql.append(tbName);
-        createSql.append("(");
+        createSql.append(" (");
+        AtomicBoolean hasAutoIncrField = new AtomicBoolean(false);
+        //字段
         columns.forEach(columnMeta -> {
             createSql.append(EntityTools.transferColumnName(columnMeta.getName()));
             fileds.add(EntityTools.transferColumnName(columnMeta.getName()));
             createSql.append(" ").append(columnMeta.getDataType());
             if (columnMeta.isNotNull()) {
-                createSql.append(" not null");
+                createSql.append(" NOT NULL");
             }
             if (columnMeta.isPrimaryKey()) {
-                createSql.append(" primary key");
+                createSql.append(" PRIMARY KEY");
                 if (columnMeta.isAutoIncr()) {
-                    createSql.append(" auto_increment");
+                    createSql.append(" AUTO_INCREMENT");
+                    hasAutoIncrField.set(true);
                 }
             }
             if (columnMeta.getVal() != null) {
+                String upperVal = columnMeta.getVal().toUpperCase();
                 if (columnMeta.getJdbcType().equals(JDBCType.TIMESTAMP)
-                        || columnMeta.getVal().toLowerCase().equals("null")) {
-                    createSql.append(String.format(" default %s", (columnMeta.getVal())));
+                        || "NULL".equals(upperVal)
+                        || "CURRENT_TIMESTAMP".equals(upperVal)
+                        || upperVal.contains("()")) {
+                    createSql.append(String.format(" DEFAULT %s", (columnMeta.getVal())));
                 } else {
-                    createSql.append(String.format(" default '%s'", (columnMeta.getVal())));
+                    createSql.append(String.format(" DEFAULT '%s'", (columnMeta.getVal())));
                 }
             }
             if (StringUtils.isNotEmpty(columnMeta.getComment())) {
-                createSql.append(String.format(" comment '%s'", columnMeta.getComment()));
+                createSql.append(String.format(" COMMENT '%s'", columnMeta.getComment()));
             }
             createSql.append(",");
         });
         //索引
         List<IndexMeta> indexMetas = tableMeta.getIndexs();
         indexMetas.forEach(indexMeta -> {
-            createSql.append((indexMeta.isUnique() ? "unique" : "") + " key " + (
+            createSql.append((indexMeta.isUnique() ? "UNIQUE" : "") + " KEY " + (
                     indexMeta.getIndexName() == null ? EntityTools
                             .transferColumnName("ix_" + indexMeta.getColumnNames().stream().map(cName -> EntityTools.transferFieldName(cName)).collect(Collectors.joining("_")))
                             : EntityTools.transferColumnName(indexMeta.getIndexName())) + " (");
@@ -514,9 +521,27 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             createSql.append(",");
         });
         createSql.setLength(createSql.length() - 1);
-        createSql.append(")ENGINE = " + tableMeta.getEngine() + " CHARSET=utf8 ");
+        createSql.append(")");
+        //表元数据
+        if (tableMeta.getEngine() != null) {
+            createSql.append(" ENGINE=").append(tableMeta.getEngine());
+        }
+        if (StringUtils.isNotEmpty(tableMeta.getCharacterSet())) {
+            createSql.append(" DEFAULT CHARSET=").append(tableMeta.getCharacterSet());
+        } else {
+            createSql.append(" DEFAULT CHARSET=utf8mb4");
+        }
+        if (StringUtils.isNotEmpty(tableMeta.getCollation())) {
+            createSql.append(" COLLATE=").append(tableMeta.getCollation());
+        }
+        if (tableMeta.getAutoIncrement() != null && hasAutoIncrField.get()) {
+            createSql.append(" AUTO_INCREMENT=").append(tableMeta.getAutoIncrement());
+        }
+        if (tableMeta.getRowFormat() != null) {
+            createSql.append(" ROW_FORMAT=").append(tableMeta.getRowFormat());
+        }
         if (StringUtils.isNotEmpty(tableMeta.getComment())) {
-            createSql.append("COMMENT=" + "'" + tableMeta.getComment() + "'");
+            createSql.append(" COMMENT=" + "'" + tableMeta.getComment() + "'");
         }
         doAfterBuild(createSql.toString(), new Object[]{});
         jdbcTemplate.execute(createSql.toString());

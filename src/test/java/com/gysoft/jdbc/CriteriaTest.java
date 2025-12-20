@@ -7,14 +7,9 @@ import com.gysoft.jdbc.dao.EntityDaoImpl;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.lang.ArrayUtils;
 import org.junit.Test;
-import org.springframework.util.ReflectionUtils;
 
-import java.lang.reflect.Field;
 import java.sql.JDBCType;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
 import static com.gysoft.jdbc.dao.EntityDao.SQL_INSERT;
@@ -225,7 +220,7 @@ public class CriteriaTest {
                 .column().name("birthday").datetime().notNull().defaultCurrentTimestamp().commit()
                 .index().unique().column("name", "age").name("ix_name_age").commit()
                 .index().name("ix_name").column("name").commit()
-                .engine(TableEngine.InnoDB).comment("用户").commit()
+                .engine(TableEnum.Engine.InnoDB).utf8mb4().comment("用户").commit()
                 .values(1, "zhou", 23)
                 .values(2, "peng", 24)
                 .values(3, "wei", 25);
