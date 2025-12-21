@@ -5,6 +5,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -306,6 +307,18 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
             throw new GyjdbcException("sql error,condition \"orCriteria\" must be following after \"where\"!");
         }
         return criteria(criteria, "OR");
+    }
+
+    public S andCriteria(Consumer<Criteria> consumer) {
+        Criteria sub = new Criteria();
+        consumer.accept(sub);
+        return andCriteria(sub);
+    }
+
+    public S orCriteria(Consumer<Criteria> consumer) {
+        Criteria sub = new Criteria();
+        consumer.accept(sub);
+        return orCriteria(sub);
     }
 
     public S and(Where where) {
