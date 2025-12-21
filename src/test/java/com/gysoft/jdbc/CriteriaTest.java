@@ -701,7 +701,13 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL().select("*").from("table111").innerJoin("table222","b",c->c.on("table111.id","b.id").and("b.name","=","testname"))
+                .leftJoin("table333","c",c->c.on(Role::getName,Token::getTk).on("table111.id","c.id").and("c.type",">",2))
+                .rightJoin("table444","d",c->c.on("table111.id","d.id").and("d.status","=","active"))
+                .where("table111.flag",1).andCriteria(c->c.where("table111.type","A").or("table111.type","B"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
-
 
 }

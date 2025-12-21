@@ -375,9 +375,17 @@ public class SQL extends AbstractCriteria<SQL> {
         return join(on);
     }
 
+    public SQL leftJoin(Object table, String alias, Consumer<Joins.On> joinConsumer) {
+        return join(table, alias, joinConsumer, JoinType.LeftJoin);
+    }
+
     public SQL rightJoin(Joins.On on) {
         on.setJoinType(JoinType.RightJoin);
         return join(on);
+    }
+
+    public SQL rightJoin(Object table, String alias, Consumer<Joins.On> joinConsumer) {
+        return join(table, alias, joinConsumer, JoinType.RightJoin);
     }
 
     public SQL innerJoin(Joins.On on) {
@@ -385,6 +393,9 @@ public class SQL extends AbstractCriteria<SQL> {
         return join(on);
     }
 
+    public SQL innerJoin(Object table, String alias, Consumer<Joins.On> joinConsumer) {
+        return join(table, alias, joinConsumer, JoinType.InnerJoin);
+    }
 
     public SQL natureJoin(Joins.BaseJoin as) {
         as.setJoinType(JoinType.NatureJoin);
@@ -394,6 +405,21 @@ public class SQL extends AbstractCriteria<SQL> {
 
     private SQL join(Joins.On join) {
         joins.add(join);
+        return this;
+    }
+
+    public SQL join(Object table, String alias, Consumer<Joins.On> joinConsumer, JoinType joinType) {
+        Joins.As as = null;
+        if (table instanceof Class) {
+            as = new Joins().with((Class) table).as(alias);
+        } else if (table instanceof String) {
+            as = new Joins().with((String) table).as(alias);
+        } else if (table instanceof SQL) {
+            as = new Joins().with((SQL) table).as(alias);
+        }
+        as.setJoinType(joinType);
+        joinConsumer.accept(as.on());
+        joins.add(as);
         return this;
     }
 

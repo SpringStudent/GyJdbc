@@ -23,7 +23,7 @@ public class Joins {
         }
 
         public StringBuilder getJoinSql() {
-            return joinSql;
+            return new StringBuilder(joinSql.toString().replace("ON  AND", "ON"));
         }
 
         public List<CriteriaProxy> getCriteriaProxys() {
@@ -48,6 +48,15 @@ public class Joins {
             joinSql.append(" ON " + field + " = " + field2 + " ");
             return getOn();
         }
+
+        public <T, R, M, P> On on(TypeFunction<T, R> function, TypeFunction<M, P> function2) {
+            return this.on(TypeFunction.getLambdaColumnName(function), TypeFunction.getLambdaColumnName(function2));
+        }
+
+        On on() {
+            joinSql.append(" ON ");
+            return getOn();
+        }
     }
 
     public class On extends BaseJoin {
@@ -56,8 +65,20 @@ public class Joins {
             return this;
         }
 
+        public <T, R, M, P> On on(TypeFunction<T, R> function, TypeFunction<M, P> function2) {
+            return this.on(TypeFunction.getLambdaColumnName(function), TypeFunction.getLambdaColumnName(function2));
+        }
+
+        public <T, R> On and(TypeFunction<T, R> function, Object value) {
+            return this.and(TypeFunction.getLambdaColumnName(function), "=", value);
+        }
+
         public On and(String key, Object value) {
-            return this.and(key,"=",value);
+            return this.and(key, "=", value);
+        }
+
+        public <T, R> On and(TypeFunction<T, R> function, String opt, Object value) {
+            return this.and(TypeFunction.getLambdaColumnName(function), opt, value);
         }
 
         public On and(String key, String opt, Object value) {
@@ -72,7 +93,7 @@ public class Joins {
         }
 
         public On andIfAbsent(String key, Object value) {
-            return this.andIfAbsent(key,"=",value);
+            return this.andIfAbsent(key, "=", value);
         }
 
         public On andIfAbsent(String key, String opt, Object value) {
@@ -83,7 +104,7 @@ public class Joins {
         }
 
         public On andIfAbsent(String key, Object value, Predicate<Object> predicate) {
-           return this.andIfAbsent(key, "=", value, predicate);
+            return this.andIfAbsent(key, "=", value, predicate);
         }
 
         public On andIfAbsent(String key, String opt, Object value, Predicate<Object> predicate) {
