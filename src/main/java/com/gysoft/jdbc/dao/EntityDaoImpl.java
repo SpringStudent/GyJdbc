@@ -389,7 +389,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public int insertWithSql(SQL sql) throws Exception {
-        String originTbName = sql.getTbName();
+        String originTbName = sql.getModifier().tableName();
         String originSqlType = sql.getSqlType();
         try {
             sql.getModifier().changeTableName(sql.getInsert().getFirst());
