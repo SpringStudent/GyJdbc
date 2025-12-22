@@ -389,58 +389,72 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public int insertWithSql(SQL sql) throws Exception {
-        //插入sql
-        String selectTbName = sql.getTbName();
-        sql.getModifier().changeTableName(sql.getInsert().getFirst());
-        doBeforeBuild(SQLType.Insert, sql);
-        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        String insertSql = pair.getFirst();
-        //待插入数据
-        List<Object[]> params = sql.getInsertValues();
-        List<Pair> kvs = sql.getKvs();
-        int res = 0;
-        if (CollectionUtils.isNotEmpty(params)) {
-            List<Object[]>[] batchs = CollectionUtil.slice(params, BATCH_PAGE_SIZE);
-            for (List<Object[]> batch : batchs) {
-                List<Object> paramList = new ArrayList<>();
-                StringBuilder tempInsertSql = new StringBuilder(insertSql);
-                tempInsertSql.append(" VALUES ");
-                for (Object[] param : batch) {
-                    tempInsertSql.append("(");
-                    for (Object obj : param) {
-                        tempInsertSql.append("?,");
-                        paramList.add(obj);
+        String originTbName = sql.getTbName();
+        String originSqlType = sql.getSqlType();
+        try {
+            sql.getModifier().changeTableName(sql.getInsert().getFirst());
+            doBeforeBuild(SQLType.Insert, sql);
+            Pair<String, Object[]> baseInsertPair = SqlMakeTools.useSql(sql);
+            String baseInsertSql = baseInsertPair.getFirst();
+            List<Object[]> params = sql.getInsertValues();
+            List<Pair> kvs = sql.getKvs();
+            int res = 0;
+            if (CollectionUtils.isNotEmpty(params)) {
+                int colCount = params.get(0).length;
+                String rowPlaceholder = "(" + String.join(",", Collections.nCopies(colCount, "?")) + ")";
+                List<Object[]>[] batchs = CollectionUtil.slice(params, BATCH_PAGE_SIZE);
+                for (List<Object[]> batch : batchs) {
+                    List<Object> paramList = new ArrayList<>();
+                    StringBuilder tempInsertSql = new StringBuilder(baseInsertSql);
+                    tempInsertSql.append(" VALUES ");
+                    // APPEND (?,?)
+                    for (int i = 0; i < batch.size(); i++) {
+                        Object[] param = batch.get(i);
+                        if (param.length != colCount) {
+                            throw new GyjdbcException("Param length not match:expect " + colCount + ",actual " + param.length);
+                        }
+                        tempInsertSql.append(rowPlaceholder);
+                        if (i < batch.size() - 1) {
+                            tempInsertSql.append(",");
+                        }
+                        Collections.addAll(paramList, param);
                     }
-                    tempInsertSql.setLength(tempInsertSql.length() - 1);
-                    tempInsertSql.append("),");
-                }
-                tempInsertSql.setLength(tempInsertSql.length() - 1);
-                if (CollectionUtils.isNotEmpty(kvs)) {
-                    tempInsertSql.append(" ON DUPLICATE KEY UPDATE ");
-                    for (Pair p : kvs) {
-                        if (p.getSecond() instanceof FieldReference) {
-                            FieldReference fieldReference = (FieldReference) p.getSecond();
-                            tempInsertSql.append(p.getFirst() + " = " + fieldReference.getField()
-                                    + ", ");
-                        } else {
-                            tempInsertSql.append(p.getFirst() + " = ?, ");
-                            paramList.add(p.getSecond());
+                    // ON DUPLICATE KEY UPDATE
+                    if (CollectionUtils.isNotEmpty(kvs)) {
+                        tempInsertSql.append(" ON DUPLICATE KEY UPDATE ");
+                        for (int i = 0; i < kvs.size(); i++) {
+                            Pair p = kvs.get(i);
+                            if (p.getSecond() instanceof FieldReference) {
+                                FieldReference fieldRef = (FieldReference) p.getSecond();
+                                tempInsertSql.append(p.getFirst()).append(" = ").append(fieldRef.getField());
+                            } else {
+                                tempInsertSql.append(p.getFirst()).append(" = ?");
+                                paramList.add(p.getSecond());
+                            }
+                            if (i < kvs.size() - 1) {
+                                tempInsertSql.append(", ");
+                            }
                         }
                     }
-                    tempInsertSql.setLength(tempInsertSql.length() - 2);
+                    Object[] finalParams = paramList.toArray();
+                    doAfterBuild(tempInsertSql.toString(), finalParams);
+                    res += jdbcTemplate.update(tempInsertSql.toString(), finalParams);
                 }
-                doAfterBuild(tempInsertSql.toString(), paramList.toArray());
-                res += jdbcTemplate.update(tempInsertSql.toString(), paramList.toArray());
+            } else if (CollectionUtils.isNotEmpty(sql.getSelectFields())) {
+                //insert...select...
+                sql.getModifier().changeSqlType(EntityDao.SQL_SELECT);
+                sql.getModifier().changeTableName(originTbName);
+                Pair<String, Object[]> selectPair = SqlMakeTools.useSql(sql);
+                String finalSql = baseInsertSql + " " + selectPair.getFirst();
+                Object[] finalParams = selectPair.getSecond();
+                doAfterBuild(finalSql, finalParams);
+                res = jdbcTemplate.update(finalSql, finalParams);
             }
-        } else if (CollectionUtils.isNotEmpty(sql.getSelectFields())) {
-            sql.getModifier().changeSqlType(EntityDao.SQL_SELECT);
-            sql.getModifier().changeTableName(selectTbName);
-            Pair<String, Object[]> p = SqlMakeTools.useSql(sql);
-            insertSql += " " + p.getFirst();
-            doAfterBuild(insertSql, p.getSecond());
-            res = jdbcTemplate.update(insertSql, p.getSecond());
+            return res;
+        } finally {
+            sql.getModifier().changeTableName(originTbName);
+            sql.getModifier().changeSqlType(originSqlType);
         }
-        return res;
     }
 
     @Override
