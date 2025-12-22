@@ -411,7 +411,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
                     for (int i = 0; i < batch.size(); i++) {
                         Object[] param = batch.get(i);
                         if (param.length != colCount) {
-                            throw new GyjdbcException("Param length not match:expect " + colCount + ",actual " + param.length);
+                            throw new GyjdbcException("Param length not match");
                         }
                         tempInsertSql.append(rowPlaceholder);
                         if (i < batch.size() - 1) {
@@ -559,7 +559,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         }
         doAfterBuild(createSql.toString(), new Object[]{});
         jdbcTemplate.execute(createSql.toString());
-        //判断是否有数据需要插入
+        //判断是否有数据需要插入,有则插入
         if (CollectionUtils.isNotEmpty(sql.getInsertValues()) || CollectionUtils.isNotEmpty(sql.getSelectFields())) {
             sql.getModifier().changeSqlType(EntityDao.SQL_INSERT);
             sql.getInsert().setFirst(tbName);
