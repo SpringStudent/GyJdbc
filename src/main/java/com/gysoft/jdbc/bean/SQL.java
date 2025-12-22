@@ -403,6 +403,10 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
+    public SQL natureJoin(Object table, String alias, Consumer<Joins.On> joinConsumer) {
+        return join(table, alias, joinConsumer, JoinType.NatureJoin);
+    }
+
     private SQL join(Joins.On join) {
         joins.add(join);
         return this;

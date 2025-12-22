@@ -45,14 +45,14 @@ public class CriteriaTest {
         criteria.orBetweenAnd("sss", "orsdsd", "sda1231").orBetweenAnd("sedTime", "2018-12-02", "2019-11-22");
         criteria.orderBy(new Sort("userName"), new Sort("createTime", "ASC"));
         criteria.groupBy("userName", "id");
-        criteria.likeL("likeL","毛弹头");
-        criteria.likeLIfAbsent("likeL","毛弹头");
-        criteria.likeLIfAbsent(Token::getTk,"毛弹头");
-        criteria.likeLIfAbsent("likeLL","xxx");
-        criteria.likeR("likeR","毛弹头");
-        criteria.likeRIfAbsent("likeR","毛弹头");
-        criteria.likeRIfAbsent(Token::getTk,"毛弹头");
-        criteria.likeRIfAbsent("likeR","");
+        criteria.likeL("likeL", "毛弹头");
+        criteria.likeLIfAbsent("likeL", "毛弹头");
+        criteria.likeLIfAbsent(Token::getTk, "毛弹头");
+        criteria.likeLIfAbsent("likeLL", "xxx");
+        criteria.likeR("likeR", "毛弹头");
+        criteria.likeRIfAbsent("likeR", "毛弹头");
+        criteria.likeRIfAbsent(Token::getTk, "毛弹头");
+        criteria.likeRIfAbsent("likeR", "");
 
         criteria.having(count("asd"), "in", Arrays.asList(1, 2, 3)).limit(1);
         pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(baseSql));
@@ -239,7 +239,7 @@ public class CriteriaTest {
         // INNER JOIN
         // tb_test t2  ON t1.id = t2.id  AND t1.id = ? SET t1.id = ?, t1.id = ? WHERE t1.id IN(?,?)
         sql = new SQL().update("test").as("t1").innerJoin(new Joins().with("tb_test").as("t2")
-                .on("t1.id", "t2.id").and("t1.id", "=", 123)).set("t1.id", "t2.pid")
+                        .on("t1.id", "t2.id").and("t1.id", "=", 123)).set("t1.id", "t2.pid")
                 .set("t1.id", 123).in("t1.id", Arrays.asList("id1", "id2"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
@@ -315,8 +315,8 @@ public class CriteriaTest {
     @Test
     public void testUnionBug() {
         SQL sql = new SQL().select("*").from(new SQL().select("*").from("test").as("t1")
-                .unionAll().select("*").from(new SQL().select("*").from("test2")
-                        .unionAll().select("*").from("test3").where("god", "pls")).as("t2")).as("t3")
+                        .unionAll().select("*").from(new SQL().select("*").from("test2")
+                                .unionAll().select("*").from("test3").where("god", "pls")).as("t2")).as("t3")
                 .union().select("*").from(new SQL().select("*").from("test3")
                         .unionAll().select("*").from(new SQL().select("t5.*").from("test").as("t5")
                                 .leftJoin(new Joins().with("test").as("t6").on("t5.id", "t6.id")
@@ -493,7 +493,7 @@ public class CriteriaTest {
     @Test
     public void finalTest() {
         //delete a,b from flow_instance as a inner join flow_action b on a.id=b.flowInstanceId where b.bizId = ?
-        SQL sql = new SQL().delete("a", "b").from("flow_instance").as("a").innerJoin("flow_action","b").on("a.id", "b.flowInstanceId").where("b.bizId", "id123456");
+        SQL sql = new SQL().delete("a", "b").from("flow_instance").as("a").innerJoin("flow_action", "b").on("a.id", "b.flowInstanceId").where("b.bizId", "id123456");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
@@ -524,8 +524,8 @@ public class CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
         sql = new SQL().select("*").from(new SQL().select("*").from("test").as("t1")
-                .unionAll().select("*").from(new SQL().select("*").from("test2")
-                        .unionAll().select("*").from("test3").where("god", "pls")).as("t2")).as("t3")
+                        .unionAll().select("*").from(new SQL().select("*").from("test2")
+                                .unionAll().select("*").from("test3").where("god", "pls")).as("t2")).as("t3")
                 .union().select("*").from(new SQL().select("*").from("test3")
                         .unionAll().select("*").from(new SQL().select("t5.*").from("test").as("t5")
                                 .leftJoin("test", "t6").on("t5.id", "t6.id").on("t5.id", ">", 1)).as("t7")).as("t4");
@@ -556,10 +556,10 @@ public class CriteriaTest {
         System.out.println(ArrayUtils.toString(pair.getSecond()));
         sql = new SQL().select("t0.id,t0.lon,t0.lat,t3.investmentStatus").from("project").as("t0")
                 .leftJoin(new Joins().with(
-                        new SQL().select("t1.projectId,t1.investmentStatus").from("project_progress").as("t1")
-                                .innerJoin(new Joins().with(new SQL().select("projectId,max(createTime) createTime").from("project_progress").groupBy("projectId"))
-                                        .as("t2").on("t1.createTime", "t2.createTime").and("t1.projectId", new FieldReference("t2.projectId")).and("tt",111))
-                )
+                                new SQL().select("t1.projectId,t1.investmentStatus").from("project_progress").as("t1")
+                                        .innerJoin(new Joins().with(new SQL().select("projectId,max(createTime) createTime").from("project_progress").groupBy("projectId"))
+                                                .as("t2").on("t1.createTime", "t2.createTime").and("t1.projectId", new FieldReference("t2.projectId")).and("tt", 111))
+                        )
                         .as("t3").on("t0.id", "t3.projectId"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
@@ -685,11 +685,11 @@ public class CriteriaTest {
                 .from("project").as("t1")
                 .innerJoin("department", "t2").on("t1.departmentId", "t2.id").on("t2.id", "=", "deptId")
                 .leftJoin("inspect", "t3").on("t1.id", "t3.projectId")
-                .leftJoin("inspect_danger", "t4").on("t3.id", "t4.inspectId").on("t4.dangerStatus", "<>", 2).on("t3.inspectStatus","=", 1)
+                .leftJoin("inspect_danger", "t4").on("t3.id", "t4.inspectId").on("t4.dangerStatus", "<>", 2).on("t3.inspectStatus", "=", 1)
                 .leftJoin(new SQL().select("t6.projectId,t6.investmentStatus").from("project_progress").as("t6")
                                 .innerJoin(new SQL().select("projectId,MAX(createTime) AS lastProgressTime").from("project_progress").groupBy("projectId")
                                         , "t7").on("t6.createTime", "t7.lastProgressTime")
-                        , "t5").on("t1.id", "t5.projectId").on("t5.investmentStatus","=", 1)
+                        , "t5").on("t1.id", "t5.projectId").on("t5.investmentStatus", "=", 1)
                 .where("t1.deleteFlag", 0).likeIfAbsent("t1.projectName", "projName")
                 .groupBy("t1.id", "t1.projectName", "t1.lon", "t1.lat", "t2.`name`", "t5.investmentStatus")
                 .orderBy(new Sort("score", "asc"));
@@ -701,10 +701,11 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
-        sql = new SQL().select("*").from("table111").innerJoin("table222","b",c->c.on("table111.id","b.id").and("b.name","=","testname"))
-                .leftJoin("table333","c",c->c.on(Role::getName,Token::getTk).on("table111.id","c.id").and("c.type",">",2))
-                .rightJoin("table444","d",c->c.on("table111.id","d.id").and("d.status","=","active"))
-                .where("table111.flag",1).andCriteria(c->c.where("table111.type","A").or("table111.type","B"));
+        sql = new SQL().select("*").from("table111").innerJoin("table222", "b", c -> c.on("table111.id", "b.id").and("b.name", "=", "testname"))
+                .leftJoin("table333", "c", c -> c.on(Role::getName, Token::getTk).on("table111.id", "c.id").and("c.type", ">", 2))
+                .rightJoin(Token.class, "d", c -> c.on("table111.id", "d.id").and("d.status", "=", "active"))
+                .natureJoin(Book.class, "e", c -> c.on("table111.id", "e.id"))
+                .where("table111.flag", 1).andCriteria(c -> c.where("table111.type", "A").or("table111.type", "B"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
