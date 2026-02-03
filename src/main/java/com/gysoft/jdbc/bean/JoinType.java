@@ -7,6 +7,7 @@ public enum JoinType {
     LeftJoin("LEFT JOIN"),
     RightJoin("RIGHT JOIN"),
     InnerJoin("INNER JOIN"),
+    @Deprecated
     NatureJoin(",");
 
     private final String type;

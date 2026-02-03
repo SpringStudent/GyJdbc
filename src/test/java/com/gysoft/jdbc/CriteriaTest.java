@@ -705,6 +705,8 @@ public class CriteriaTest {
                 .leftJoin("table333", "c", c -> c.on(Role::getName, Token::getTk).on("table111.id", "c.id").and("c.type", ">", 2))
                 .rightJoin(Token.class, "d", c -> c.on("table111.id", "d.id").and("d.status", "=", "active"))
                 .natureJoin(Book.class, "e", c -> c.on("table111.id", "e.id"))
+                .leftJoin("table444", c -> c.on("table111.id", "f.id").andIfAbsent("f.flag", 1))
+                .rightJoin(Book.class, c -> c.on("table111.id", "g.id").andIfAbsent("g.type", "standard"))
                 .where("table111.flag", 1).andCriteria(c -> c.where("table111.type", "A").or("table111.type", "B"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());

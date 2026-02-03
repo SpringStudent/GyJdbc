@@ -2,6 +2,7 @@ package com.gysoft.jdbc.bean;
 
 import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +34,9 @@ public class Joins {
 
     public class With extends BaseJoin {
         public As as(String aliasName) {
-            joinSql.append(" " + aliasName + " ");
+            if(!StringUtils.isEmpty(aliasName)){
+                joinSql.append(" " + aliasName + " ");
+            }
             return getAs();
         }
 

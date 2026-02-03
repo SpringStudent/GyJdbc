@@ -375,6 +375,10 @@ public class SQL extends AbstractCriteria<SQL> {
         return join(on);
     }
 
+    public SQL leftJoin(Object table, Consumer<Joins.On> joinConsumer) {
+        return join(table, null, joinConsumer, JoinType.LeftJoin);
+    }
+
     public SQL leftJoin(Object table, String alias, Consumer<Joins.On> joinConsumer) {
         return join(table, alias, joinConsumer, JoinType.LeftJoin);
     }
@@ -388,6 +392,10 @@ public class SQL extends AbstractCriteria<SQL> {
         return join(table, alias, joinConsumer, JoinType.RightJoin);
     }
 
+    public SQL rightJoin(Object table,Consumer<Joins.On> joinConsumer) {
+        return join(table, null, joinConsumer, JoinType.RightJoin);
+    }
+
     public SQL innerJoin(Joins.On on) {
         on.setJoinType(JoinType.InnerJoin);
         return join(on);
@@ -395,6 +403,10 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public SQL innerJoin(Object table, String alias, Consumer<Joins.On> joinConsumer) {
         return join(table, alias, joinConsumer, JoinType.InnerJoin);
+    }
+
+    public SQL innerJoin(Object table, Consumer<Joins.On> joinConsumer) {
+        return join(table, null, joinConsumer, JoinType.InnerJoin);
     }
 
     public SQL natureJoin(Joins.BaseJoin as) {
@@ -405,6 +417,10 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public SQL natureJoin(Object table, String alias, Consumer<Joins.On> joinConsumer) {
         return join(table, alias, joinConsumer, JoinType.NatureJoin);
+    }
+
+    public SQL natureJoin(Object table, Consumer<Joins.On> joinConsumer) {
+        return join(table, null, joinConsumer, JoinType.NatureJoin);
     }
 
     private SQL join(Joins.On join) {
