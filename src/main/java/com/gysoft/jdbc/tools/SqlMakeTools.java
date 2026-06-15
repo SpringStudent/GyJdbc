@@ -1,6 +1,5 @@
 package com.gysoft.jdbc.tools;
 
-
 import com.gysoft.jdbc.bean.*;
 import com.gysoft.jdbc.dao.EntityDao;
 import org.apache.commons.collections.CollectionUtils;
@@ -30,12 +29,11 @@ public class SqlMakeTools {
      */
     public static <E> String makeSql(Class clazz, String tbName, String sqlFlag) {
         StringBuilder sql = new StringBuilder();
-        Field[] fields = clazz.getDeclaredFields();
+        Field[] fields = EntityTools.getDeclaredFields(clazz);
         if (sqlFlag.equals(SQL_INSERT)) {
             sql.append(" INSERT INTO " + tbName);
             sql.append("(");
             for (int i = 0; fields != null && i < fields.length; i++) {
-                fields[i].setAccessible(true); // 暴力反射
                 String column = EntityTools.getColumnName(fields[i]);//获取属性对应字段名，没有注解默认按照属性名。有Column注解，获取Column的name作为字段名
                 sql.append(column).append(",");
             }
@@ -50,7 +48,6 @@ public class SqlMakeTools {
             String primaryKey = "id";
             sql.append(" UPDATE " + tbName + " SET ");
             for (int i = 0; fields != null && i < fields.length; i++) {
-                fields[i].setAccessible(true); // 暴力反射
                 String column = EntityTools.getColumnName(fields[i]);//获取属性对应字段名，没有注解默认按照属性名。有Column注解，获取Column的name作为字段名
                 if (EntityTools.isPk(clazz, fields[i])) { // id 代表主键
                     primaryKey = column;
@@ -63,7 +60,6 @@ public class SqlMakeTools {
         } else if (sqlFlag.equals(SQL_DELETE)) {
             String primaryKey = "id";
             for (int i = 0; fields != null && i < fields.length; i++) {
-                fields[i].setAccessible(true); // 暴力反射
                 String column = EntityTools.getColumnName(fields[i]);//获取属性对应字段名，没有注解默认按照属性名。有Column注解，获取Column的name作为字段名
                 if (EntityTools.isPk(clazz, fields[i])) { // id 代表主键
                     primaryKey = column;
@@ -85,12 +81,11 @@ public class SqlMakeTools {
      */
     public static <E> Object[] setArgs(E entity, String sqlFlag) {
         Class<?> clzz = entity.getClass();
-        Field[] fields = clzz.getDeclaredFields();
+        Field[] fields = EntityTools.getDeclaredFields(clzz);
         if (sqlFlag.equals(SQL_INSERT)) {
             Object[] args = new Object[fields.length];
             for (int i = 0; args != null && i < args.length; i++) {
                 try {
-                    fields[i].setAccessible(true); // 暴力反射
                     args[i] = fields[i].get(entity);
                 } catch (Exception e) {
                     throw new GyjdbcException(e);
@@ -103,7 +98,6 @@ public class SqlMakeTools {
             int j = 0;
             for (int i = 0; fields != null && i < fields.length; i++) {
                 try {
-                    fields[i].setAccessible(true); // 暴力反射
                     if (EntityTools.isPk(clzz, fields[i])) { // id 代表主键
                         primaryValue = fields[i].get(entity);
                         continue;
@@ -120,7 +114,6 @@ public class SqlMakeTools {
             Object primaryValue = new Object();
             for (int i = 0; fields != null && i < fields.length; i++) {
                 try {
-                    fields[i].setAccessible(true); // 暴力反射
                     if (EntityTools.isPk(clzz, fields[i])) { // id 代表主键
                         primaryValue = fields[i].get(entity);
                         break;
@@ -150,7 +143,7 @@ public class SqlMakeTools {
      * @return int[] 参数类型数组
      */
     public static <E> int[] setArgTypes(E entity, String sqlFlag) {
-        Field[] fields = entity.getClass().getDeclaredFields();
+        Field[] fields = EntityTools.getDeclaredFields(entity.getClass());
         if (sqlFlag.equals(SQL_INSERT)) {
             int[] argTypes = new int[fields.length];
             try {
@@ -189,7 +182,6 @@ public class SqlMakeTools {
     }
 
     private static int getTypes(Field arg) {
-        arg.setAccessible(true); // 暴力反射
         if (String.class.equals(arg.getType())) {
             return Types.VARCHAR;
         } else if (int.class.equals(arg.getType()) || Integer.class.equals(arg.getType())) {
@@ -224,7 +216,6 @@ public class SqlMakeTools {
      * @author 周宁
      */
     public static Pair<String, Object[]> doCriteria(AbstractCriteria criteria, StringBuilder sql) {
-        Pair<String, Object[]> result = new Pair<>();
         Object[] params = {};
         if (null != criteria) {
             if (CollectionUtils.isNotEmpty(criteria.getWhereParams())) {
@@ -240,7 +231,17 @@ public class SqlMakeTools {
                         if (StringUtils.isEmpty(whereParam.getKey())) {
                             continue;
                         }
-                        String key = whereParam.getKey();
+                        String rawKey = whereParam.getKey();
+                        String key = rawKey;
+                        // 处理 OR 前缀：回退前一个条件的 " AND "，替换为 " OR "
+                        if (rawKey.startsWith(" OR ")) {
+                            key = rawKey.substring(4);
+                            int len = sql.length();
+                            if (len >= 5 && " AND ".equals(sql.substring(len - 5))) {
+                                sql.setLength(len - 5);
+                                sql.append(" OR ");
+                            }
+                        }
                         String opt = whereParam.getOpt();
                         Object value = whereParam.getValue();
                         sql.append(key).append(" ");
@@ -324,9 +325,7 @@ public class SqlMakeTools {
                 }
             }
         }
-        result.setFirst(sql.toString().replace("AND  OR", "OR"));
-        result.setSecond(params);
-        return result;
+        return new Pair<>(sql.toString(), params);
     }
 
     /**
@@ -340,6 +339,13 @@ public class SqlMakeTools {
             for (CriteriaProxy criteriaProxy : criteriaProxys) {
                 if (criteriaProxy.getWhereParamsIndex() - 1 == whereParamIndex) {
                     String criteriaType = criteriaProxy.getCriteriaType();
+                    // 去掉前一个条件追加的 " AND " 分隔符，避免 "AND  OR" 双分隔符
+                    if (!"AND".equals(criteriaType) && !"WHEREAND".equals(criteriaType)) {
+                        int len = sql.length();
+                        if (len >= 5 && " AND ".equals(sql.substring(len - 5))) {
+                            sql.setLength(len - 5);
+                        }
+                    }
                     if (criteriaType.equals("AND")) {
                         if (criteriaProxy.getWhereParamsIndex() == -1) {
                             sql.append(" AND ").append(criteriaProxy.getSql());
@@ -352,7 +358,7 @@ public class SqlMakeTools {
                     } else if (criteriaType.equals("WHEREOR")) {
                         sql.append(" OR ").append(criteriaProxy.getSql()).append(" AND ");
                     } else {
-                        sql.append(" ").append(criteriaType).append('(').append(criteriaProxy.getSql()).append(')').append(" AND ");
+                        sql.append(" ").append(criteriaType).append(" (").append(criteriaProxy.getSql()).append(')').append(" AND ");
                     }
                     params = ArrayUtils.addAll(params, criteriaProxy.getParams());
                 }
@@ -360,6 +366,7 @@ public class SqlMakeTools {
         }
         return params;
     }
+
 
     /**
      * 使用自定义sql
@@ -640,5 +647,4 @@ public class SqlMakeTools {
         // 转换为数组返回
         return new Pair<>(sqlBuilder.toString(), paramsList.toArray());
     }
-
 }

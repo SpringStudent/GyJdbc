@@ -2,13 +2,11 @@ package com.gysoft.jdbc.tools;
 
 import com.gysoft.jdbc.annotation.Column;
 import com.gysoft.jdbc.annotation.Table;
-import com.gysoft.jdbc.bean.GyjdbcException;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 数据库实体映射工具类
@@ -17,6 +15,11 @@ import java.lang.reflect.Method;
  */
 public class EntityTools {
 
+    private static final Map<Class<?>, String> TABLE_NAME_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, String> PK_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Field[]> FIELDS_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Field, String> COLUMN_NAME_CACHE = new ConcurrentHashMap<>();
+
     /**
      * 根据实体类名，获取表名称
      *
@@ -24,6 +27,10 @@ public class EntityTools {
      * @return String 表名称
      */
     public static String getTableName(Class<?> entity) {
+        return TABLE_NAME_CACHE.computeIfAbsent(entity, EntityTools::doGetTableName);
+    }
+
+    private static String doGetTableName(Class<?> entity) {
         Table table = entity.getAnnotation(Table.class);
         if (null != table && !StringUtils.isEmpty(table.name())) {
             return table.name();
@@ -66,6 +73,10 @@ public class EntityTools {
      * @return String 表主键
      */
     public static String getPk(Class<?> entity) {
+        return PK_CACHE.computeIfAbsent(entity, EntityTools::doGetPk);
+    }
+
+    private static String doGetPk(Class<?> entity) {
         Table table = entity.getAnnotation(Table.class);
         if (null != table) {
             return table.pk();
@@ -73,6 +84,15 @@ public class EntityTools {
         return "id";
     }
 
+    public static Field[] getDeclaredFields(Class<?> entity) {
+        return FIELDS_CACHE.computeIfAbsent(entity, clss -> {
+            Field[] fields = clss.getDeclaredFields();
+            for (Field field : fields) {
+                field.setAccessible(true);
+            }
+            return fields;
+        });
+    }
 
     /**
      * 判断是否为主键
@@ -92,25 +112,14 @@ public class EntityTools {
     }
 
     public static String getColumnName(Field field) {
+        return COLUMN_NAME_CACHE.computeIfAbsent(field, EntityTools::doGetColumnName);
+    }
+
+    private static String doGetColumnName(Field field) {
         String columnName = field.getName();
         Column anno = field.getAnnotation(Column.class);
         if (anno != null) {
-            Method[] meth = anno.annotationType().getDeclaredMethods();
-            if (meth != null) {
-                for (Method me : meth) {
-                    if (!me.isAccessible()) {
-                        me.setAccessible(true);
-                    }
-                    try {
-                        if (me.getName().equals("name")) {
-                            columnName = me.invoke(anno, null).toString();
-                        }
-                    } catch (Exception e) {
-                        throw new GyjdbcException(e);
-                    }
-                }
-            }
-
+            columnName = anno.name();
         }
         return columnName;
     }
