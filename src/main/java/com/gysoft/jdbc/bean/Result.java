@@ -1,11 +1,12 @@
 package com.gysoft.jdbc.bean;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -55,15 +56,23 @@ public class Result<E> {
     }
 
     public PageResult<E> pageQuery(Page page) throws Exception {
-        Object pageParams[] = {};
         String pageSql = "SELECT SQL_CALC_FOUND_ROWS * FROM (" + sql + ") temp ";
         pageSql = pageSql + " LIMIT ?,?";
-        pageParams = ArrayUtils.addAll(params, new Object[]{page.getOffset(), page.getPageSize()});
+        Object[] pageParams = appendParams(params, page.getOffset(), page.getPageSize());
         consumer.accept(pageSql,pageParams);
         List<E> paged = jdbcTemplate.query(pageSql, pageParams, BeanPropertyRowMapper.newInstance(type));
         String countSql = "SELECT FOUND_ROWS() ";
         consumer.accept(countSql,new Object[]{});
         int count = jdbcTemplate.queryForObject(countSql, Integer.class);
         return new PageResult(paged, count);
+    }
+
+    private Object[] appendParams(Object[] params, Object... extraParams) {
+        List<Object> result = new ArrayList<>();
+        if (params != null) {
+            Collections.addAll(result, params);
+        }
+        Collections.addAll(result, extraParams);
+        return result.toArray();
     }
 }

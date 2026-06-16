@@ -3,7 +3,6 @@ package com.gysoft.jdbc.tools;
 import com.gysoft.jdbc.bean.*;
 import com.gysoft.jdbc.dao.EntityDao;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.lang.reflect.Field;
@@ -216,7 +215,7 @@ public class SqlMakeTools {
      * @author 周宁
      */
     public static Pair<String, Object[]> doCriteria(AbstractCriteria criteria, StringBuilder sql) {
-        Object[] params = {};
+        List<Object> params = new ArrayList<>();
         if (null != criteria) {
             if (CollectionUtils.isNotEmpty(criteria.getWhereParams())) {
                 //where 条件参数拼接
@@ -251,7 +250,7 @@ public class SqlMakeTools {
                                 if (CollectionUtils.isNotEmpty(((Collection) value))) {
                                     Iterator iterator = ((Collection) value).iterator();
                                     while (iterator.hasNext()) {
-                                        params = ArrayUtils.add(params, iterator.next());
+                                        params.add(iterator.next());
                                         sql.append("?,");
                                     }
                                     sql.setLength(sql.length() - 1);
@@ -260,10 +259,10 @@ public class SqlMakeTools {
                                 SQL inSql = (SQL) value;
                                 Pair<String, Object[]> inPair = useSql(inSql);
                                 sql.append(inPair.getFirst());
-                                params = ArrayUtils.addAll(params, inPair.getSecond());
+                                addAll(params, inPair.getSecond());
                             } else {
                                 sql.append(" ").append("?");
-                                params = ArrayUtils.add(params, value);
+                                params.add(value);
                             }
                             sql.append(')');
                         } else if ("IS".equals(opt.toUpperCase())) {
@@ -271,8 +270,8 @@ public class SqlMakeTools {
                         } else if ("BETWEEN ? AND ?".equals(opt.toUpperCase())) {
                             sql.append(opt).append(" ");
                             Pair<Object, Object> pair = (Pair<Object, Object>) value;
-                            params = ArrayUtils.add(params, pair.getFirst());
-                            params = ArrayUtils.add(params, pair.getSecond());
+                            params.add(pair.getFirst());
+                            params.add(pair.getSecond());
                         } else {
                             if (value instanceof FieldReference) {
                                 FieldReference fieldReference = (FieldReference) value;
@@ -281,10 +280,10 @@ public class SqlMakeTools {
                                 SQL whereSql = (SQL) value;
                                 Pair<String, Object[]> wherePair = useSql(whereSql);
                                 sql.append(opt).append('(').append(wherePair.getFirst()).append(')');
-                                params = ArrayUtils.addAll(params, wherePair.getSecond());
+                                addAll(params, wherePair.getSecond());
                             } else {
                                 sql.append(opt).append(" ").append("?");
-                                params = ArrayUtils.add(params, value);
+                                params.add(value);
                             }
                         }
                         sql.append(" AND ");
@@ -301,11 +300,12 @@ public class SqlMakeTools {
                     sql.append(groupByFiled + ",");
                 }
                 sql.setLength(sql.length() - 1);
-                if (criteria.getHaving() != null) {
-                    Pair<String, Object[]> having = criteria.getHaving();
-                    sql.append(" ").append("HAVING").append(having.getFirst());
-                    params = ArrayUtils.addAll(params, having.getSecond());
-                }
+            }
+            //having拼接
+            if (criteria.getHaving() != null) {
+                Pair<String, Object[]> having = criteria.getHaving();
+                sql.append(" ").append("HAVING").append(having.getFirst());
+                addAll(params, having.getSecond());
             }
             //排序条件拼接
             if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
@@ -318,14 +318,14 @@ public class SqlMakeTools {
             }
             if (criteria.getOffset() >= 0) {
                 sql.append(" LIMIT ?");
-                params = ArrayUtils.add(params, criteria.getOffset());
+                params.add(criteria.getOffset());
                 if (criteria.getSize() > 0) {
                     sql.append(", ?");
-                    params = ArrayUtils.add(params, criteria.getSize());
+                    params.add(criteria.getSize());
                 }
             }
         }
-        return new Pair<>(sql.toString(), params);
+        return new Pair<>(sql.toString(), params.toArray());
     }
 
     /**
@@ -334,7 +334,7 @@ public class SqlMakeTools {
      * @author 周宁
      * @version 1.0
      */
-    private static Object[] doCriteriaProxy(List<CriteriaProxy> criteriaProxys, int whereParamIndex, StringBuilder sql, Object[] params) {
+    private static List<Object> doCriteriaProxy(List<CriteriaProxy> criteriaProxys, int whereParamIndex, StringBuilder sql, List<Object> params) {
         if (CollectionUtils.isNotEmpty(criteriaProxys)) {
             for (CriteriaProxy criteriaProxy : criteriaProxys) {
                 if (criteriaProxy.getWhereParamsIndex() - 1 == whereParamIndex) {
@@ -360,11 +360,17 @@ public class SqlMakeTools {
                     } else {
                         sql.append(" ").append(criteriaType).append(" (").append(criteriaProxy.getSql()).append(')').append(" AND ");
                     }
-                    params = ArrayUtils.addAll(params, criteriaProxy.getParams());
+                    addAll(params, criteriaProxy.getParams());
                 }
             }
         }
         return params;
+    }
+
+    private static void addAll(List<Object> params, Object[] values) {
+        if (values != null) {
+            Collections.addAll(params, values);
+        }
     }
 
 
@@ -436,7 +442,7 @@ public class SqlMakeTools {
     private static Pair<String, Object[]> doSql(SQL sqlObj) {
         //先拼接基础查询
         Pair<String, Object[]> pair;
-        Object[] params = {};
+        List<Object> params = new ArrayList<>();
         StringBuilder sql = new StringBuilder();
         if (sqlObj.getSqlType().equals(EntityDao.SQL_SELECT)) {
             sql.append("SELECT ");
@@ -445,12 +451,12 @@ public class SqlMakeTools {
                 for (Object obj : selects) {
                     if (obj instanceof ValueReference) {
                         sql.append("?, ");
-                        params = ArrayUtils.add(params, ((ValueReference) obj).getValue());
+                        params.add(((ValueReference) obj).getValue());
                     } else if (obj instanceof SQL) {
                         //兼容select字段为一条sql
                         Pair<String, Object[]> temp = SqlMakeTools.useSql((SQL) obj);
                         sql.append(temp.getFirst() + ", ");
-                        params = ArrayUtils.addAll(params, temp.getSecond());
+                        addAll(params, temp.getSecond());
                     } else {
                         sql.append(obj.toString() + ", ");
                     }
@@ -545,10 +551,10 @@ public class SqlMakeTools {
                     } else if (p.getSecond() instanceof SQL) {
                         Pair<String, Object[]> updatePair = useSql((SQL) p.getSecond());
                         sql.append(p.getFirst() + " = (" + updatePair.getFirst() + "), ");
-                        params = ArrayUtils.addAll(params, updatePair.getSecond());
+                        addAll(params, updatePair.getSecond());
                     } else {
                         sql.append(p.getFirst() + " = ?, ");
-                        params = ArrayUtils.add(params, p.getSecond());
+                        params.add(p.getSecond());
                     }
                 }
                 sql.setLength(sql.length() - 2);
@@ -556,8 +562,8 @@ public class SqlMakeTools {
         }
         //组装条件
         pair = doCriteria(sqlObj, sql);
-        params = ArrayUtils.addAll(params, pair.getSecond());
-        return new Pair<>(pair.getFirst(), params);
+        addAll(params, pair.getSecond());
+        return new Pair<>(pair.getFirst(), params.toArray());
     }
 
     /**

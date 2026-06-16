@@ -11,7 +11,6 @@ import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.beanutils.MethodUtils;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
@@ -274,8 +273,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         String pageSql = "SELECT SQL_CALC_FOUND_ROWS * FROM (" + sql + ") temp ";
         if (page != null) {
             pageSql = pageSql + " LIMIT ?,?";
-            params = ArrayUtils.add(params, page.getOffset());
-            params = ArrayUtils.add(params, page.getPageSize());
+            params = appendParams(params, page.getOffset(), page.getPageSize());
         }
         List<T> paged = jdbcTemplate.query(pageSql, params, tRowMapper);
         String countSql = "SELECT FOUND_ROWS() ";
@@ -291,7 +289,16 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public boolean existsWithCriteria(Criteria criteria) throws Exception {
-        return !queryWithCriteria(criteria, rowMapper).isEmpty();
+        String sql = "SELECT 1 FROM " + tableName;
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
+        String existsSql = pair.getFirst();
+        Object[] params = pair.getSecond();
+        if (!existsSql.toUpperCase().contains(" LIMIT ")) {
+            existsSql = existsSql + " LIMIT ?";
+            params = appendParams(params, 1);
+        }
+        List<Object> results = jdbcTemplate.query(existsSql, params, (rs, rowNum) -> rs.getObject(1));
+        return !results.isEmpty();
     }
 
     @Override
@@ -382,9 +389,20 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     public boolean existsWithSql(SQL sql) throws Exception {
         doBeforeBuild(SQLType.Select, sql);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        doAfterBuild(pair.getFirst(), pair.getSecond());
-        List<Object> results = jdbcTemplate.query(pair.getFirst(), pair.getSecond(), (rs, rowNum) -> rs.getObject(1));
+        String existsSql = "SELECT 1 FROM (" + pair.getFirst() + ") gy_exists LIMIT ?";
+        Object[] params = appendParams(pair.getSecond(), 1);
+        doAfterBuild(existsSql, params);
+        List<Object> results = jdbcTemplate.query(existsSql, params, (rs, rowNum) -> rs.getObject(1));
         return !results.isEmpty();
+    }
+
+    private Object[] appendParams(Object[] params, Object... extraParams) {
+        List<Object> result = new ArrayList<>();
+        if (params != null) {
+            Collections.addAll(result, params);
+        }
+        Collections.addAll(result, extraParams);
+        return result.toArray();
     }
 
     @Override

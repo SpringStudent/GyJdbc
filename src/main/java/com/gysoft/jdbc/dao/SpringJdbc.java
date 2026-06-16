@@ -3,7 +3,6 @@ package com.gysoft.jdbc.dao;
 import com.gysoft.jdbc.bean.GyjdbcException;
 import com.gysoft.jdbc.bean.Page;
 import com.gysoft.jdbc.bean.PageResult;
-import org.apache.commons.lang.ArrayUtils;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.*;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -328,12 +327,20 @@ public class SpringJdbc implements ISpringJdbc {
         String baseSql = (String) obj[0];
         Object[] params = (Object[]) obj[1];
         String pageSql = "SELECT SQL_CALC_FOUND_ROWS * FROM (" + baseSql + ") temp LIMIT ?,?";
-        params = ArrayUtils.add(params, page.getOffset());
-        params = ArrayUtils.add(params, page.getPageSize());
+        params = appendParams(params, page.getOffset(), page.getPageSize());
         List<T> paged = jdbcTemplate.query(pageSql, params, BeanPropertyRowMapper.newInstance(requiredType));
         String countSql = "SELECT FOUND_ROWS() ";
         int count = jdbcTemplate.queryForObject(countSql, Integer.class);
         return new PageResult(paged, count);
+    }
+
+    private Object[] appendParams(Object[] params, Object... extraParams) {
+        List<Object> result = new ArrayList<Object>();
+        if (params != null) {
+            Collections.addAll(result, params);
+        }
+        Collections.addAll(result, extraParams);
+        return result.toArray();
     }
 
     @Override
