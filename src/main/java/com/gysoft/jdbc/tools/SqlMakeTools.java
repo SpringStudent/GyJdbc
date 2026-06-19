@@ -597,7 +597,7 @@ public class SqlMakeTools {
             if (!isRootSql) {
                 sqlBuilder.append(beforeFrom);
                 if (hasMultipleChildren && hasFromAsTable) {
-                    sqlBuilder.append("FROM((");
+                    sqlBuilder.append("FROM( (");
                 } else {
                     sqlBuilder.append("FROM(");
                 }
