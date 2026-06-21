@@ -6,8 +6,10 @@ import com.gysoft.jdbc.bean.Pair;
 import com.gysoft.jdbc.bean.SQL;
 import com.gysoft.jdbc.bean.Sort;
 import com.gysoft.jdbc.bean.ValueReference;
+import com.gysoft.jdbc.dao.EntityDaoImpl;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.junit.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.gysoft.jdbc.bean.*;
 
@@ -22,6 +24,42 @@ import static com.gysoft.jdbc.bean.FuncBuilder.sum;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 public class CSqlTest {
+
+    @Test
+    public void createWithSqlShouldRestoreSqlStateAfterInsert() throws Exception {
+        SQL sql = new SQL().create().table("halou")
+                .column().name("id").integer().primary().commit()
+                .column().name("name").varchar(16).commit()
+                .commit()
+                .values(1, "zhou");
+
+        new TestDao().createWithSql(sql);
+
+        assertEquals("create", sql.getSqlType());
+        assertEquals("`halou`", sql.getTableMeta().getName());
+        assertNull(sql.getInsert().getFirst());
+        assertNull(sql.getInsert().getSecond());
+    }
+
+    @Test
+    public void createWithSqlShouldRestoreSqlStateWhenCreateFails() throws Exception {
+        SQL sql = new SQL().create().table("halou")
+                .column().name("id").integer().primary().commit()
+                .commit()
+                .values(1);
+
+        try {
+            new FailingCreateDao().createWithSql(sql);
+            fail("createWithSql should fail");
+        } catch (IllegalStateException expected) {
+            assertEquals("create failed", expected.getMessage());
+        }
+
+        assertEquals("create", sql.getSqlType());
+        assertEquals("`halou`", sql.getTableMeta().getName());
+        assertNull(sql.getInsert().getFirst());
+        assertNull(sql.getInsert().getSecond());
+    }
 
     @Test
     public void testSimpleWhere() {
@@ -525,5 +563,45 @@ public class CSqlTest {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         assertEquals("SELECT res.* FROM( (SELECT u1.* FROM TEST WHERE u1.id = ?) UNION (SELECT u2.* FROM TEST WHERE xd22 = ? OR zx IS NULL OR had = ?) UNION ALL (SELECT u3.* FROM BOOK LEFT JOIN TEST u31  ON u31.id = u3.id  AND u31.nmm = ? WHERE u3 = ? LIMIT ?) , (SELECT t1.* FROM BOOK t1 LEFT JOIN BOOK j1  ON j1.id = t1.id  AND j1.name = ? WHERE (t1.id IN(?,?,?) AND t1.name LIKE ?)))  WHERE res.name = ? ORDER BY res.name DESC LIMIT ?", pair.getFirst());
         assertArrayEquals(new Object[]{123,1,2335,"nmmm",123,10000,"j1name",1,2,3,"%name1%","book1",100}, pair.getSecond());
+    }
+
+    private static class TestDao extends EntityDaoImpl<TestEntity, String> {
+        TestDao() {
+            this.jdbcTemplate = new JdbcTemplate() {
+                @Override
+                public void execute(String sql) {
+                }
+
+                @Override
+                public int update(String sql, Object... args) {
+                    return 1;
+                }
+            };
+        }
+    }
+
+    private static class FailingCreateDao extends EntityDaoImpl<TestEntity, String> {
+        FailingCreateDao() {
+            this.jdbcTemplate = new JdbcTemplate();
+        }
+
+        @Override
+        public void doAfterBuild(String sql, Object[] args) throws Exception {
+            if (sql.startsWith("CREATE ")) {
+                throw new IllegalStateException("create failed");
+            }
+        }
+    }
+
+    private static class TestEntity {
+        private String id;
+
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
     }
 }
