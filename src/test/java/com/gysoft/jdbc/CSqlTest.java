@@ -1,4 +1,5 @@
 package com.gysoft.jdbc;
+
 import com.gysoft.jdbc.annotation.Table;
 import com.gysoft.jdbc.bean.Criteria;
 import com.gysoft.jdbc.bean.FieldReference;
@@ -15,6 +16,7 @@ import com.gysoft.jdbc.bean.*;
 
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
 import static org.junit.Assert.*;
+
 import java.util.Arrays;
 
 import static com.gysoft.jdbc.bean.FuncBuilder.avg;
@@ -23,6 +25,7 @@ import static com.gysoft.jdbc.bean.FuncBuilder.max;
 import static com.gysoft.jdbc.bean.FuncBuilder.sum;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+
 public class CSqlTest {
 
     @Test
@@ -164,7 +167,7 @@ public class CSqlTest {
 
     @Test
     public void testWhereBuilderPattern() {
-        Criteria criteria = new Criteria().where("1",1)
+        Criteria criteria = new Criteria().where("1", 1)
                 .andWhere(Where.where("a").equal(1).and("b").equal(2))
                 .orWhere(Where.where("c").equal(3));
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
@@ -523,6 +526,7 @@ public class CSqlTest {
         assertEquals("DELETE a,b FROM flow_instance a INNER JOIN flow_action b  ON a.id = b.flowInstanceId  WHERE b.bizId = ?", pair.getFirst());
         assertArrayEquals(new Object[]{"id123456"}, pair.getSecond());
     }
+
     @Table
     private class Book {
         private String id;
@@ -553,6 +557,7 @@ public class CSqlTest {
             this.num = num;
         }
     }
+
     @Test
     public void sqlShouldBuildDeleteWithJoinAndChild() {
         SQL s1 = new SQL().select("u1.*").from(Test.class).where("u1.id", 123).union().select("u2.*").from(Test.class).and("xd22", 1).or(Opt.OR, WhereParam.where("zx").isNull(), WhereParam.where("had").equal(2335))
@@ -562,7 +567,18 @@ public class CSqlTest {
         SQL sql = new SQL().select("res.*").from(s1, s2).where("res.name", "book1").orderBy(new Sort("res.name")).limit(100);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         assertEquals("SELECT res.* FROM( (SELECT u1.* FROM TEST WHERE u1.id = ?) UNION (SELECT u2.* FROM TEST WHERE xd22 = ? OR zx IS NULL OR had = ?) UNION ALL (SELECT u3.* FROM BOOK LEFT JOIN TEST u31  ON u31.id = u3.id  AND u31.nmm = ? WHERE u3 = ? LIMIT ?) , (SELECT t1.* FROM BOOK t1 LEFT JOIN BOOK j1  ON j1.id = t1.id  AND j1.name = ? WHERE (t1.id IN(?,?,?) AND t1.name LIKE ?)))  WHERE res.name = ? ORDER BY res.name DESC LIMIT ?", pair.getFirst());
-        assertArrayEquals(new Object[]{123,1,2335,"nmmm",123,10000,"j1name",1,2,3,"%name1%","book1",100}, pair.getSecond());
+        assertArrayEquals(new Object[]{123, 1, 2335, "nmmm", 123, 10000, "j1name", 1, 2, 3, "%name1%", "book1", 100}, pair.getSecond());
+    }
+
+    @Test
+    public void sqlShouldBuildJoinWith() {
+        SQL sql = new SQL().select("m.status mkStatus").from("inspection", "m")
+                .leftJoin(new SQL().select("m.inspId,max(m.modelObjId)modelObjId").from("inspection_model").as("m")
+                        .and("m.projectId", "pid").groupBy("m.projectId"), "g1").on("g1.inspId", "m.id")
+                .inIfAbsent("m.status", Arrays.asList(1, 2, 3));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT m.status mkStatus FROM inspection m LEFT JOIN (SELECT m.inspId,max(m.modelObjId)modelObjId FROM inspection_model m WHERE m.projectId = ? GROUP BY m.projectId) g1  ON g1.inspId = m.id  WHERE m.status IN(?,?,?)", pair.getFirst());
+        assertArrayEquals(new Object[]{"pid", 1, 2, 3,}, pair.getSecond());
     }
 
     private static class TestDao extends EntityDaoImpl<TestEntity, String> {
