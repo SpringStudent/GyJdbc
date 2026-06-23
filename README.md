@@ -140,7 +140,7 @@ https://github.com/SpringStudent/webrtc-meetings
 
 #### sql语法
 
-#### https://github.com/hope-for/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/CriteriaTest.java
+#### https://github.com/hope-for/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/CSqlTest.java
 
 #### 集成测试
 
