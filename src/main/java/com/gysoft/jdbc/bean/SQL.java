@@ -1,12 +1,12 @@
 package com.gysoft.jdbc.bean;
 
 import com.gysoft.jdbc.dao.EntityDao;
-import com.gysoft.jdbc.tools.CollectionUtil;
 import com.gysoft.jdbc.tools.EntityTools;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -82,7 +82,10 @@ public class SQL extends AbstractCriteria<SQL> {
      */
     private Drunk drunk;
 
-    private SqlModifier sqlModifier;
+    /**
+     * MySQL查询锁语句
+     */
+    private String lockClause;
 
     private String id;
 
@@ -91,7 +94,6 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public SQL(String id) {
-        sqlModifier = new SqlModifier(this);
         sqlPiepline = new SQLPiepline(this);
         selectFields = new ArrayList<>();
         kvs = new ArrayList<>();
@@ -160,6 +162,16 @@ public class SQL extends AbstractCriteria<SQL> {
         if (this.sqlType == null) {
             this.sqlType = EntityDao.SQL_SELECT;
         }
+        return this;
+    }
+
+    public SQL forUpdate() {
+        this.lockClause = "FOR UPDATE";
+        return this;
+    }
+
+    public SQL lockInShareMode() {
+        this.lockClause = "LOCK IN SHARE MODE";
         return this;
     }
 
@@ -392,7 +404,7 @@ public class SQL extends AbstractCriteria<SQL> {
         return join(table, alias, joinConsumer, JoinType.RightJoin);
     }
 
-    public SQL rightJoin(Object table,Consumer<Joins.On> joinConsumer) {
+    public SQL rightJoin(Object table, Consumer<Joins.On> joinConsumer) {
         return join(table, null, joinConsumer, JoinType.RightJoin);
     }
 
@@ -554,6 +566,18 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
+    public SQL onDuplicateKeyUpdateValues(String... keys) {
+        Arrays.stream(keys).forEach(key -> kvs.add(new Pair(key, new FieldReference("VALUES(" + key + ")"))));
+        return this;
+    }
+
+    public <T, R> SQL onDuplicateKeyUpdateValues(TypeFunction<T, R>... functions) {
+        Arrays.stream(functions)
+                .map(TypeFunction::getLambdaColumnName)
+                .forEach(key -> kvs.add(new Pair(key, new FieldReference("VALUES(" + key + ")"))));
+        return this;
+    }
+
     void setTableMeta(TableMeta tableMeta) {
         this.tableMeta = tableMeta;
     }
@@ -562,11 +586,29 @@ public class SQL extends AbstractCriteria<SQL> {
         this.insertValues = insertValues;
     }
 
+    public void changeTableName(String tableName) {
+        if (EntityDao.SQL_CREATE.equals(sqlType)) {
+            tableMeta.setName(tableName);
+        } else {
+            sqlPiepline.getHead().setTbName(tableName);
+        }
+    }
+
+    public String tableName() {
+        if (EntityDao.SQL_CREATE.equals(sqlType)) {
+            return tableMeta.getName();
+        } else if (EntityDao.SQL_DROP.equals(sqlType) || EntityDao.SQL_TRUNCATE.equals(sqlType)) {
+            return drunk.getTables().stream().collect(Collectors.joining(","));
+        } else {
+            return sqlPiepline.getHead().getTbName();
+        }
+    }
+
     void setTbName(String tbName) {
         this.tbName = tbName;
     }
 
-    void setSqlType(String sqlType) {
+    public void changeSqlType(String sqlType) {
         this.sqlType = sqlType;
     }
 
@@ -642,15 +684,15 @@ public class SQL extends AbstractCriteria<SQL> {
         return drunk;
     }
 
-    public SqlModifier getModifier() {
-        return sqlModifier;
+    public String getLockClause() {
+        return lockClause;
     }
 
     public String getId() {
         if (StringUtils.isNotEmpty(id)) {
             return id;
         } else {
-            return System.currentTimeMillis() + ":" + sqlModifier.sqlType() + ":" + sqlModifier.tableName();
+            return System.currentTimeMillis() + ":" + getSqlType() + ":" + tableName();
         }
     }
 

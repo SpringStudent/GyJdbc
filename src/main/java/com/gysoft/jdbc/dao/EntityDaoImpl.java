@@ -9,34 +9,20 @@ import com.gysoft.jdbc.multi.balance.RoundRobinLoadBalance;
 import com.gysoft.jdbc.tools.CollectionUtil;
 import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
-import org.apache.commons.beanutils.MethodUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.ColumnMapRowMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.ResultSetExtractor;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.transaction.annotation.Propagation;
+import org.springframework.jdbc.core.*;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ReflectionUtils;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
-import java.security.InvalidParameterException;
 import java.sql.JDBCType;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -50,9 +36,6 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Autowired
     protected JdbcTemplate jdbcTemplate;
-
-    @Autowired(required = false)
-    private List<SQLInterceptor> sqlInterceptors;
 
     /**
      * 泛型
@@ -256,7 +239,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public PageResult<T> pageQuery(Page page, RowMapper<T> tRowMapper) throws Exception {
-        return this.pageQueryWithCriteria(page, null, rowMapper);
+        return this.pageQueryWithCriteria(page, null, tRowMapper);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -333,30 +316,19 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public <E> Result<E> queryWithSql(Class<E> clss, SQL sql) throws Exception {
-        doBeforeBuild(SQLType.Select, sql);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        return new Result<>(clss, pair.getFirst(), pair.getSecond(), jdbcTemplate, (s, objects) -> {
-            try {
-                EntityDaoImpl.this.doAfterBuild(s, objects);
-            } catch (Exception e) {
-                throw new GyjdbcException(e);
-            }
-        });
+        return new Result<>(clss, pair.getFirst(), pair.getSecond(), jdbcTemplate);
     }
 
     @Override
     public int updateWithSql(SQL sql) throws Exception {
-        doBeforeBuild(SQLType.Update, sql);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        doAfterBuild(pair.getFirst(), pair.getSecond());
         return jdbcTemplate.update(pair.getFirst(), pair.getSecond());
     }
 
     @Override
     public int deleteWithSql(SQL sql) throws Exception {
-        doBeforeBuild(SQLType.Delete, sql);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        doAfterBuild(pair.getFirst(), pair.getSecond());
         return jdbcTemplate.update(pair.getFirst(), pair.getSecond());
     }
 
@@ -364,35 +336,27 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     public <K, V> Map<K, V> queryMapWithSql(SQL sql,
                                             ResultSetExtractor<Map<K, V>> resultSetExtractor)
             throws Exception {
-        doBeforeBuild(SQLType.Select, sql);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        doAfterBuild(pair.getFirst(), pair.getSecond());
         return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), resultSetExtractor);
     }
 
     @Override
     public List<Map<String, Object>> queryMapsWithSql(SQL sql) throws Exception {
-        doBeforeBuild(SQLType.Select, sql);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        doAfterBuild(pair.getFirst(), pair.getSecond());
         return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), new ColumnMapRowMapper());
     }
 
     @Override
     public Integer queryIntegerWithSql(SQL sql) throws Exception {
-        doBeforeBuild(SQLType.Select, sql);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        doAfterBuild(pair.getFirst(), pair.getSecond());
         return jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), Integer.class);
     }
 
     @Override
     public boolean existsWithSql(SQL sql) throws Exception {
-        doBeforeBuild(SQLType.Select, sql);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         String existsSql = "SELECT 1 FROM (" + pair.getFirst() + ") gy_exists LIMIT ?";
         Object[] params = appendParams(pair.getSecond(), 1);
-        doAfterBuild(existsSql, params);
         List<Object> results = jdbcTemplate.query(existsSql, params, (rs, rowNum) -> rs.getObject(1));
         return !results.isEmpty();
     }
@@ -408,11 +372,10 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public int insertWithSql(SQL sql) throws Exception {
-        String originTbName = sql.getModifier().tableName();
+        String originTbName = sql.tableName();
         String originSqlType = sql.getSqlType();
         try {
-            sql.getModifier().changeTableName(sql.getInsert().getFirst());
-            doBeforeBuild(SQLType.Insert, sql);
+            sql.changeTableName(sql.getInsert().getFirst());
             Pair<String, Object[]> baseInsertPair = SqlMakeTools.useSql(sql);
             String baseInsertSql = baseInsertPair.getFirst();
             List<Object[]> params = sql.getInsertValues();
@@ -456,23 +419,21 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
                         }
                     }
                     Object[] finalParams = paramList.toArray();
-                    doAfterBuild(tempInsertSql.toString(), finalParams);
                     res += jdbcTemplate.update(tempInsertSql.toString(), finalParams);
                 }
             } else if (CollectionUtils.isNotEmpty(sql.getSelectFields())) {
                 //insert...select...
-                sql.getModifier().changeSqlType(EntityDao.SQL_SELECT);
-                sql.getModifier().changeTableName(originTbName);
+                sql.changeSqlType(EntityDao.SQL_SELECT);
+                sql.changeTableName(originTbName);
                 Pair<String, Object[]> selectPair = SqlMakeTools.useSql(sql);
                 String finalSql = baseInsertSql + " " + selectPair.getFirst();
                 Object[] finalParams = selectPair.getSecond();
-                doAfterBuild(finalSql, finalParams);
                 res = jdbcTemplate.update(finalSql, finalParams);
             }
             return res;
         } finally {
-            sql.getModifier().changeTableName(originTbName);
-            sql.getModifier().changeSqlType(originSqlType);
+            sql.changeTableName(originTbName);
+            sql.changeSqlType(originSqlType);
         }
     }
 
@@ -493,8 +454,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             List<String> fileds = new ArrayList<>();
             //创建表
             final String tbName = originTbName;
-            sql.getModifier().changeTableName(tbName);
-            doBeforeBuild(SQLType.Create, sql);
+            sql.changeTableName(tbName);
             createSql.append("CREATE ");
             if (tableMeta.isTemporary()) {
                 createSql.append("TEMPORARY ");
@@ -581,11 +541,10 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             if (StringUtils.isNotEmpty(tableMeta.getComment())) {
                 createSql.append(" COMMENT=" + "'" + tableMeta.getComment() + "'");
             }
-            doAfterBuild(createSql.toString(), new Object[]{});
             jdbcTemplate.execute(createSql.toString());
             //判断是否有数据需要插入,有则插入
             if (CollectionUtils.isNotEmpty(sql.getInsertValues()) || CollectionUtils.isNotEmpty(sql.getSelectFields())) {
-                sql.getModifier().changeSqlType(EntityDao.SQL_INSERT);
+                sql.changeSqlType(EntityDao.SQL_INSERT);
                 sql.getInsert().setFirst(tbName);
                 sql.getInsert().setSecond(fileds);
                 insertWithSql(sql);
@@ -593,7 +552,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             return tbName;
         } finally {
             tableMeta.setName(originTbName);
-            sql.getModifier().changeSqlType(originSqlType);
+            sql.changeSqlType(originSqlType);
             sql.getInsert().setFirst(originInsertTbName);
             sql.getInsert().setSecond(originInsertFields);
         }
@@ -615,14 +574,10 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     public void drunk(SQL sql) throws Exception {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         if (sql.getSqlType().equals(EntityDao.SQL_TRUNCATE)) {
-            doBeforeBuild(SQLType.Truncate, sql);
             String truncateSql = pair.getFirst();
-            doAfterBuild(truncateSql, new Object[]{});
             jdbcTemplate.batchUpdate(truncateSql.split("\n"));
         } else if (sql.getSqlType().equals(EntityDao.SQL_DROP)) {
-            doBeforeBuild(SQLType.Drop, sql);
             String dropSql = pair.getFirst();
-            doAfterBuild(dropSql, new Object[]{});
             jdbcTemplate.execute(dropSql);
         } else {
             throw new GyjdbcException("method drunk only support `DROP` AND `TRUNCATE`");
@@ -645,22 +600,6 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @Override
     public EntityDao<T, Id> bindGroup(String group) throws Exception {
         return bindGroup(group, RoundRobinLoadBalance.class);
-    }
-
-    public void doBeforeBuild(SQLType sqlType, SQL sql) throws Exception {
-        if (CollectionUtils.isNotEmpty(sqlInterceptors)) {
-            for (SQLInterceptor sqlInterceptor : sqlInterceptors) {
-                sqlInterceptor.beforeBuild(sqlType, sql.getModifier());
-            }
-        }
-    }
-
-    public void doAfterBuild(String sql, Object[] args) throws Exception {
-        if (CollectionUtils.isNotEmpty(sqlInterceptors)) {
-            for (SQLInterceptor sqlInterceptor : sqlInterceptors) {
-                sqlInterceptor.afterBuild(sql, args);
-            }
-        }
     }
 
 }

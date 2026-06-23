@@ -133,6 +133,54 @@ public class FuncBuilder {
         return "SUM(" + field + ")";
     }
 
+    public static FuncBuilder groupConcatAs(String field) {
+        return new FuncBuilder(groupConcat(field));
+    }
+
+    public static <T, R> FuncBuilder groupConcatAs(TypeFunction<T, R> function) {
+        return groupConcatAs(TypeFunction.getLambdaColumnName(function));
+    }
+
+    public static String groupConcat(String field) {
+        return "GROUP_CONCAT(" + field + ")";
+    }
+
+    public static <T, R> String groupConcat(TypeFunction<T, R> function) {
+        return groupConcat(TypeFunction.getLambdaColumnName(function));
+    }
+
+    public static FuncBuilder groupConcatDistinctAs(String field) {
+        return new FuncBuilder(groupConcatDistinct(field));
+    }
+
+    public static <T, R> FuncBuilder groupConcatDistinctAs(TypeFunction<T, R> function) {
+        return groupConcatDistinctAs(TypeFunction.getLambdaColumnName(function));
+    }
+
+    public static String groupConcatDistinct(String field) {
+        return "GROUP_CONCAT(DISTINCT " + field + ")";
+    }
+
+    public static <T, R> String groupConcatDistinct(TypeFunction<T, R> function) {
+        return groupConcatDistinct(TypeFunction.getLambdaColumnName(function));
+    }
+
+    public static FuncBuilder groupConcatAs(String field, String separator) {
+        return new FuncBuilder(groupConcat(field, separator));
+    }
+
+    public static <T, R> FuncBuilder groupConcatAs(TypeFunction<T, R> function, String separator) {
+        return groupConcatAs(TypeFunction.getLambdaColumnName(function), separator);
+    }
+
+    public static String groupConcat(String field, String separator) {
+        return "GROUP_CONCAT(" + field + " SEPARATOR " + separator + ")";
+    }
+
+    public static <T, R> String groupConcat(TypeFunction<T, R> function, String separator) {
+        return groupConcat(TypeFunction.getLambdaColumnName(function), separator);
+    }
+
     public static String concat(String... fields) {
         return "CONCAT(" + Arrays.stream(fields).collect(Collectors.joining(",")) + ")";
     }
@@ -647,6 +695,40 @@ public class FuncBuilder {
         return _if(TypeFunction.getLambdaColumnName(function), val1, val2);
     }
 
+    public static FuncBuilder caseWhenAs(String express, Object thenVal, Object elseVal) {
+        return new FuncBuilder(caseWhen(express, thenVal, elseVal));
+    }
+
+    public static String caseWhen(String express, Object thenVal, Object elseVal) {
+        return caseWhen(express, thenVal).elseThen(elseVal).end();
+    }
+
+    public static CaseWhenBuilder caseWhen(String express, Object thenVal) {
+        return new CaseWhenBuilder().when(express, thenVal);
+    }
+
+    public static class CaseWhenBuilder {
+        private final StringBuilder caseSql = new StringBuilder("CASE");
+
+        public CaseWhenBuilder when(String express, Object thenVal) {
+            caseSql.append(" WHEN ").append(express).append(" THEN ").append(thenVal);
+            return this;
+        }
+
+        public CaseWhenBuilder elseThen(Object elseVal) {
+            caseSql.append(" ELSE ").append(elseVal);
+            return this;
+        }
+
+        public String end() {
+            return caseSql + " END";
+        }
+
+        public FuncBuilder asBuilder() {
+            return new FuncBuilder(end());
+        }
+    }
+
     public static FuncBuilder unixTimeStampAs(String field) {
         return new FuncBuilder(unixTimeStamp(field));
     }
@@ -696,7 +778,7 @@ public class FuncBuilder {
     }
 
     public static String jsonExtract(String field, String $key) {
-        return "json_extract(" + field + ",'" + $key + "')";
+        return "JSON_EXTRACT(" + field + ",'" + $key + "')";
     }
 
     public static <T, R> String jsonExtract(TypeFunction<T, R> function, String $key) {
@@ -709,6 +791,102 @@ public class FuncBuilder {
 
     public static <T, R> FuncBuilder jsonExtractAs(TypeFunction<T, R> function, String $key) {
         return jsonExtractAs(TypeFunction.getLambdaColumnName(function), $key);
+    }
+
+    public static String jsonUnquote(String express) {
+        return "JSON_UNQUOTE(" + express + ")";
+    }
+
+    public static FuncBuilder jsonUnquoteAs(String express) {
+        return new FuncBuilder(jsonUnquote(express));
+    }
+
+    public static String jsonContains(String field, String candidate) {
+        return "JSON_CONTAINS(" + field + "," + candidate + ")";
+    }
+
+    public static <T, R> String jsonContains(TypeFunction<T, R> function, String candidate) {
+        return jsonContains(TypeFunction.getLambdaColumnName(function), candidate);
+    }
+
+    public static String jsonContains(String field, String candidate, String $key) {
+        return "JSON_CONTAINS(" + field + "," + candidate + ",'" + $key + "')";
+    }
+
+    public static <T, R> String jsonContains(TypeFunction<T, R> function, String candidate, String $key) {
+        return jsonContains(TypeFunction.getLambdaColumnName(function), candidate, $key);
+    }
+
+    public static FuncBuilder jsonContainsAs(String field, String candidate) {
+        return new FuncBuilder(jsonContains(field, candidate));
+    }
+
+    public static <T, R> FuncBuilder jsonContainsAs(TypeFunction<T, R> function, String candidate) {
+        return jsonContainsAs(TypeFunction.getLambdaColumnName(function), candidate);
+    }
+
+    public static FuncBuilder jsonContainsAs(String field, String candidate, String $key) {
+        return new FuncBuilder(jsonContains(field, candidate, $key));
+    }
+
+    public static <T, R> FuncBuilder jsonContainsAs(TypeFunction<T, R> function, String candidate, String $key) {
+        return jsonContainsAs(TypeFunction.getLambdaColumnName(function), candidate, $key);
+    }
+
+    public static String jsonSet(String field, String $key, String val) {
+        return "JSON_SET(" + field + ",'" + $key + "'," + val + ")";
+    }
+
+    public static <T, R> String jsonSet(TypeFunction<T, R> function, String $key, String val) {
+        return jsonSet(TypeFunction.getLambdaColumnName(function), $key, val);
+    }
+
+    public static FuncBuilder jsonSetAs(String field, String $key, String val) {
+        return new FuncBuilder(jsonSet(field, $key, val));
+    }
+
+    public static <T, R> FuncBuilder jsonSetAs(TypeFunction<T, R> function, String $key, String val) {
+        return jsonSetAs(TypeFunction.getLambdaColumnName(function), $key, val);
+    }
+
+    public static String jsonRemove(String field, String... $keys) {
+        return "JSON_REMOVE(" + field + "," + Arrays.stream($keys).map($key -> "'" + $key + "'").collect(Collectors.joining(",")) + ")";
+    }
+
+    public static <T, R> String jsonRemove(TypeFunction<T, R> function, String... $keys) {
+        return jsonRemove(TypeFunction.getLambdaColumnName(function), $keys);
+    }
+
+    public static FuncBuilder jsonRemoveAs(String field, String... $keys) {
+        return new FuncBuilder(jsonRemove(field, $keys));
+    }
+
+    public static <T, R> FuncBuilder jsonRemoveAs(TypeFunction<T, R> function, String... $keys) {
+        return jsonRemoveAs(TypeFunction.getLambdaColumnName(function), $keys);
+    }
+
+    public static String jsonObject(String... fields) {
+        return "JSON_OBJECT(" + Arrays.stream(fields).collect(Collectors.joining(",")) + ")";
+    }
+
+    public static FuncBuilder jsonObjectAs(String... fields) {
+        return new FuncBuilder(jsonObject(fields));
+    }
+
+    public static String jsonArray(String... fields) {
+        return "JSON_ARRAY(" + Arrays.stream(fields).collect(Collectors.joining(",")) + ")";
+    }
+
+    public static <T, R> String jsonArray(TypeFunction<T, R>... functions) {
+        return jsonArray(Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()).toArray(new String[0]));
+    }
+
+    public static FuncBuilder jsonArrayAs(String... fields) {
+        return new FuncBuilder(jsonArray(fields));
+    }
+
+    public static <T, R> FuncBuilder jsonArrayAs(TypeFunction<T, R>... functions) {
+        return jsonArrayAs(Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()).toArray(new String[0]));
     }
 
 }

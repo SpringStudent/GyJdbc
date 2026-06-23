@@ -224,6 +224,24 @@ public class CSqlTest {
     }
 
     @Test
+    public void sqlSelectShouldSupportForUpdate() {
+        SQL sql = new SQL().select("*").from("tb_order").where("id", 1).forUpdate();
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+
+        assertEquals("SELECT * FROM tb_order WHERE id = ? FOR UPDATE", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void sqlSelectShouldSupportLockInShareMode() {
+        SQL sql = new SQL().select("*").from("tb_order").where("id", 1).lockInShareMode();
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+
+        assertEquals("SELECT * FROM tb_order WHERE id = ? LOCK IN SHARE MODE", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
     public void testSqlDelete() {
         SQL sql = new SQL().delete().from("test").where("id", 1);
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
@@ -355,6 +373,39 @@ public class CSqlTest {
     public void testFuncBuilderConcat() {
         String result = concat("a", "b", "c");
         assertEquals("CONCAT(a,b,c)", result);
+    }
+
+    @Test
+    public void testFuncBuilderGroupConcat() {
+        assertEquals("GROUP_CONCAT(name)", groupConcat("name"));
+        assertEquals("GROUP_CONCAT(DISTINCT name)", groupConcatDistinct("name"));
+        assertEquals("GROUP_CONCAT(name SEPARATOR ',')", groupConcat("name", "','"));
+        assertEquals("GROUP_CONCAT(`name`)", groupConcat(Role::getName));
+        assertEquals("GROUP_CONCAT(name) AS names", groupConcatAs("name").as("names"));
+    }
+
+    @Test
+    public void testFuncBuilderCaseWhen() {
+        assertEquals("CASE WHEN score >= 60 THEN 'pass' ELSE 'fail' END", caseWhen("score >= 60", "'pass'", "'fail'"));
+        assertEquals("CASE WHEN score >= 90 THEN 'A' WHEN score >= 60 THEN 'B' ELSE 'C' END",
+                caseWhen("score >= 90", "'A'").when("score >= 60", "'B'").elseThen("'C'").end());
+        assertEquals("CASE WHEN status = 1 THEN 'enabled' ELSE 'disabled' END AS statusName",
+                caseWhen("status = 1", "'enabled'").elseThen("'disabled'").asBuilder().as("statusName"));
+    }
+
+    @Test
+    public void testFuncBuilderJsonFunctions() {
+        assertEquals("JSON_EXTRACT(extra,'$.name')", jsonExtract("extra", "$.name"));
+        assertEquals("JSON_EXTRACT(`auths`,'$.name')", jsonExtract(Role::getAuths, "$.name"));
+        assertEquals("JSON_UNQUOTE(JSON_EXTRACT(extra,'$.name'))", jsonUnquote(jsonExtract("extra", "$.name")));
+        assertEquals("JSON_CONTAINS(extra,'1')", jsonContains("extra", "'1'"));
+        assertEquals("JSON_CONTAINS(extra,'1','$.ids')", jsonContains("extra", "'1'", "$.ids"));
+        assertEquals("JSON_SET(extra,'$.name','Tom')", jsonSet("extra", "$.name", "'Tom'"));
+        assertEquals("JSON_REMOVE(extra,'$.temp','$.debug')", jsonRemove("extra", "$.temp", "$.debug"));
+        assertEquals("JSON_OBJECT('id',id,'name',name)", jsonObject("'id'", "id", "'name'", "name"));
+        assertEquals("JSON_ARRAY(id,name)", jsonArray("id", "name"));
+        assertEquals("JSON_ARRAY(`name`,`auths`)", jsonArray(Role::getName, Role::getAuths));
+        assertEquals("JSON_EXTRACT(extra,'$.name') AS nameJson", jsonExtractAs("extra", "$.name").as("nameJson"));
     }
 
     @Test
@@ -497,6 +548,34 @@ public class CSqlTest {
     }
 
     @Test
+    public void sqlShouldBuildDuplicateKeyUpdateWithInsertValues() {
+        SQL sql = new SQL()
+                .insertInto("tb_account", "userName", "realName")
+                .values("admin", "all")
+                .onDuplicateKeyUpdateValues("userName", "realName");
+
+        assertEquals(2, sql.getKvs().size());
+        assertEquals("userName", sql.getKvs().get(0).getFirst());
+        assertEquals("VALUES(userName)", ((FieldReference) sql.getKvs().get(0).getSecond()).getField());
+        assertEquals("realName", sql.getKvs().get(1).getFirst());
+        assertEquals("VALUES(realName)", ((FieldReference) sql.getKvs().get(1).getSecond()).getField());
+    }
+
+    @Test
+    public void sqlShouldBuildDuplicateKeyUpdateWithLambdaInsertValues() {
+        SQL sql = new SQL()
+                .insertInto(Role.class, Role::getName, Role::getAuths)
+                .values("admin", "all")
+                .onDuplicateKeyUpdateValues(Role::getName, Role::getAuths);
+
+        assertEquals(2, sql.getKvs().size());
+        assertEquals("`name`", sql.getKvs().get(0).getFirst());
+        assertEquals("VALUES(`name`)", ((FieldReference) sql.getKvs().get(0).getSecond()).getField());
+        assertEquals("`auths`", sql.getKvs().get(1).getFirst());
+        assertEquals("VALUES(`auths`)", ((FieldReference) sql.getKvs().get(1).getSecond()).getField());
+    }
+
+    @Test
     public void sqlShouldBuildUpdateWithFieldReferenceAndWhereParams() {
         SQL sql = new SQL()
                 .update("test")
@@ -592,20 +671,23 @@ public class CSqlTest {
                 public int update(String sql, Object... args) {
                     return 1;
                 }
+
+                @Override
+                public <T> T queryForObject(String sql, Object[] args, Class<T> requiredType) {
+                    return requiredType.cast(1);
+                }
             };
         }
     }
 
     private static class FailingCreateDao extends EntityDaoImpl<TestEntity, String> {
         FailingCreateDao() {
-            this.jdbcTemplate = new JdbcTemplate();
-        }
-
-        @Override
-        public void doAfterBuild(String sql, Object[] args) throws Exception {
-            if (sql.startsWith("CREATE ")) {
-                throw new IllegalStateException("create failed");
-            }
+            this.jdbcTemplate = new JdbcTemplate() {
+                @Override
+                public void execute(String sql) {
+                    throw new IllegalStateException("create failed");
+                }
+            };
         }
     }
 

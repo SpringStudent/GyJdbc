@@ -563,6 +563,9 @@ public class SqlMakeTools {
         //组装条件
         pair = doCriteria(sqlObj, sql);
         addAll(params, pair.getSecond());
+        if (EntityDao.SQL_SELECT.equals(sqlObj.getSqlType()) && StringUtils.isNotEmpty(sqlObj.getLockClause())) {
+            pair.setFirst(pair.getFirst() + " " + sqlObj.getLockClause());
+        }
         return new Pair<>(pair.getFirst(), params.toArray());
     }
 
