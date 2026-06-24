@@ -1,20 +1,34 @@
-## 是什么
+# GyJdbc
 
-GyJdbc基于jdbctemplate的类似JPA的持久层框架封装，使用优势：
+> 基于 Spring JdbcTemplate 的轻量级持久层框架：保留 SQL 的表达力，减少 DAO 层样板代码，让 Java 项目更快写出清晰、可维护的数据访问逻辑。
 
-1. **Dao层0代码，再也不需要为Dao层的方法名称命名掉头发。**
-2. **链式SQL配合lambda表达式，既装B又简洁。**
-3. **强悍的SQL拼接，支持作者已知的所有SQL语法。**
-4. **学习成本极低，靠近SQL语法，开发者使用起来会像平时一样写SQL一样简单。**
-5. **提供类JPA语法，类MongoTemplate的SQL拼接语法**
-6. **支持多数据源，多数据源的负载均衡，仅需一个注解或者一个方法调用。**
+GyJdbc 适合那些不想引入重型 ORM、又不想反复手写 DAO 和 SQL 拼接代码的项目。它在 JdbcTemplate 之上提供了类 JPA 的实体 DAO、链式 SQL 构建器、Lambda 字段引用、Criteria 条件拼装，以及多数据源绑定和负载均衡能力。
 
-#### 快速开始
+## 为什么选择 GyJdbc
 
-**step1.添加maven坐标**
+- **DAO 层更轻**：通用增删改查、分页、批量操作、SQL 查询等能力由 `EntityDao` 提供，业务 DAO 不再堆重复代码。
+- **SQL 仍然可控**：不是把 SQL 藏起来，而是用链式 API 把 SQL 写得更安全、更清楚。
+- **接近原生 SQL 的表达力**：支持 `select`、`insert`、`update`、`delete`、`join`、`union`、子查询、分组、排序、分页、聚合函数等常见 SQL 场景。
+- **字段引用更稳**：支持 `TbUser::getName` 这类 Lambda 字段引用，减少字符串字段名带来的拼写风险。
+- **动态条件友好**：`Criteria` 支持 `where`、`and`、`or`、`in`、`like`、`between`、嵌套条件、`xxxIfAbsent` 等常用条件拼装。
+- **多数据源内置支持**：可以通过注解、DAO 方法绑定指定数据源，也可以按数据源组使用负载均衡策略。
+- **学习成本低**：API 贴近 SQL 语义，熟悉 SQL 和 Spring JdbcTemplate 的开发者可以很快上手。
+
+## 适用场景
+
+GyJdbc 很适合：
+
+- Spring / Spring Boot 项目中需要快速实现数据访问层；
+- 业务以 SQL 为中心，不希望被复杂 ORM 映射规则束缚；
+- 需要动态拼接查询条件、分页、批量操作；
+- 需要在主从库、读写库、多个业务库之间灵活切换；
+- 希望保留 JdbcTemplate 的简单直接，同时减少重复 DAO 代码。
+
+如果你的项目需要完整的对象关系管理、复杂实体状态跟踪、一级缓存或自动脏检查，Hibernate / JPA 可能更适合。GyJdbc 的定位更直接：让你用更少代码写出更清晰的 SQL 数据访问层。
+
+## 安装
 
 ```xml
-
 <dependency>
     <groupId>io.github.springstudent</groupId>
     <artifactId>GyJdbc</artifactId>
@@ -22,11 +36,18 @@ GyJdbc基于jdbctemplate的类似JPA的持久层框架封装，使用优势：
 </dependency>
 ```
 
-**step2.定义Pojo类，对应数据库中的一张表。**
+当前版本基于 Java 8 和 Spring JDBC 4.3.x。
 
-`@Table`注解，`name`定义pojo类与数据库表的关系，`pk`指定表的主键
+## 快速开始
+
+### 1. 定义实体
+
+使用 `@Table` 声明实体与数据库表的关系，`pk` 指定主键字段。
 
 ```java
+import com.gysoft.jdbc.annotation.Table;
+
+import java.util.Date;
 
 @Table(name = "tb_user", pk = "id")
 public class TbUser {
@@ -41,170 +62,267 @@ public class TbUser {
     private String career;
     private Integer isActive = 0;
     private Integer roleId;
-}    
+
+    // getter / setter
+}
 ```
 
-**step3.定义Dao与DaoImpl，分别继承自EntityDao和EntityDaoImpl**
+### 2. 定义 DAO
+
+业务 DAO 继承 `EntityDao`，实现类继承 `EntityDaoImpl`。
 
 ```java
-public interface TbUserDao extends EntityDao<TbUser, String> {
+import com.gysoft.jdbc.dao.EntityDao;
+import com.gysoft.jdbc.dao.EntityDaoImpl;
+import org.springframework.stereotype.Repository;
 
+public interface TbUserDao extends EntityDao<TbUser, String> {
 }
 
 @Repository
 public class TbUserDaoImpl extends EntityDaoImpl<TbUser, String> implements TbUserDao {
-
 }
 ```
 
-**step4.在Service层注入Dao，使用EntityDao提供的方法完成增、删、改、查**
-
-<u>增</u>
+### 3. 在 Service 中使用
 
 ```java
-void save(T t)throws Exception;
-void batchSave(List<T> list)throws Exception;
-int insertWithSql(SQL sql)throws Exception;
-```
+import com.gysoft.jdbc.bean.Criteria;
+import com.gysoft.jdbc.bean.Page;
+import com.gysoft.jdbc.bean.PageResult;
+import com.gysoft.jdbc.bean.SQL;
 
-<u>删</u>
+import java.util.Arrays;
+import java.util.List;
 
-```java
-void delete(Id id)throws Exception;
-void deleteWithCriteria(Criteria criteria)throws Exception;
-void batchDelete(List<Id> ids)throws Exception;
-int deleteWithSql(SQL sql)throws Exception;
-void truncate()throws Exception;
-void drop()throws Exception;
-void drunk(SQL sql)throws Exception;
-```
+public class UserService {
 
-<u>改</u>
+    private TbUserDao tbUserDao;
 
-```java
-void update(T t)throws Exception;
-void batchUpdate(List<T> list)throws Exception;
-int updateWithSql(SQL sql)throws Exception;
-```
+    public int createUser(TbUser user) throws Exception {
+        return tbUserDao.save(user);
+    }
 
-<u>查</u>
+    public List<TbUser> queryActiveUsers() throws Exception {
+        return tbUserDao.queryWithCriteria(
+                new Criteria()
+                        .where(TbUser::getIsActive, 1)
+                        .in(TbUser::getName, Arrays.asList("zhouning", "yinhw"))
+        );
+    }
 
-```java
-T queryOne(Id id)throws Exception;
-List<T> queryAll()throws Exception;
-PageResult<T> pageQuery(Page page)throws Exception;
-PageResult<T> pageQueryWithCriteria(Page page,Criteria criteria)throws Exception;
-List<T> queryWithCriteria(Criteria criteria)throws Exception;
-<E> Result<E> queryWithSql(Class<E> clss,SQL sql)throws Exception;
-List<Map<String, Object>>queryMapsWithSql(SQL sql)throws Exception;
-<K, V> Map<K, V> queryMapWithSql(SQL sql,ResultSetExtractor<Map<K, V>>resultSetExtractor)throws Exception;
+    public PageResult<TbUser> pageUsers(int pageNo, int pageSize) throws Exception {
+        return tbUserDao.pageQueryWithCriteria(
+                new Page(pageNo, pageSize),
+                new Criteria().where(TbUser::getIsActive, 1)
+        );
+    }
 
-```
-
-`Criteria语法示例:`
-
-```java
-//where name = 'zhouning'
-new Criteria().where(TbUser::getName,"zhouning").andIfAbsent(TbUser::getName,null);
-//where name in ('zhouning','yinhw')
-new Criteria().in(TbUser::getName,Arrays.asList("zhouning","yinhw"));
-//where age < 28 order by age desc
-new Criteria().lt(TbUser::getAge,28).orderBy(new Sort(TbUser::getAge);
-//where age < 20 and (name like '%zhou%' or realName like 'zhouning')
-new Criteria().lt(TbUser::getAge,20).andCriteria(new Criteria().like(TbUser::getName,"zhou").orLike(TbUser::getRealName,"周"));
-```
-
-`SQL语法示例:`
-
-```java
-new SQL().select(TbUser::getName,TbUser::getEmail,TbUser::getRealName,TbUser::getMobile).from(TbUser.class).where(TbUser::getIsActive,1);
-new SQL().select("age",countAs("age").as("num")).from(TbUser.class).orderBy(new Sort(TbUser::getAge)).groupBy(TbUser::getAge);
-new SQL().update(TbUser.class).set(TbUser::getRealName,"元林").set(TbUser::getEmail,"13888888888@163.com").where(TbUser::getName,"Smith");
-new SQL().insertInto(TbAccount.class,"userName","realName").values("test","测试").values("test2","测试2");
-new SQL().delete().from(TbUser.class).gt(TbUser::getAge,20);
-//类似MongoTemplate的Criteria拼接
-new SQL().select("*").from("table1").where("f1",1).and(Where.where("f2").like("a").or("f3").gte(1).and("f4").in(Arrays.asList(2,3,4)))
-//类似JPA的Predict使用
-List<WhereParam> params=new ArrayList<>();
-params.add(WhereParam.where("f1").like("v1"));
-params.add(WhereParam.where("f2").in(Arrays.asList(1,2,3)));
-sql=new SQL().select("*").from("table2").and(Opt.AND,params);
-```
-
-#### 谁在用Gyjdbc
-
-https://github.com/SpringStudent/remote-desktop-control
-
-https://github.com/SpringStudent/webrtc-meetings
-
-
-#### sql语法
-
-#### https://github.com/hope-for/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/CSqlTest.java
-
-#### 集成测试
-
-#### https://github.com/SpringStudent/GyJdbcTest
-
-#### 多数据源支持
-
-开启AOP和引入切面增强类
-
-```java
-@SpringBootApplication
-@EnableAspectJAutoProxy(proxyTargetClass = true)
-@Import(BindPointAspectRegistar.class)
-public class SystemApp {
-
-	public static void main(String[] args) {
-		SpringApplication.run(SystemApp.class, args);
-	}
-
+    public int updateEmail(String name, String email) throws Exception {
+        return tbUserDao.updateWithSql(
+                new SQL()
+                        .update(TbUser.class)
+                        .set(TbUser::getEmail, email)
+                        .where(TbUser::getName, name)
+        );
+    }
 }
 ```
 
-通过spring的xml配置
+## EntityDao 常用能力
 
-```xml
-
-<bean id="sourceDs" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
-    ...省略
-</bean>
-
-<bean id="targetDs" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
-...省略
-</bean>
-
-<bean id="nightDs" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
-...省略
-</bean>
-
-<bean id="dataSource" class="com.gysoft.jdbc.multi.JdbcRoutingDataSource">
-<property name="targetDataSources">
-    <map>
-        <entry key="master" value-ref="sourceDs"/>
-        <entry key="slave" value-ref="targetDs"/>
-        <entry key="slave2" value-ref="nightDs"/>
-    </map>
-</property>
-<property name="dataSourceKeysGroup">
-    <map>
-        <entry key="masterGroup" value="master"/>
-        <entry key="slaveGroup" value="slave,slave2"/>
-    </map>
-</property>
-<property name="defaultLookUpKey" value="master"/>
-</bean>
-
-<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
-<property name="dataSource" ref="dataSource"/>
-</bean>
-```
-通过spring的bean配置
+`EntityDao<T, Id>` 覆盖了多数常见数据访问操作：
 
 ```java
+int save(T entity) throws Exception;
+void batchSave(List<T> list) throws Exception;
+void saveOrUpdate(T entity) throws Exception;
+int saveAll(List<T> list) throws Exception;
+
+int update(T entity) throws Exception;
+void batchUpdate(List<T> list) throws Exception;
+int updateWithSql(SQL sql) throws Exception;
+
+int delete(Id id) throws Exception;
+int batchDelete(List<Id> ids) throws Exception;
+int deleteWithCriteria(Criteria criteria) throws Exception;
+int deleteWithSql(SQL sql) throws Exception;
+
+T queryOne(Id id) throws Exception;
+T queryOne(Criteria criteria) throws Exception;
+List<T> queryAll() throws Exception;
+List<T> queryWithCriteria(Criteria criteria) throws Exception;
+PageResult<T> pageQuery(Page page) throws Exception;
+PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria) throws Exception;
+
+<E> Result<E> queryWithSql(Class<E> type, SQL sql) throws Exception;
+List<Map<String, Object>> queryMapsWithSql(SQL sql) throws Exception;
+Integer queryIntegerWithSql(SQL sql) throws Exception;
+boolean existsWithCriteria(Criteria criteria) throws Exception;
+boolean existsWithSql(SQL sql) throws Exception;
+```
+
+## Criteria：更舒服地拼动态条件
+
+`Criteria` 适合查询条件来自页面筛选、接口参数、权限规则等动态场景。
+
+```java
+// WHERE name = ?
+new Criteria().where(TbUser::getName, "zhouning");
+
+// WHERE name IN (?,?)
+new Criteria().in(TbUser::getName, Arrays.asList("zhouning", "yinhw"));
+
+// WHERE age < ? ORDER BY age DESC
+new Criteria()
+        .lt(TbUser::getAge, 28)
+        .orderBy(new Sort(TbUser::getAge));
+
+// WHERE age < ? AND (name LIKE ? OR realName LIKE ?)
+new Criteria()
+        .lt(TbUser::getAge, 20)
+        .andCriteria(
+                new Criteria()
+                        .like(TbUser::getName, "zhou")
+                        .orLike(TbUser::getRealName, "周")
+        );
+
+// 参数为空时自动跳过，适合搜索表单
+new Criteria()
+        .where(TbUser::getIsActive, 1)
+        .likeIfAbsent(TbUser::getName, keyword);
+```
+
+## SQL：像写 SQL 一样组合复杂语句
+
+`SQL` 构建器适合需要明确控制查询字段、表连接、聚合、子查询、更新语句的场景。
+
+### 查询
+
+```java
+new SQL()
+        .select(TbUser::getName, TbUser::getEmail, TbUser::getMobile)
+        .from(TbUser.class)
+        .where(TbUser::getIsActive, 1);
+```
+
+### 聚合、分组、排序
+
+```java
+import static com.gysoft.jdbc.bean.FuncBuilder.countAs;
+
+new SQL()
+        .select("age", countAs("age").as("num"))
+        .from(TbUser.class)
+        .groupBy(TbUser::getAge)
+        .orderBy(new Sort(TbUser::getAge));
+```
+
+### 更新
+
+```java
+new SQL()
+        .update(TbUser.class)
+        .set(TbUser::getRealName, "元林")
+        .set(TbUser::getEmail, "13888888888@163.com")
+        .where(TbUser::getName, "Smith");
+```
+
+### 插入
+
+```java
+new SQL()
+        .insertInto(TbAccount.class, "userName", "realName")
+        .values("test", "测试")
+        .values("test2", "测试2");
+```
+
+### 删除
+
+```java
+new SQL()
+        .delete()
+        .from(TbUser.class)
+        .gt(TbUser::getAge, 20);
+```
+
+### JOIN
+
+```java
+new SQL()
+        .select("u.name", "r.role_name")
+        .from("tb_user", "u")
+        .leftJoin("tb_role", "r")
+        .on("u.role_id", "r.id")
+        .where("u.is_active", 1);
+```
+
+### UNION / UNION ALL
+
+```java
+new SQL()
+        .select("*")
+        .from("tb_a")
+        .where("status", 1)
+        .unionAll()
+        .select("*")
+        .from("tb_b")
+        .where("status", 1);
+```
+
+### 子查询
+
+```java
+new SQL()
+        .select("*")
+        .from("BOOK")
+        .notIn(
+                "id",
+                new SQL()
+                        .select("id")
+                        .from("author")
+                        .where("status", 1)
+        );
+```
+
+### MySQL 常用函数
+
+```java
+import static com.gysoft.jdbc.bean.FuncBuilder.*;
+
+new SQL()
+        .select(
+                countAs("id").as("total"),
+                maxAs("age").as("maxAge"),
+                jsonExtractAs("extra", "$.name").as("nameJson")
+        )
+        .from("tb_user")
+        .where("is_active", 1);
+```
+
+## 多数据源支持
+
+GyJdbc 提供 `JdbcRoutingDataSource`，可以按 key 或 group 选择数据源。group 支持负载均衡策略，适合读写分离、多从库、租户库等场景。
+
+### Spring Boot 配置示例
+
+```java
+import com.gysoft.jdbc.multi.JdbcRoutingDataSource;
+import com.zaxxer.hikari.HikariDataSource;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import javax.sql.DataSource;
+import java.util.HashMap;
+import java.util.Map;
+
 @Configuration
 public class DatasourceConf {
+
     @Bean(name = "primary")
     @Primary
     @ConfigurationProperties(prefix = "spring.datasource.primary")
@@ -212,68 +330,133 @@ public class DatasourceConf {
         return new HikariDataSource();
     }
 
-    @Bean(name = "secondry")
-    @ConfigurationProperties(prefix = "spring.datasource.secondry")
-    public HikariDataSource secondry() {
+    @Bean(name = "secondary")
+    @ConfigurationProperties(prefix = "spring.datasource.secondary")
+    public HikariDataSource secondary() {
         return new HikariDataSource();
     }
 
-    @Bean(name = "thrid")
-    @ConfigurationProperties(prefix = "spring.datasource.thrid")
-    public HikariDataSource thrid() {
+    @Bean(name = "third")
+    @ConfigurationProperties(prefix = "spring.datasource.third")
+    public HikariDataSource third() {
         return new HikariDataSource();
     }
 
     @Bean(name = "dataSource")
-    public DataSource dataSource() {
-        JdbcRoutingDataSource jdbcRoutingDataSource = new JdbcRoutingDataSource();
-        jdbcRoutingDataSource.setDefaultLookUpKey("primary");
+    public DataSource dataSource(
+            @Qualifier("primary") DataSource primary,
+            @Qualifier("secondary") DataSource secondary,
+            @Qualifier("third") DataSource third) {
+
+        JdbcRoutingDataSource routingDataSource = new JdbcRoutingDataSource();
+        routingDataSource.setDefaultLookUpKey("primary");
 
         Map<Object, Object> targetDataSources = new HashMap<>();
-        targetDataSources.put("primary", primary());
-        targetDataSources.put("secondry", secondry());
-        targetDataSources.put("third", thrid());
-        jdbcRoutingDataSource.setTargetDataSources(targetDataSources);
-        //配置分组用于负载均衡，如果无需负载均衡则可忽略
+        targetDataSources.put("primary", primary);
+        targetDataSources.put("secondary", secondary);
+        targetDataSources.put("third", third);
+        routingDataSource.setTargetDataSources(targetDataSources);
+
         Map<String, String> dataSourceKeysGroup = new HashMap<>();
-        dataSourceKeysGroup.put("master","primary");
-        dataSourceKeysGroup.put("slave","secondry,thrid");
-        jdbcRoutingDataSource.setDataSourceKeysGroup(dataSourceKeysGroup);
-        return jdbcRoutingDataSource;
+        dataSourceKeysGroup.put("master", "primary");
+        dataSourceKeysGroup.put("slave", "secondary,third");
+        routingDataSource.setDataSourceKeysGroup(dataSourceKeysGroup);
+
+        return routingDataSource;
     }
 
     @Bean(name = "jdbcTemplate")
-    public JdbcTemplate jdbcTemplate() {
-        return new JdbcTemplate(dataSource());
+    public JdbcTemplate jdbcTemplate(@Qualifier("dataSource") DataSource dataSource) {
+        return new JdbcTemplate(dataSource);
     }
 }
 ```
-**@Bindpoint注解绑定数据源**
 
-<u>绑定方法或者类级别的数据源,依赖于Spring Aop</u>
-
-```java
-//绑定数据源slaveGroup组，采用RandomLoadBalance策略（随机）的负载均衡策略选取数据源
-@BindPoint(group = "slaveGroup", loadBalance = RandomLoadBalance.class)
-//绑定指定slave2数据源
-@BindPoint(key = "slave2")
-```
-
-**EntityDao.binxxx方法绑定数据源**
-
-<u>绑定Sql级别的数据源</u>
+### 开启注解绑定
 
 ```java
-//SELECT * FROM tb_user where name in('zhouning','yinhw')将会在slave数据源上执行
- List<TbUser> tbUsers=tbUserDao.bindKey("slave").queryWithCriteria(new Criteria().in(TbUser::getName,Arrays.asList("zhouning","yinhw")));
-//UPDATE tb_user set realName = "元林",email = "13888888888@163.com" WHERE name = "Smith"
-//采用轮询负载均衡策略在masterGroup组中选择一个数据源执行update操作
-tbUserDao.bindGroup("masterGroup",RoundbinLoadBalance.class).updateWithSql(new SQL().update(TbUser.class).set(TbUser::getRealName,"元林").set(TbUser::getEmail,"13888888888@163.com").where(TbUser::getName,"Smith"));
+import com.gysoft.jdbc.multi.BindPointAspectRegistar;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+
+@SpringBootApplication
+@EnableAspectJAutoProxy(proxyTargetClass = true)
+@Import(BindPointAspectRegistar.class)
+public class SystemApp {
+
+    public static void main(String[] args) {
+        SpringApplication.run(SystemApp.class, args);
+    }
+}
 ```
 
-**FAQ**
+### 使用 `@BindPoint`
 
-<u>数据源选择的优先级顺序：</u>
+```java
+import com.gysoft.jdbc.multi.BindPoint;
+import com.gysoft.jdbc.multi.balance.RandomLoadBalance;
 
-*entityDao.bindXxx* > *方法上@BindPoint* > *类上@BindPoint* > *JdbcRoutingDataSource.defaultLookUpKey*
+// 从 slave 数据源组中随机选择一个数据源
+@BindPoint(group = "slave", loadBalance = RandomLoadBalance.class)
+public List<TbUser> queryFromSlave() throws Exception {
+    return tbUserDao.queryAll();
+}
 
+// 绑定指定数据源
+@BindPoint(key = "secondary")
+public int updateSecondary(TbUser user) throws Exception {
+    return tbUserDao.update(user);
+}
+```
+
+### 在 DAO 调用级别绑定
+
+```java
+import com.gysoft.jdbc.multi.balance.RoundRobinLoadBalance;
+
+// 指定 slave 数据源执行查询
+List<TbUser> users = tbUserDao
+        .bindKey("secondary")
+        .queryWithCriteria(new Criteria().in(TbUser::getName, Arrays.asList("zhouning", "yinhw")));
+
+// 在 master 组中使用轮询策略选择数据源执行更新
+tbUserDao
+        .bindGroup("master", RoundRobinLoadBalance.class)
+        .updateWithSql(
+                new SQL()
+                        .update(TbUser.class)
+                        .set(TbUser::getRealName, "元林")
+                        .where(TbUser::getName, "Smith")
+        );
+```
+
+数据源选择优先级：
+
+```text
+EntityDao.bindXxx > 方法上的 @BindPoint > 类上的 @BindPoint > JdbcRoutingDataSource.defaultLookUpKey
+```
+
+## 更多示例
+
+- SQL 语法测试：[CSqlTest.java](https://github.com/hope-for/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/CSqlTest.java)
+- 集成测试项目：[GyJdbcTest](https://github.com/SpringStudent/GyJdbcTest)
+- 使用示例项目：
+  - [remote-desktop-control](https://github.com/SpringStudent/remote-desktop-control)
+  - [webrtc-meetings](https://github.com/SpringStudent/webrtc-meetings)
+
+## 项目定位
+
+GyJdbc 不是为了取代所有 ORM，也不是为了隐藏 SQL。它更像是一个面向实战的 SQL 助手：
+
+- 简单 CRUD 交给 `EntityDao`；
+- 动态查询交给 `Criteria`；
+- 复杂 SQL 交给 `SQL` 构建器；
+- 多数据源选择交给 `JdbcRoutingDataSource` 和 `@BindPoint`。
+
+你仍然掌控 SQL，但不用再把时间浪费在重复 DAO、字符串拼接和散落各处的数据源切换代码上。
+
+## License
+
+GyJdbc 使用 Apache License 2.0 开源协议。

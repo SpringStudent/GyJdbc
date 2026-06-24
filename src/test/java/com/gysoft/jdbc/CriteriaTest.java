@@ -711,6 +711,13 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL()
+                .select("*")
+                .select(new SQL().select(count("*")).from("tb_role").as("role_count"))
+                .from("tb_user");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
 
 }
