@@ -718,6 +718,29 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL()
+                .update("tb_score")
+                .set(
+                        "(avg_score,max_score)",
+                        new SQL()
+                                .select("AVG(score)", "MAX(score)")
+                                .from("tb_score_detail")
+                                .where("student_id", 1)
+                )
+                .where("student_id", 1);
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL()
+                .update("tb_user", "u")
+                .innerJoin("tb_account", "a")
+                .on("u.id", "a.user_id")
+                .set("u.email", new FieldReference("a.email"))
+                .set("u.mobile", new FieldReference("a.mobile"))
+                .where("a.status", 1);
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
 
 }
