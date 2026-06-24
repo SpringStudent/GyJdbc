@@ -427,8 +427,8 @@ public class CSqlTest {
     public void criteriaShouldBuildNestedAndOrGroups() {
         Criteria criteria = new Criteria()
                 .where("type", "A")
-                .andCriteria(new Criteria().where("status", 1).or("status", 2))
-                .orCriteria(new Criteria().where("owner", "root").and("enabled", true));
+                .andCriteria(a -> a.where("status", 1).or("status", 2))
+                .orCriteria(c -> c.where("owner", "root").and("enabled", true));
 
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM account"));
 
