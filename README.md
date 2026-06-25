@@ -241,10 +241,10 @@ new Criteria()
 // WHERE role_id IN(?,?,?) AND age >= ? AND mobile IS NOT NULL
 new Criteria()
         .and(
-                        Opt.AND,
-                        WhereParam.where(TbUser::getRoleId).in(Arrays.asList(1, 2, 3)),
-                        WhereParam.where(TbUser::getAge).gte(18),
-                        WhereParam.where(TbUser::getMobile).isNotNull()
+                Opt.AND,
+                WhereParam.where(TbUser::getRoleId).in(Arrays.asList(1, 2, 3)),
+                WhereParam.where(TbUser::getAge).gte(18),
+                WhereParam.where(TbUser::getMobile).isNotNull()
         );
 
 // WHERE is_active = ? AND (role_id IN(?,?,?) OR age >= ? OR mobile IS NOT NULL)
