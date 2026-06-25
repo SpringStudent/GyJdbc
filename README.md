@@ -223,6 +223,13 @@ import com.gysoft.jdbc.bean.Opt;
 import com.gysoft.jdbc.bean.Where;
 import com.gysoft.jdbc.bean.WhereParam;
 
+// WHERE name LIKE ? OR email LIKE ?
+new Criteria()
+        .and(
+                Where.where(TbUser::getName).like("zhou")
+                                .or(TbUser::getEmail).like("@example.com")
+        );
+
 // WHERE is_active = ? AND (name LIKE ? OR email LIKE ?)
 new Criteria()
         .where(TbUser::getIsActive, 1)
@@ -318,6 +325,8 @@ new SQL()
 也可以使用回调方式写连接条件，连接条件里同样支持 Lambda 字段引用和动态条件。
 
 ```java
+// SELECT u.name, r.role_name, d.dept_name FROM tb_user u INNER JOIN tb_role r  ON u.role_id = r.id  AND r.status = ? LEFT JOIN tb_department d  ON u.dept_id = d.id  AND d.type = ? 
+// WHERE u.is_active = ? AND (u.name LIKE ? OR u.real_name like ?)
 new SQL()
         .select("u.name", "r.role_name", "d.dept_name")
         .from("tb_user", "u")

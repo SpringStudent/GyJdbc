@@ -741,6 +741,23 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
+        sql = new SQL()
+                .select("u.name", "r.role_name", "d.dept_name")
+                .from("tb_user", "u")
+                .innerJoin("tb_role", "r", on -> on
+                        .on("u.role_id", "r.id")
+                        .and("r.status", "=", 1))
+                .leftJoin("tb_department", "d", on -> on
+                        .on("u.dept_id", "d.id")
+                        .andIfAbsent("d.type", "=", "d1"))
+                .where("u.is_active", 1)
+                .andCriteria(c -> c
+                        .like("u.name", "zz")
+                        .orLike("u.real_name", "周"));
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
+
     }
 
 }
