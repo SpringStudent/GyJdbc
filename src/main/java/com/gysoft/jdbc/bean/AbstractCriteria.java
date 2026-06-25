@@ -219,12 +219,12 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     @Override
     public S orLike(String key, Object value) {
-        return this.or(key, "like", "%" + value + "%");
+        return this.or(key, "LIKE", "%" + value + "%");
     }
 
     @Override
     public <T, R> S orLike(TypeFunction<T, R> function, Object value) {
-        return this.or(TypeFunction.getLambdaColumnName(function), "like", "%" + value + "%");
+        return this.or(TypeFunction.getLambdaColumnName(function), "LIKE", "%" + value + "%");
     }
 
     public S or(String key, String opt, Object value) {

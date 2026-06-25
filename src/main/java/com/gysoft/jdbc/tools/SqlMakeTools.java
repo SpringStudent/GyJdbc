@@ -193,7 +193,7 @@ public class SqlMakeTools {
             return Types.BIGINT;
         } else if (float.class.equals(arg.getType()) || Float.class.equals(arg.getType())) {
             return Types.FLOAT;
-        } else if (boolean.class.equals(arg.getType()) || Boolean.class.equals(arg.getType())) {
+        } else if (boolean.class.equals(arg.getType()) || Boolean.class.equals (arg.getType())) {
             return Types.BOOLEAN;
         } else if (short.class.equals(arg.getType()) || Short.class.equals(arg.getType())) {
             return Types.INTEGER;
