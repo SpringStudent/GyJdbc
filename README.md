@@ -399,7 +399,7 @@ new SQL()
         .where("status", 1);
 ```
 
-### 子查询
+### 条件子查询
 
 ```java
 new SQL()
@@ -412,6 +412,23 @@ new SQL()
                         .from("author")
                         .where("status", 1)
         );
+```
+
+### 嵌套子查询
+
+```java
+// 子查询的健壮性毫无压力
+new SQL().select("*").from(
+            new SQL().select("a.*").from(
+                    new SQL().select("b.*").from(
+                                        new SQL().select("c.*").from(
+                                                new SQL().select("d.*").from(
+                                                        new SQL().select("e.*").from("nestTable")
+                                                ).where("key", "k1")
+                                        )
+                    ).like("keyLike","Lie").unionAll().select("f.*").from("f").isNotNull("notNull")
+            ).where("condition", "1")
+);
 ```
 
 ### MySQL 常用函数

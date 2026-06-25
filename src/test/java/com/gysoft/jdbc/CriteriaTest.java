@@ -757,7 +757,20 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
-
+        sql = new SQL().select("*").from(
+                new SQL().select("a.*").from(
+                        new SQL().select("b.*").from(
+                                new SQL().select("c.*").from(
+                                        new SQL().select("d.*").from(
+                                                new SQL().select("e.*").from("nestTable")
+                                        ).where("key", "k1")
+                                )
+                        ).like("keyLike","Lie").unionAll().select("f.*").from("f").isNotNull("notNull")
+                ).where("condition", "1")
+        );
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
 
 }
