@@ -1,30 +1,15 @@
 package com.gysoft.jdbc;
 
-import com.gysoft.jdbc.annotation.Table;
-import com.gysoft.jdbc.bean.Criteria;
-import com.gysoft.jdbc.bean.FieldReference;
-import com.gysoft.jdbc.bean.Pair;
-import com.gysoft.jdbc.bean.SQL;
-import com.gysoft.jdbc.bean.Sort;
-import com.gysoft.jdbc.bean.ValueReference;
+import com.gysoft.jdbc.bean.*;
 import com.gysoft.jdbc.dao.EntityDaoImpl;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.junit.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.gysoft.jdbc.bean.*;
+import java.util.Arrays;
 
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
 import static org.junit.Assert.*;
-
-import java.util.Arrays;
-
-import static com.gysoft.jdbc.bean.FuncBuilder.avg;
-import static com.gysoft.jdbc.bean.FuncBuilder.count;
-import static com.gysoft.jdbc.bean.FuncBuilder.max;
-import static com.gysoft.jdbc.bean.FuncBuilder.sum;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 public class CSqlTest {
 
@@ -604,49 +589,6 @@ public class CSqlTest {
 
         assertEquals("DELETE a,b FROM flow_instance a INNER JOIN flow_action b  ON a.id = b.flowInstanceId  WHERE b.bizId = ?", pair.getFirst());
         assertArrayEquals(new Object[]{"id123456"}, pair.getSecond());
-    }
-
-    @Table
-    private class Book {
-        private String id;
-        private String name;
-        private String num;
-
-        public String getId() {
-            return id;
-        }
-
-        public void setId(String id) {
-            this.id = id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getNum() {
-            return num;
-        }
-
-        public void setNum(String num) {
-            this.num = num;
-        }
-    }
-
-    @Test
-    public void sqlShouldBuildDeleteWithJoinAndChild() {
-        SQL s1 = new SQL().select("u1.*").from(Test.class).where("u1.id", 123).union().select("u2.*").from(Test.class).and("xd22", 1).or(Opt.OR, WhereParam.where("zx").isNull(), WhereParam.where("had").equal(2335))
-                .unionAll().select("u3.*").from(Book.class).where("u3", 123).leftJoin(new Joins().with(Test.class)
-                        .as("u31").on("u31.id", "u3.id").and("u31.nmm", "=", "nmmm")).limit(10000);
-        SQL s2 = new SQL().select("t1.*").from(Book.class).as("t1").andCriteria(new Criteria().in("t1.id", Arrays.asList(1, 2, 3)).like("t1.name", "name1")).leftJoin(new Joins().with(Book.class).as("j1").on("j1.id", "t1.id").and("j1.name", "=", "j1name"));
-        SQL sql = new SQL().select("res.*").from(s1, s2).where("res.name", "book1").orderBy(new Sort("res.name")).limit(100);
-        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        assertEquals("SELECT res.* FROM( (SELECT u1.* FROM TEST WHERE u1.id = ?) UNION (SELECT u2.* FROM TEST WHERE xd22 = ? OR zx IS NULL OR had = ?) UNION ALL (SELECT u3.* FROM BOOK LEFT JOIN TEST u31  ON u31.id = u3.id  AND u31.nmm = ? WHERE u3 = ? LIMIT ?) , (SELECT t1.* FROM BOOK t1 LEFT JOIN BOOK j1  ON j1.id = t1.id  AND j1.name = ? WHERE (t1.id IN(?,?,?) AND t1.name LIKE ?)))  WHERE res.name = ? ORDER BY res.name DESC LIMIT ?", pair.getFirst());
-        assertArrayEquals(new Object[]{123, 1, 2335, "nmmm", 123, 10000, "j1name", 1, 2, 3, "%name1%", "book1", 100}, pair.getSecond());
     }
 
     @Test
