@@ -74,7 +74,7 @@ public class CriteriaTest {
                 .and("sd", "in", Arrays.asList("sd1", "xg1")).gt("sdf", 12)
                 .andWhere(Opt.OR, WhereParam.where("k1").in(Arrays.asList(1, 3, 4)), WhereParam.where("k2").equal("k2v"), WhereParam.where("k3").isNotNull())
                 .natureJoin(new Joins().with(Book.class).as("t3"))
-                .leftJoin(new Joins().with(Book.class).as("t4").on("t4.id", "t2.id").on("t4.name", "t2.name").andIfAbsent("t4.andIfAbsent", "=", "123"))
+                .leftJoin(Book.class,"t4",lj->lj.on("t4.id", "t2.id").on("t4.name", "t2.name").andIfAbsent("t4.andIfAbsent", "=", "123"))
                 .andCriteria(new Criteria().where("k1", "v1").or("k2", "v2")).or("k3", "k5")
                 .limit(12222, 100)
                 .union().select("un.ke", "un.ke2").from(Book.class).where("un.ke", 1);
