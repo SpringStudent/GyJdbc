@@ -193,7 +193,7 @@ public class SqlMakeTools {
             return Types.BIGINT;
         } else if (float.class.equals(arg.getType()) || Float.class.equals(arg.getType())) {
             return Types.FLOAT;
-        } else if (boolean.class.equals(arg.getType()) || Boolean.class.equals (arg.getType())) {
+        } else if (boolean.class.equals(arg.getType()) || Boolean.class.equals(arg.getType())) {
             return Types.BOOLEAN;
         } else if (short.class.equals(arg.getType()) || Short.class.equals(arg.getType())) {
             return Types.INTEGER;
@@ -455,7 +455,11 @@ public class SqlMakeTools {
                     } else if (obj instanceof SQL) {
                         //兼容select字段为一条sql
                         Pair<String, Object[]> temp = SqlMakeTools.useSql((SQL) obj);
-                        sql.append(temp.getFirst() + ", ");
+                        if (temp.getFirst().startsWith("(")) {
+                            sql.append(temp.getFirst()).append(", ");
+                        } else {
+                            sql.append("(").append(temp.getFirst()).append("), ");
+                        }
                         addAll(params, temp.getSecond());
                     } else {
                         sql.append(obj.toString() + ", ");
@@ -612,7 +616,9 @@ public class SqlMakeTools {
                 if (i > 0 && StringUtils.isNotEmpty(childNode.getUnionType())) {
                     sqlBuilder.append(" ").append(childNode.getUnionType());
                 }
-                sqlBuilder.append(" (");
+                if (hasMultipleChildren || StringUtils.isNotEmpty(childNode.getAsTable()) || hasFromAsTable) {
+                    sqlBuilder.append(" (");
+                }
                 // 递归处理子节点
                 if (CollectionUtils.isNotEmpty(childNode.getChilds())) {
                     Pair<String, Object[]> childPair = recurSql(childNode, new Pair<>("", new Object[]{}));
@@ -626,7 +632,9 @@ public class SqlMakeTools {
                         Collections.addAll(paramsList, childNode.getParams());
                     }
                 }
-                sqlBuilder.append(")");
+                if (hasMultipleChildren || StringUtils.isNotEmpty(childNode.getAsTable()) || hasFromAsTable) {
+                    sqlBuilder.append(")");
+                }
                 if (StringUtils.isNotEmpty(childNode.getAsTable())) {
                     sqlBuilder.append(" ").append(childNode.getAsTable());
                 }
