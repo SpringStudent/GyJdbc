@@ -352,6 +352,8 @@ public class SqlMakeTools {
                         } else {
                             sql.append('(').append(criteriaProxy.getSql()).append(')').append(" AND ");
                         }
+                    } else if (criteriaType.equals("JOINS")) {
+                        sql.append(" ON ").append(criteriaProxy.getSql());
                     } else if (criteriaType.equals("WITH")) {
                     } else if (criteriaType.equals("WHEREAND")) {
                         sql.append(criteriaProxy.getSql()).append(" AND ");

@@ -143,6 +143,8 @@ public class CriteriaTest {
         Pair<String, Object[]> sqlParamPair = SqlMakeTools.useSql(s);
         System.out.println(sqlParamPair.getFirst());
         System.out.println(ArrayUtils.toString(sqlParamPair.getSecond()));
+        org.junit.Assert.assertFalse(sqlParamPair.getFirst().contains("  ON "));
+        org.junit.Assert.assertFalse(sqlParamPair.getFirst().contains("  AND "));
     }
 
     @Table

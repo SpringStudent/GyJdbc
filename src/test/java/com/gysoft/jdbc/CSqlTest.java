@@ -273,7 +273,7 @@ public class CSqlTest {
         SQL sql = new SQL().select("*").from("a")
                 .rightJoin("b", "aliasB").on("a.id", "aliasB.id");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        assertTrue(pair.getFirst().contains("RIGHT JOIN b aliasB  ON a.id = aliasB.id"));
+        assertTrue(pair.getFirst().contains("RIGHT JOIN b aliasB ON a.id = aliasB.id"));
     }
 
     @Test
@@ -434,7 +434,7 @@ public class CSqlTest {
 
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
 
-        assertEquals("SELECT r.name, t.ddd FROM tb_role r LEFT JOIN tb_token t  ON r.name = t.ddd  WHERE t.size > ? AND r.auths = ? OR t.id = ?", pair.getFirst());
+        assertEquals("SELECT r.name, t.ddd FROM tb_role r LEFT JOIN tb_token t ON r.name = t.ddd WHERE t.size > ? AND r.auths = ? OR t.id = ?", pair.getFirst());
         assertArrayEquals(new Object[]{3, "admin", 7}, pair.getSecond());
     }
 
@@ -587,7 +587,7 @@ public class CSqlTest {
 
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
 
-        assertEquals("DELETE a,b FROM flow_instance a INNER JOIN flow_action b  ON a.id = b.flowInstanceId  WHERE b.bizId = ?", pair.getFirst());
+        assertEquals("DELETE a,b FROM flow_instance a INNER JOIN flow_action b ON a.id = b.flowInstanceId WHERE b.bizId = ?", pair.getFirst());
         assertArrayEquals(new Object[]{"id123456"}, pair.getSecond());
     }
 
@@ -598,7 +598,7 @@ public class CSqlTest {
                         .and("m.projectId", "pid").groupBy("m.projectId"), "g1").on("g1.inspId", "m.id")
                 .inIfAbsent("m.status", Arrays.asList(1, 2, 3));
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        assertEquals("SELECT m.status mkStatus FROM inspection m LEFT JOIN (SELECT m.inspId,max(m.modelObjId)modelObjId FROM inspection_model m WHERE m.projectId = ? GROUP BY m.projectId) g1  ON g1.inspId = m.id  WHERE m.status IN(?,?,?)", pair.getFirst());
+        assertEquals("SELECT m.status mkStatus FROM inspection m LEFT JOIN (SELECT m.inspId,max(m.modelObjId)modelObjId FROM inspection_model m WHERE m.projectId = ? GROUP BY m.projectId) g1 ON g1.inspId = m.id WHERE m.status IN(?,?,?)", pair.getFirst());
         assertArrayEquals(new Object[]{"pid", 1, 2, 3,}, pair.getSecond());
     }
 

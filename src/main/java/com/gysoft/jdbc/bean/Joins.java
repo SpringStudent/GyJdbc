@@ -17,14 +17,17 @@ public class Joins {
 
     private List<CriteriaProxy> criteriaProxys;
 
+    private boolean hasOnCondition;
+
     public abstract class BaseJoin {
 
         public void setJoinType(JoinType joinType) {
-            joinSql = new StringBuilder(String.format(joinSql.toString(), joinType.getType()));
+            String joinTypeSql = joinType == JoinType.NatureJoin ? joinType.getType() : " " + joinType.getType();
+            joinSql = new StringBuilder(String.format(joinSql.toString(), joinTypeSql));
         }
 
         public StringBuilder getJoinSql() {
-            return new StringBuilder(joinSql.toString().replace("ON  AND", "ON"));
+            return new StringBuilder(joinSql);
         }
 
         public List<CriteriaProxy> getCriteriaProxys() {
@@ -35,20 +38,20 @@ public class Joins {
     public class With extends BaseJoin {
         public As as(String aliasName) {
             if(!StringUtils.isEmpty(aliasName)){
-                joinSql.append(" " + aliasName + " ");
+                joinSql.append(" ").append(aliasName);
             }
             return getAs();
         }
 
         public On on(String field, String field2) {
-            joinSql.append(" ON " + field + " = " + field2 + " ");
+            appendOn(field, field2);
             return getOn();
         }
     }
 
     public class As extends BaseJoin {
         public On on(String field, String field2) {
-            joinSql.append(" ON " + field + " = " + field2 + " ");
+            appendOn(field, field2);
             return getOn();
         }
 
@@ -57,14 +60,13 @@ public class Joins {
         }
 
         On on() {
-            joinSql.append(" ON ");
             return getOn();
         }
     }
 
     public class On extends BaseJoin {
         public On on(String field, String field2) {
-            joinSql.append(" AND " + field + " = " + field2 + " ");
+            appendOn(field, field2);
             return this;
         }
 
@@ -87,11 +89,16 @@ public class Joins {
         public On and(String key, String opt, Object value) {
             CriteriaProxy criteriaProxy = new CriteriaProxy();
             Pair<String, Object[]> pair = SqlMakeTools.doCriteria(new Criteria().where(key, opt, value), new StringBuilder());
-            criteriaProxy.setSql(new StringBuilder(pair.getFirst().replace("WHERE", "").trim()));
+            String criteriaSql = pair.getFirst().trim();
+            if (criteriaSql.startsWith("WHERE ")) {
+                criteriaSql = criteriaSql.substring("WHERE ".length());
+            }
+            criteriaProxy.setSql(new StringBuilder(criteriaSql));
             criteriaProxy.setParams(pair.getSecond());
-            criteriaProxy.setCriteriaType("AND");
+            criteriaProxy.setCriteriaType(hasOnCondition ? "AND" : "JOINS");
             criteriaProxy.setWhereParamsIndex(-1);
             criteriaProxys.add(criteriaProxy);
+            hasOnCondition = true;
             return this;
         }
 
@@ -121,21 +128,22 @@ public class Joins {
     public Joins() {
         this.joinSql = new StringBuilder();
         this.criteriaProxys = new ArrayList<>();
+        this.hasOnCondition = false;
     }
 
     public With with(Class clss) {
-        joinSql.append(" %s " + EntityTools.getTableName(clss));
+        joinSql.append("%s ").append(EntityTools.getTableName(clss));
         return getWith();
     }
 
     public With with(String tb) {
-        joinSql.append(" %s " + tb);
+        joinSql.append("%s ").append(tb);
         return getWith();
     }
 
     public With with(SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        joinSql.append(" %s " + "(" + pair.getFirst() + ")");
+        joinSql.append("%s ").append("(").append(pair.getFirst()).append(")");
         CriteriaProxy criteriaProxy = new CriteriaProxy();
         criteriaProxy.setWhereParamsIndex(-1);
         criteriaProxy.setParams(pair.getSecond());
@@ -158,5 +166,13 @@ public class Joins {
 
     private On getOn() {
         return new On();
+    }
+
+    private void appendOn(String field, String field2) {
+        joinSql.append(hasOnCondition ? " AND " : " ON ")
+                .append(field)
+                .append(" = ")
+                .append(field2);
+        hasOnCondition = true;
     }
 }
