@@ -428,8 +428,8 @@ public class CSqlTest {
                 .from(Role.class).as("r")
                 .leftJoin(Token.class, "t")
                 .on("r.name", "t.ddd")
-                .and("t.size", ">", 3)
                 .where("r.auths", "admin")
+                .and("t.size", ">", 3)
                 .or("t.id", 7);
 
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
