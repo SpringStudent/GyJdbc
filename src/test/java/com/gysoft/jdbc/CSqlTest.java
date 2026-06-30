@@ -287,6 +287,16 @@ public class CSqlTest {
     }
 
     @Test
+    public void joinShouldRejectUnsupportedTableType() {
+        try {
+            new SQL().select("*").from("a").leftJoin(new Object());
+            fail("unsupported join table type should fail");
+        } catch (GyjdbcException expected) {
+            assertEquals("unsupported join table type", expected.getMessage());
+        }
+    }
+
+    @Test
     public void joinsStaticFactoryShouldCreateStringClassAndSqlJoins() {
         SQL sql = new SQL()
                 .select("r.name", "t.ddd", "g1.max_id")
@@ -612,6 +622,29 @@ public class CSqlTest {
         assertEquals("ASC", ascSort.getSortType());
         assertEquals("createTime", descSort.getSortField());
         assertEquals("DESC", descSort.getSortType());
+    }
+
+    @Test
+    public void pageStaticFactoryShouldCreatePage() {
+        Page emptyPage = Page.newPage();
+        Page page = Page.newPage(2, 10);
+
+        assertEquals(0, emptyPage.getCurrentPage());
+        assertEquals(0, emptyPage.getPageSize());
+        assertEquals(2, page.getCurrentPage());
+        assertEquals(10, page.getPageSize());
+        assertEquals(10, page.getOffset());
+    }
+
+    @Test
+    public void pageResultStaticFactoriesShouldCreatePageResult() {
+        PageResult<String> pageResult = PageResult.newPageResult(Arrays.asList("a", "b"), 2);
+        PageResult<String> emptyPageResult = PageResult.emptyPageResult();
+
+        assertEquals(Integer.valueOf(2), pageResult.getTotal());
+        assertEquals(Arrays.asList("a", "b"), pageResult.getList());
+        assertEquals(Integer.valueOf(0), emptyPageResult.getTotal());
+        assertTrue(emptyPageResult.getList().isEmpty());
     }
 
     @Test

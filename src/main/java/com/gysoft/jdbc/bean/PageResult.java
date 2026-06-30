@@ -30,14 +30,18 @@ public class PageResult<T> implements Serializable {
 		this.list = list;
 	}
 
+	public static <T> PageResult<T> newPageResult(List<T> list, Integer total) {
+		return new PageResult<>(list, total);
+	}
+
 	/**
 	 * 创建一个空的分页结果集
      * @author 周宁
 	 * @return PageResult
 	 * @version 1.0
 	 */
-	public static PageResult emptyPageResult(){
-	    return new PageResult(Collections.EMPTY_LIST,0);
+	public static <T> PageResult<T> emptyPageResult(){
+	    return new PageResult<>(Collections.emptyList(),0);
     }
 
 	public Integer getTotal() {

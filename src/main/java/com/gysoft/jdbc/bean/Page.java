@@ -28,6 +28,14 @@ public class Page implements Serializable {
 
     }
 
+    public static Page newPage() {
+        return new Page();
+    }
+
+    public static Page newPage(int currentPage, int pageSize) {
+        return new Page(currentPage, pageSize);
+    }
+
     public Page(int currentPage, int pageSize) {
         this.currentPage = currentPage;
         this.pageSize = pageSize;

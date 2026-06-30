@@ -449,14 +449,7 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public SQL join(Object table, String alias, Consumer<Joins.On> joinConsumer, JoinType joinType) {
-        Joins.As as = null;
-        if (table instanceof Class) {
-            as = new Joins().with((Class) table).as(alias);
-        } else if (table instanceof String) {
-            as = new Joins().with((String) table).as(alias);
-        } else if (table instanceof SQL) {
-            as = new Joins().with((SQL) table).as(alias);
-        }
+        Joins.As as = Joins.joinWith(table).as(alias);
         as.setJoinType(joinType);
         joinConsumer.accept(as.on());
         joins.add(as);
@@ -464,28 +457,14 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public SQL join(JoinType joinType, Object table, String aliasName) {
-        Joins.As as = null;
-        if (table instanceof Class) {
-            as = new Joins().with((Class) table).as(aliasName);
-        } else if (table instanceof String) {
-            as = new Joins().with((String) table).as(aliasName);
-        } else if (table instanceof SQL) {
-            as = new Joins().with((SQL) table).as(aliasName);
-        }
+        Joins.As as = Joins.joinWith(table).as(aliasName);
         as.setJoinType(joinType);
         joins.add(as);
         return this;
     }
 
     public SQL join(JoinType joinType, Object table) {
-        Joins.With with = null;
-        if (table instanceof Class) {
-            with = new Joins().with((Class) table);
-        } else if (table instanceof String) {
-            with = new Joins().with((String) table);
-        } else if (table instanceof SQL) {
-            with = new Joins().with((SQL) table);
-        }
+        Joins.With with = Joins.joinWith(table);
         with.setJoinType(joinType);
         joins.add(with);
         return this;
