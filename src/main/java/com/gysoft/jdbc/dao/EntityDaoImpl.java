@@ -439,13 +439,12 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @Transactional(rollbackFor = Exception.class)
     public String createWithSql(SQL sql) throws Exception {
         TableMeta tableMeta = sql.getTableMeta();
-        String originTbName = EntityTools.transferColumnName(StringUtils.isEmpty(tableMeta.getName()) ? "tmp_" + UUID.randomUUID().toString().toLowerCase().replace("-", "") : tableMeta.getName());
         String originSqlType = sql.getSqlType();
         String originInsertTbName = sql.getInsert().getFirst();
         List<String> originInsertFields = sql.getInsert().getSecond();
+        Pair<String, Object[]> createSqlPair = SqlMakeTools.useSql(sql);
+        String originTbName = createSqlPair.getSecond()[0].toString();
         try {
-            sql.changeTableName(originTbName);
-            Pair<String, Object[]> createSqlPair = SqlMakeTools.useSql(sql);
             jdbcTemplate.execute(createSqlPair.getFirst());
             //判断是否有数据需要插入,有则插入
             if (CollectionUtils.isNotEmpty(sql.getInsertValues()) || CollectionUtils.isNotEmpty(sql.getSelectFields())) {
@@ -456,7 +455,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             }
             return originTbName;
         } finally {
-            tableMeta.setName(originTbName);
+            sql.changeTableName(originTbName);
             sql.changeSqlType(originSqlType);
             sql.getInsert().setFirst(originInsertTbName);
             sql.getInsert().setSecond(originInsertFields);

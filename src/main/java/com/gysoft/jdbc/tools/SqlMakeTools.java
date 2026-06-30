@@ -617,7 +617,7 @@ public class SqlMakeTools {
             if (StringUtils.isNotEmpty(tableMeta.getComment())) {
                 createSql.append(" COMMENT=" + "'" + tableMeta.getComment() + "'");
             }
-            return new Pair<>(createSql.toString(), new Object[]{});
+            return new Pair<>(createSql.toString(), new Object[]{tbName});
         }
         //连接查询sql组装
         if (CollectionUtils.isNotEmpty(sqlObj.getJoins())) {

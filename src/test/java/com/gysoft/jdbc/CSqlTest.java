@@ -23,7 +23,7 @@ public class CSqlTest {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
 
         assertEquals("CREATE TABLE `halou` (`id` int PRIMARY KEY,`name` varchar(16)) DEFAULT CHARSET=utf8mb4", pair.getFirst());
-        assertArrayEquals(new Object[]{}, pair.getSecond());
+        assertArrayEquals(new Object[]{"`halou`"}, pair.getSecond());
     }
 
     @Test
@@ -48,7 +48,7 @@ public class CSqlTest {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
 
         assertEquals("CREATE TABLE IF NOT EXISTS `member_log` (`id` int NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'primary id',`memberName` varchar(64) NOT NULL DEFAULT 'anonymous' COMMENT 'member name',`createdAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,`deletedFlag` tinyint DEFAULT '0',UNIQUE KEY `uk_member_name` (`memberName`) USING BTREE COMMENT 'unique member name', KEY `ix_createdAt_deletedFlag` (`createdAt`,`deletedFlag`) USING HASH) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci AUTO_INCREMENT=1000 ROW_FORMAT=DYNAMIC COMMENT='member log table'", pair.getFirst());
-        assertArrayEquals(new Object[]{}, pair.getSecond());
+        assertArrayEquals(new Object[]{"`member_log`"}, pair.getSecond());
     }
 
     @Test
