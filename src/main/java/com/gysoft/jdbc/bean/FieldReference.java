@@ -11,6 +11,14 @@ public class FieldReference {
      */
     private String field;
 
+    public static FieldReference newFieldRef(String field) {
+        return new FieldReference(field);
+    }
+
+    public static <T, R> FieldReference newFieldRef(TypeFunction<T, R> function) {
+        return new FieldReference(TypeFunction.getLambdaColumnName(function));
+    }
+
     public FieldReference(String field) {
         this.field = field;
     }

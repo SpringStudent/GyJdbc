@@ -16,6 +16,30 @@ public class Sort implements Serializable {
      */
     private String sortType = "DESC";
 
+    public static Sort by(String sortField) {
+        return new Sort(sortField);
+    }
+
+    public static <T, R> Sort by(TypeFunction<T, R> function) {
+        return new Sort(function);
+    }
+
+    public static Sort asc(String sortField) {
+        return new Sort(sortField, "ASC");
+    }
+
+    public static <T, R> Sort asc(TypeFunction<T, R> function) {
+        return new Sort(function, "ASC");
+    }
+
+    public static Sort desc(String sortField) {
+        return new Sort(sortField, "DESC");
+    }
+
+    public static <T, R> Sort desc(TypeFunction<T, R> function) {
+        return new Sort(function, "DESC");
+    }
+
     public Sort(String sortField) {
         this.sortField = sortField;
     }

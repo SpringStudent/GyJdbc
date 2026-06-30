@@ -131,6 +131,20 @@ public class Joins {
         this.hasOnCondition = false;
     }
 
+    public static With joinWith(Object table) {
+        Joins joins = new Joins();
+        if (table instanceof Class) {
+            return joins.with((Class) table);
+        }
+        if (table instanceof String) {
+            return joins.with((String) table);
+        }
+        if (table instanceof SQL) {
+            return joins.with((SQL) table);
+        }
+        throw new GyjdbcException("unsupported join table type");
+    }
+
     public With with(Class clss) {
         joinSql.append("%s ").append(EntityTools.getTableName(clss));
         return getWith();

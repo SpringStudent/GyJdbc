@@ -7,6 +7,10 @@ public class ValueReference {
 
     private Object value;
 
+    public static ValueReference newValueRef(Object value) {
+        return new ValueReference(value);
+    }
+
     public Object getValue() {
         return value;
     }

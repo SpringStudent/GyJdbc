@@ -104,6 +104,14 @@ public class SQL extends AbstractCriteria<SQL> {
         this.id = id;
     }
 
+    public static SQL newSQL() {
+        return new SQL();
+    }
+
+    public static SQL newSQL(String id) {
+        return new SQL(id);
+    }
+
     public SQL from(SQL... cc) {
         for (SQL c : cc) {
             c.getSqlPiepline().getSqlNexts().forEach(sqlNext -> {

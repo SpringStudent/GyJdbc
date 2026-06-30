@@ -286,6 +286,25 @@ public class CSqlTest {
         assertTrue(pair.getFirst().contains("LEFT JOIN c cAlias"));
     }
 
+    @Test
+    public void joinsStaticFactoryShouldCreateStringClassAndSqlJoins() {
+        SQL sql = new SQL()
+                .select("r.name", "t.ddd", "g1.max_id")
+                .from(Role.class).as("r")
+                .leftJoin(Joins.joinWith("tb_token").as("t").on("r.name", "t.ddd"))
+                .innerJoin(Joins.joinWith(Token.class).as("t2").on("r.name", "t2.ddd"))
+                .rightJoin(Joins.joinWith(new SQL()
+                        .select("ddd", "MAX(id) max_id")
+                        .from(Token.class)
+                        .groupBy("ddd")).as("g1").on("g1.ddd", "t.ddd"))
+                .where("r.auths", "admin");
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+
+        assertEquals("SELECT r.name, t.ddd, g1.max_id FROM tb_role r LEFT JOIN tb_token t ON r.name = t.ddd INNER JOIN tb_token t2 ON r.name = t2.ddd RIGHT JOIN (SELECT ddd, MAX(id) max_id FROM tb_token GROUP BY ddd) g1 ON g1.ddd = t.ddd WHERE r.auths = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"admin"}, pair.getSecond());
+    }
+
     // ==================== UNION 测试 ====================
 
     @Test
@@ -434,8 +453,8 @@ public class CSqlTest {
 
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
 
-        assertEquals("SELECT r.name, t.ddd FROM tb_role r LEFT JOIN tb_token t ON r.name = t.ddd WHERE t.size > ? AND r.auths = ? OR t.id = ?", pair.getFirst());
-        assertArrayEquals(new Object[]{3, "admin", 7}, pair.getSecond());
+        assertEquals("SELECT r.name, t.ddd FROM tb_role r LEFT JOIN tb_token t ON r.name = t.ddd WHERE r.auths = ? AND t.size > ? OR t.id = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"admin", 3, 7}, pair.getSecond());
     }
 
     @Test
@@ -573,6 +592,70 @@ public class CSqlTest {
 
         assertEquals("UPDATE test t SET t.name = src.name, t.size = ? WHERE t.id = ?", pair.getFirst());
         assertArrayEquals(new Object[]{10, "id1"}, pair.getSecond());
+    }
+
+    @Test
+    public void staticFactoriesShouldCreateReferencesAndSorts() {
+        FieldReference fieldReference = FieldReference.newFieldRef("src.name");
+        FieldReference lambdaFieldReference = FieldReference.newFieldRef(Token::getSize);
+        ValueReference valueReference = ValueReference.newValueRef("fixed");
+        Sort defaultSort = Sort.by("score");
+        Sort ascSort = Sort.asc(Token::getSize);
+        Sort descSort = Sort.desc("createTime");
+
+        assertEquals("src.name", fieldReference.getField());
+        assertEquals("`size`", lambdaFieldReference.getField());
+        assertEquals("fixed", valueReference.getValue());
+        assertEquals("score", defaultSort.getSortField());
+        assertEquals("DESC", defaultSort.getSortType());
+        assertEquals("`size`", ascSort.getSortField());
+        assertEquals("ASC", ascSort.getSortType());
+        assertEquals("createTime", descSort.getSortField());
+        assertEquals("DESC", descSort.getSortType());
+    }
+
+    @Test
+    public void criteriaStaticFactoriesShouldCreateCriteria() {
+        Criteria emptyCriteria = Criteria.newCriteria().in("id", Arrays.asList(1, 2));
+        Criteria equalCriteria = Criteria.newCriteria("name", "zhangsan").or("name", "lisi");
+        Criteria optCriteria = Criteria.newCriteria("age", ">", 18).and("status", 1);
+        Criteria lambdaEqualCriteria = Criteria.newCriteria(Token::getTk, "token1");
+        Criteria lambdaOptCriteria = Criteria.newCriteria(Token::getSize, ">", 18);
+
+        Pair<String, Object[]> emptyPair = SqlMakeTools.doCriteria(emptyCriteria, new StringBuilder("SELECT * FROM user"));
+        Pair<String, Object[]> equalPair = SqlMakeTools.doCriteria(equalCriteria, new StringBuilder("SELECT * FROM user"));
+        Pair<String, Object[]> optPair = SqlMakeTools.doCriteria(optCriteria, new StringBuilder("SELECT * FROM user"));
+        Pair<String, Object[]> lambdaEqualPair = SqlMakeTools.doCriteria(lambdaEqualCriteria, new StringBuilder("SELECT * FROM tb_token"));
+        Pair<String, Object[]> lambdaOptPair = SqlMakeTools.doCriteria(lambdaOptCriteria, new StringBuilder("SELECT * FROM tb_token"));
+
+        assertEquals("SELECT * FROM user WHERE id IN(?,?)", emptyPair.getFirst());
+        assertArrayEquals(new Object[]{1, 2}, emptyPair.getSecond());
+        assertEquals("SELECT * FROM user WHERE name = ? OR name = ?", equalPair.getFirst());
+        assertArrayEquals(new Object[]{"zhangsan", "lisi"}, equalPair.getSecond());
+        assertEquals("SELECT * FROM user WHERE age > ? AND status = ?", optPair.getFirst());
+        assertArrayEquals(new Object[]{18, 1}, optPair.getSecond());
+        assertEquals("SELECT * FROM tb_token WHERE ddd = ?", lambdaEqualPair.getFirst());
+        assertArrayEquals(new Object[]{"token1"}, lambdaEqualPair.getSecond());
+        assertEquals("SELECT * FROM tb_token WHERE `size` > ?", lambdaOptPair.getFirst());
+        assertArrayEquals(new Object[]{18}, lambdaOptPair.getSecond());
+    }
+
+    @Test
+    public void sqlStaticFactoryShouldCreateSql() {
+        SQL sql = SQL.newSQL("scoreQuery")
+                .select("number", ValueReference.newValueRef("fixed"))
+                .from("student_score")
+                .where("subject", "math")
+                .gt("score", SQL.newSQL()
+                        .select(avg("score"))
+                        .from("student_score")
+                        .where("subject", "math"));
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+
+        assertEquals("SELECT number, ? FROM student_score WHERE subject = ? AND score >(SELECT AVG(score) FROM student_score WHERE subject = ?)", pair.getFirst());
+        assertArrayEquals(new Object[]{"fixed", "math", "math"}, pair.getSecond());
+        assertEquals("scoreQuery", sql.getId());
     }
 
     @Test
