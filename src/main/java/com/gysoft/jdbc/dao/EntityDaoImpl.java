@@ -20,9 +20,7 @@ import org.springframework.util.ReflectionUtils;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
-import java.sql.JDBCType;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -446,110 +444,17 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         String originInsertTbName = sql.getInsert().getFirst();
         List<String> originInsertFields = sql.getInsert().getSecond();
         try {
-            List<ColumnMeta> columns = tableMeta.getColumns();
-            if (columns.isEmpty()) {
-                throw new GyjdbcException("未指定任何字段");
-            }
-            StringBuilder createSql = new StringBuilder();
-            List<String> fileds = new ArrayList<>();
-            //创建表
-            final String tbName = originTbName;
-            sql.changeTableName(tbName);
-            createSql.append("CREATE ");
-            if (tableMeta.isTemporary()) {
-                createSql.append("TEMPORARY ");
-            }
-            createSql.append("TABLE ");
-            if (tableMeta.isIfNotExists()) {
-                createSql.append("IF NOT EXISTS ");
-            }
-            createSql.append(tbName);
-            createSql.append(" (");
-            AtomicBoolean hasAutoIncrField = new AtomicBoolean(false);
-            //字段
-            columns.forEach(columnMeta -> {
-                createSql.append(EntityTools.transferColumnName(columnMeta.getName()));
-                fileds.add(EntityTools.transferColumnName(columnMeta.getName()));
-                createSql.append(" ").append(columnMeta.getDataType());
-                if (columnMeta.isNotNull()) {
-                    createSql.append(" NOT NULL");
-                }
-                if (columnMeta.isPrimaryKey()) {
-                    createSql.append(" PRIMARY KEY");
-                    if (columnMeta.isAutoIncr()) {
-                        createSql.append(" AUTO_INCREMENT");
-                        hasAutoIncrField.set(true);
-                    }
-                }
-                if (columnMeta.getVal() != null) {
-                    String upperVal = columnMeta.getVal().toUpperCase();
-                    if (columnMeta.getJdbcType().equals(JDBCType.TIMESTAMP)
-                            || "NULL".equals(upperVal)
-                            || "CURRENT_TIMESTAMP".equals(upperVal)
-                            || upperVal.contains("()")) {
-                        createSql.append(String.format(" DEFAULT %s", (columnMeta.getVal())));
-                    } else {
-                        createSql.append(String.format(" DEFAULT '%s'", (columnMeta.getVal())));
-                    }
-                }
-                if (StringUtils.isNotEmpty(columnMeta.getComment())) {
-                    createSql.append(String.format(" COMMENT '%s'", columnMeta.getComment()));
-                }
-                createSql.append(",");
-            });
-            //索引
-            List<IndexMeta> indexMetas = tableMeta.getIndexs();
-            indexMetas.forEach(indexMeta -> {
-                createSql.append((indexMeta.isUnique() ? "UNIQUE" : "") + " KEY " + (
-                        indexMeta.getIndexName() == null ? EntityTools
-                                .transferColumnName("ix_" + indexMeta.getColumnNames().stream().map(cName -> EntityTools.transferFieldName(cName)).collect(Collectors.joining("_")))
-                                : EntityTools.transferColumnName(indexMeta.getIndexName())) + " (");
-                indexMeta.getColumnNames().forEach(cc -> {
-                    createSql.append(EntityTools.transferColumnName(cc));
-                    createSql.append(",");
-                });
-                createSql.setLength(createSql.length() - 1);
-                createSql.append(")");
-                if (StringUtils.isNotEmpty(indexMeta.getIndexType())) {
-                    createSql.append(" ").append(indexMeta.getIndexType());
-                }
-                if (StringUtils.isNotEmpty(indexMeta.getComment())) {
-                    createSql.append(" COMMENT '").append(indexMeta.getComment()).append("'");
-                }
-                createSql.append(",");
-            });
-            createSql.setLength(createSql.length() - 1);
-            createSql.append(")");
-            //表元数据
-            if (tableMeta.getEngine() != null) {
-                createSql.append(" ENGINE=").append(tableMeta.getEngine());
-            }
-            if (StringUtils.isNotEmpty(tableMeta.getCharacterSet())) {
-                createSql.append(" DEFAULT CHARSET=").append(tableMeta.getCharacterSet());
-            } else {
-                createSql.append(" DEFAULT CHARSET=utf8mb4");
-            }
-            if (StringUtils.isNotEmpty(tableMeta.getCollation())) {
-                createSql.append(" COLLATE=").append(tableMeta.getCollation());
-            }
-            if (tableMeta.getAutoIncrement() != null && hasAutoIncrField.get()) {
-                createSql.append(" AUTO_INCREMENT=").append(tableMeta.getAutoIncrement());
-            }
-            if (tableMeta.getRowFormat() != null) {
-                createSql.append(" ROW_FORMAT=").append(tableMeta.getRowFormat());
-            }
-            if (StringUtils.isNotEmpty(tableMeta.getComment())) {
-                createSql.append(" COMMENT=" + "'" + tableMeta.getComment() + "'");
-            }
-            jdbcTemplate.execute(createSql.toString());
+            sql.changeTableName(originTbName);
+            Pair<String, Object[]> createSqlPair = SqlMakeTools.useSql(sql);
+            jdbcTemplate.execute(createSqlPair.getFirst());
             //判断是否有数据需要插入,有则插入
             if (CollectionUtils.isNotEmpty(sql.getInsertValues()) || CollectionUtils.isNotEmpty(sql.getSelectFields())) {
                 sql.changeSqlType(EntityDao.SQL_INSERT);
-                sql.getInsert().setFirst(tbName);
-                sql.getInsert().setSecond(fileds);
+                sql.getInsert().setFirst(originTbName);
+                sql.getInsert().setSecond(tableMeta.getColumns().stream().map(columnMeta -> EntityTools.transferColumnName(columnMeta.getName())).collect(Collectors.toList()));
                 insertWithSql(sql);
             }
-            return tbName;
+            return originTbName;
         } finally {
             tableMeta.setName(originTbName);
             sql.changeSqlType(originSqlType);

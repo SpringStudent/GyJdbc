@@ -14,39 +14,41 @@ import static org.junit.Assert.*;
 public class CSqlTest {
 
     @Test
-    public void createWithSqlShouldRestoreSqlStateAfterInsert() throws Exception {
+    public void useSqlShouldBuildCreateSqlWithEmptyParams() {
         SQL sql = new SQL().create().table("halou")
-                .column().name("id").integer().primary().commit()
-                .column().name("name").varchar(16).commit()
-                .commit()
-                .values(1, "zhou");
+                .column(c -> c.name("id").integer().primary())
+                .column(c -> c.name("name").varchar(16))
+                .commit();
 
-        new TestDao().createWithSql(sql);
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
 
-        assertEquals("create", sql.getSqlType());
-        assertEquals("`halou`", sql.getTableMeta().getName());
-        assertNull(sql.getInsert().getFirst());
-        assertNull(sql.getInsert().getSecond());
+        assertEquals("CREATE TABLE `halou` (`id` int PRIMARY KEY,`name` varchar(16)) DEFAULT CHARSET=utf8mb4", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
     }
 
     @Test
-    public void createWithSqlShouldRestoreSqlStateWhenCreateFails() throws Exception {
-        SQL sql = new SQL().create().table("halou")
-                .column().name("id").integer().primary().commit()
+    public void useSqlShouldBuildComplexCreateSql() {
+        SQL sql = new SQL().create().table("member_log")
+                .ifNotExists()
+                .engine(TableEnum.Engine.InnoDB)
+                .charset("utf8mb4")
+                .collation("utf8mb4_general_ci")
+                .autoIncrement(1000)
+                .rowFormat(TableEnum.RowFormat.DYNAMIC)
+                .comment("member log table")
+                .column().name("id").integer().primary().autoIncrement().notNull().comment("primary id").commit()
+                .column().name("memberName").varchar(64).notNull().defaultVal("anonymous").comment("member name").commit()
+                .column().name("createdAt").datetime(6).notNull().defaultCurrentTimestamp().commit()
+                .column().name("deletedFlag").tinyint().defaultVal("0").commit()
+                .index().name("uk_member_name").unique().column("memberName").usingBtree().comment("unique member name").commit()
+                .index().column("createdAt", "deletedFlag").usingHash().commit()
                 .commit()
-                .values(1);
+                .select("*").from(new SQL().select("1").from("DUAL"));
 
-        try {
-            new FailingCreateDao().createWithSql(sql);
-            fail("createWithSql should fail");
-        } catch (IllegalStateException expected) {
-            assertEquals("create failed", expected.getMessage());
-        }
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
 
-        assertEquals("create", sql.getSqlType());
-        assertEquals("`halou`", sql.getTableMeta().getName());
-        assertNull(sql.getInsert().getFirst());
-        assertNull(sql.getInsert().getSecond());
+        assertEquals("CREATE TABLE IF NOT EXISTS `member_log` (`id` int NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'primary id',`memberName` varchar(64) NOT NULL DEFAULT 'anonymous' COMMENT 'member name',`createdAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,`deletedFlag` tinyint DEFAULT '0',UNIQUE KEY `uk_member_name` (`memberName`) USING BTREE COMMENT 'unique member name', KEY `ix_createdAt_deletedFlag` (`createdAt`,`deletedFlag`) USING HASH) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci AUTO_INCREMENT=1000 ROW_FORMAT=DYNAMIC COMMENT='member log table'", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
     }
 
     @Test

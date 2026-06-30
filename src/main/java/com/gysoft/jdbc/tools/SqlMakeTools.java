@@ -7,8 +7,10 @@ import org.apache.commons.lang.StringUtils;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.sql.JDBCType;
 import java.sql.Types;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static com.gysoft.jdbc.dao.EntityDao.*;
@@ -385,24 +387,29 @@ public class SqlMakeTools {
      * @version 1.0
      */
     public static Pair<String, Object[]> useSql(SQL sqlObj) {
-        //虚拟出查询的根节点，兼容处理联合查询和子查询
-        SQL parentSQL = new SQL().select("*").from(sqlObj);
-        SQLTree sqlTree = new SQLTree();
-        sqlTree.setId("0");
-        sqlTree.setParams(new Object[]{});
-        sqlTree.setSql(" FROM ");
-        sqlTree.setChilds(new ArrayList<>());
-        //递归组装SQL树
-        buildSQLTree(parentSQL, sqlTree);
-        //递归SQL树获取真正的sql和参数
-        Pair<String, Object[]> pair = recurSql(sqlTree, new Pair<>("", new Object[]{}));
-        String parentSql = pair.getFirst().trim();
-        //非联合查询sql语句不必保留左右两侧括号
-        if (sqlObj.getSqlPiepline().getSqlNexts().size() <= 1 && parentSql.startsWith("(") && parentSql.endsWith(")")) {
-            parentSql = parentSql.substring(1, parentSql.length() - 1).trim();
+        //只有查询语句才需要虚拟查询树，其他场景不需要
+        if (!SQL_SELECT.equals(sqlObj.getSqlType())) {
+            return doSql(sqlObj);
+        } else {
+            //虚拟出查询的根节点，兼容处理联合查询和子查询
+            SQL parentSQL = new SQL().select("*").from(sqlObj);
+            SQLTree sqlTree = new SQLTree();
+            sqlTree.setId("0");
+            sqlTree.setParams(new Object[]{});
+            sqlTree.setSql(" FROM ");
+            sqlTree.setChilds(new ArrayList<>());
+            //递归组装SQL树
+            buildSQLTree(parentSQL, sqlTree);
+            //递归SQL树获取真正的sql和参数
+            Pair<String, Object[]> pair = recurSql(sqlTree, new Pair<>("", new Object[]{}));
+            String parentSql = pair.getFirst().trim();
+            //非联合查询sql语句不必保留左右两侧括号
+            if (sqlObj.getSqlPiepline().getSqlNexts().size() <= 1 && parentSql.startsWith("(") && parentSql.endsWith(")")) {
+                parentSql = parentSql.substring(1, parentSql.length() - 1).trim();
+            }
+            pair.setFirst(parentSql);
+            return pair;
         }
-        pair.setFirst(parentSql);
-        return pair;
     }
 
     /**
@@ -418,15 +425,7 @@ public class SqlMakeTools {
         for (int i = 0; i < subSqls.size(); i++) {
             //单个sql对象对应的sql和参数组装
             Pair<String, Object[]> pair = doSql(subSqls.get(i));
-            SQLTree cTree = new SQLTree(
-                    pair.getFirst(),
-                    pair.getSecond(),
-                    new ArrayList<>(),
-                    UUID.randomUUID().toString().replace("-", ""),
-                    subSqls.get(i).getUnionType(),
-                    subSqls.get(i).getAsTable(),
-                    subSqls.get(i).getFromAsTable()
-            );
+            SQLTree cTree = new SQLTree(pair.getFirst(), pair.getSecond(), new ArrayList<>(), UUID.randomUUID().toString().replace("-", ""), subSqls.get(i).getUnionType(), subSqls.get(i).getAsTable(), subSqls.get(i).getFromAsTable());
             //加入子查询列表
             sqlTree.getChilds().add(cTree);
             buildSQLTree(subSqls.get(i), cTree);
@@ -506,7 +505,7 @@ public class SqlMakeTools {
             for (String tb : tables) {
                 sql.append("TRUNCATE TABLE " + tb + ";\n");
             }
-            return new Pair<>(sql.toString(), null);
+            return new Pair<>(sql.toString(), new Object[]{});
 
         } else if (sqlObj.getSqlType().equals(EntityDao.SQL_DROP)) {
             Drunk drunk = sqlObj.getDrunk();
@@ -521,7 +520,7 @@ public class SqlMakeTools {
                 }
                 sql.setLength(sql.length() - 1);
             }
-            return new Pair<>(sql.toString(), null);
+            return new Pair<>(sql.toString(), new Object[]{});
 
         } else if (sqlObj.getSqlType().equals(SQL_INSERT) || sqlObj.getSqlType().equals(SQL_INSERTIGNORE) || sqlObj.getSqlType().equals(SQL_REPLACE)) {
             sql.append(sqlObj.getSqlType().toUpperCase()).append(" INTO ");
@@ -533,7 +532,92 @@ public class SqlMakeTools {
             if (CollectionUtils.isNotEmpty(insertFields)) {
                 sql.append("(").append(insertFields.stream().collect(Collectors.joining(","))).append(")");
             }
-            return new Pair<>(sql.toString(), null);
+            return new Pair<>(sql.toString(), new Object[]{});
+        } else if (sqlObj.getSqlType().equals(SQL_CREATE)) {
+            TableMeta tableMeta = sqlObj.getTableMeta();
+            List<ColumnMeta> columns = tableMeta.getColumns();
+            if (columns.isEmpty()) {
+                throw new GyjdbcException("未指定任何字段");
+            }
+            String tbName = EntityTools.transferColumnName(StringUtils.isEmpty(tableMeta.getName()) ? "tmp_" + UUID.randomUUID().toString().toLowerCase().replace("-", "") : tableMeta.getName());
+            StringBuilder createSql = new StringBuilder();
+            createSql.append("CREATE ");
+            if (tableMeta.isTemporary()) {
+                createSql.append("TEMPORARY ");
+            }
+            createSql.append("TABLE ");
+            if (tableMeta.isIfNotExists()) {
+                createSql.append("IF NOT EXISTS ");
+            }
+            createSql.append(tbName);
+            createSql.append(" (");
+            AtomicBoolean hasAutoIncrField = new AtomicBoolean(false);
+            columns.forEach(columnMeta -> {
+                createSql.append(EntityTools.transferColumnName(columnMeta.getName()));
+                createSql.append(" ").append(columnMeta.getDataType());
+                if (columnMeta.isNotNull()) {
+                    createSql.append(" NOT NULL");
+                }
+                if (columnMeta.isPrimaryKey()) {
+                    createSql.append(" PRIMARY KEY");
+                    if (columnMeta.isAutoIncr()) {
+                        createSql.append(" AUTO_INCREMENT");
+                        hasAutoIncrField.set(true);
+                    }
+                }
+                if (columnMeta.getVal() != null) {
+                    String upperVal = columnMeta.getVal().toUpperCase();
+                    if (columnMeta.getJdbcType().equals(JDBCType.TIMESTAMP) || "NULL".equals(upperVal) || "CURRENT_TIMESTAMP".equals(upperVal) || upperVal.contains("()")) {
+                        createSql.append(String.format(" DEFAULT %s", (columnMeta.getVal())));
+                    } else {
+                        createSql.append(String.format(" DEFAULT '%s'", (columnMeta.getVal())));
+                    }
+                }
+                if (StringUtils.isNotEmpty(columnMeta.getComment())) {
+                    createSql.append(String.format(" COMMENT '%s'", columnMeta.getComment()));
+                }
+                createSql.append(",");
+            });
+            List<IndexMeta> indexMetas = tableMeta.getIndexs();
+            indexMetas.forEach(indexMeta -> {
+                createSql.append((indexMeta.isUnique() ? "UNIQUE" : "") + " KEY " + (indexMeta.getIndexName() == null ? EntityTools.transferColumnName("ix_" + indexMeta.getColumnNames().stream().map(cName -> EntityTools.transferFieldName(cName)).collect(Collectors.joining("_"))) : EntityTools.transferColumnName(indexMeta.getIndexName())) + " (");
+                indexMeta.getColumnNames().forEach(cc -> {
+                    createSql.append(EntityTools.transferColumnName(cc));
+                    createSql.append(",");
+                });
+                createSql.setLength(createSql.length() - 1);
+                createSql.append(")");
+                if (StringUtils.isNotEmpty(indexMeta.getIndexType())) {
+                    createSql.append(" ").append(indexMeta.getIndexType());
+                }
+                if (StringUtils.isNotEmpty(indexMeta.getComment())) {
+                    createSql.append(" COMMENT '").append(indexMeta.getComment()).append("'");
+                }
+                createSql.append(",");
+            });
+            createSql.setLength(createSql.length() - 1);
+            createSql.append(")");
+            if (tableMeta.getEngine() != null) {
+                createSql.append(" ENGINE=").append(tableMeta.getEngine());
+            }
+            if (StringUtils.isNotEmpty(tableMeta.getCharacterSet())) {
+                createSql.append(" DEFAULT CHARSET=").append(tableMeta.getCharacterSet());
+            } else {
+                createSql.append(" DEFAULT CHARSET=utf8mb4");
+            }
+            if (StringUtils.isNotEmpty(tableMeta.getCollation())) {
+                createSql.append(" COLLATE=").append(tableMeta.getCollation());
+            }
+            if (tableMeta.getAutoIncrement() != null && hasAutoIncrField.get()) {
+                createSql.append(" AUTO_INCREMENT=").append(tableMeta.getAutoIncrement());
+            }
+            if (tableMeta.getRowFormat() != null) {
+                createSql.append(" ROW_FORMAT=").append(tableMeta.getRowFormat());
+            }
+            if (StringUtils.isNotEmpty(tableMeta.getComment())) {
+                createSql.append(" COMMENT=" + "'" + tableMeta.getComment() + "'");
+            }
+            return new Pair<>(createSql.toString(), new Object[]{});
         }
         //连接查询sql组装
         if (CollectionUtils.isNotEmpty(sqlObj.getJoins())) {
@@ -598,8 +682,7 @@ public class SqlMakeTools {
             String parentSql = sqlTree.getSql();
             int fromIndex = parentSql.indexOf("FROM");
             String beforeFrom = fromIndex >= 0 ? parentSql.substring(0, fromIndex) : parentSql;
-            String afterFrom = fromIndex >= 0 && fromIndex + 4 < parentSql.length()
-                    ? parentSql.substring(fromIndex + 4) : "";
+            String afterFrom = fromIndex >= 0 && fromIndex + 4 < parentSql.length() ? parentSql.substring(fromIndex + 4) : "";
             boolean hasMultipleChildren = childs.size() > 1;
             boolean hasFromAsTable = StringUtils.isNotEmpty(sqlTree.getFromAsTable());
             // 处理FROM之前的SQL部分
