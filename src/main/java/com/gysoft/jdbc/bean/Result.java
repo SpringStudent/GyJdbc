@@ -49,13 +49,13 @@ public class Result<E> {
     }
 
     public PageResult<E> pageQuery(Page page) throws Exception {
-        String pageSql = "SELECT SQL_CALC_FOUND_ROWS * FROM (" + sql + ") temp ";
-        pageSql = pageSql + " LIMIT ?,?";
+        String pageSql = "SELECT * FROM (" + sql + ") temp LIMIT ?,?";
         Object[] pageParams = appendParams(params, page.getOffset(), page.getPageSize());
         List<E> paged = jdbcTemplate.query(pageSql, pageParams, BeanPropertyRowMapper.newInstance(type));
-        String countSql = "SELECT FOUND_ROWS() ";
-        int count = jdbcTemplate.queryForObject(countSql, Integer.class);
-        return new PageResult(paged, count);
+        //独立统计总数,避免FOUND_ROWS()依赖同一连接在连接池/并发下取到错误计数
+        String countSql = "SELECT COUNT(*) FROM (" + sql + ") temp";
+        Integer count = jdbcTemplate.queryForObject(countSql, params, Integer.class);
+        return new PageResult(paged, count == null ? 0 : count);
     }
 
     private Object[] appendParams(Object[] params, Object... extraParams) {

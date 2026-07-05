@@ -325,13 +325,14 @@ public class SpringJdbc implements ISpringJdbc {
     public <T> PageResult<T> queryForPageResult(Page page, String sql, Object[] args, Class<T> requiredType) throws Exception {
         Object[] obj = this.changeMessage(sql, args);
         String baseSql = (String) obj[0];
-        Object[] params = (Object[]) obj[1];
-        String pageSql = "SELECT SQL_CALC_FOUND_ROWS * FROM (" + baseSql + ") temp LIMIT ?,?";
-        params = appendParams(params, page.getOffset(), page.getPageSize());
-        List<T> paged = jdbcTemplate.query(pageSql, params, BeanPropertyRowMapper.newInstance(requiredType));
-        String countSql = "SELECT FOUND_ROWS() ";
-        int count = jdbcTemplate.queryForObject(countSql, Integer.class);
-        return new PageResult(paged, count);
+        Object[] baseParams = (Object[]) obj[1];
+        String pageSql = "SELECT * FROM (" + baseSql + ") temp LIMIT ?,?";
+        Object[] pageParams = appendParams(baseParams, page.getOffset(), page.getPageSize());
+        List<T> paged = jdbcTemplate.query(pageSql, pageParams, BeanPropertyRowMapper.newInstance(requiredType));
+        //独立统计总数,避免FOUND_ROWS()依赖同一连接在连接池/并发下取到错误计数
+        String countSql = "SELECT COUNT(*) FROM (" + baseSql + ") temp";
+        Integer count = jdbcTemplate.queryForObject(countSql, baseParams, Integer.class);
+        return new PageResult(paged, count == null ? 0 : count);
     }
 
     private Object[] appendParams(Object[] params, Object... extraParams) {

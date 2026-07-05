@@ -247,7 +247,7 @@ public class SqlMakeTools {
                         Object value = whereParam.getValue();
                         sql.append(key).append(" ");
                         if ("IN".equals(opt.toUpperCase()) || "NOT IN".equals(opt.toUpperCase())) {
-                            sql.append(opt).append(" (");
+                            sql.append(opt).append("(");
                             if (value instanceof Collection) {
                                 if (CollectionUtils.isNotEmpty(((Collection) value))) {
                                     Iterator iterator = ((Collection) value).iterator();
@@ -256,6 +256,8 @@ public class SqlMakeTools {
                                         sql.append("?,");
                                     }
                                     sql.setLength(sql.length() - 1);
+                                }else{
+                                    throw new GyjdbcException("in condition collection cannot be null");
                                 }
                             } else if (value instanceof SQL) {
                                 SQL inSql = (SQL) value;
@@ -306,7 +308,7 @@ public class SqlMakeTools {
             //having拼接
             if (criteria.getHaving() != null) {
                 Pair<String, Object[]> having = criteria.getHaving();
-                sql.append(" ").append("HAVING").append(having.getFirst());
+                sql.append(" ").append("HAVING").append(" ").append(having.getFirst());
                 addAll(params, having.getSecond());
             }
             //排序条件拼接
@@ -563,6 +565,7 @@ public class SqlMakeTools {
                     if (columnMeta.isAutoIncr()) {
                         createSql.append(" AUTO_INCREMENT");
                         hasAutoIncrField.set(true);
+
                     }
                 }
                 if (columnMeta.getVal() != null) {
@@ -749,4 +752,5 @@ public class SqlMakeTools {
         // 转换为数组返回
         return new Pair<>(sqlBuilder.toString(), paramsList.toArray());
     }
+
 }

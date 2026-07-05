@@ -433,7 +433,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         CriteriaProxy criteriaProxy = new CriteriaProxy();
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder());
         criteriaProxy.setWhereParamsIndex(whereParams.size() + 1);
-        criteriaProxy.setSql(new StringBuilder(pair.getFirst().replace("WHERE", "").trim()));
+        criteriaProxy.setSql(new StringBuilder(removeWhereAndTrim(pair.getFirst())));
         criteriaProxy.setParams(pair.getSecond());
         criteriaProxy.setCriteriaType(criteriaType);
         criteriaProxys.add(criteriaProxy);
@@ -456,7 +456,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     public S having(Criteria criteria) {
         having = SqlMakeTools.doCriteria(criteria, new StringBuilder());
-        having.setFirst(having.getFirst().replace("WHERE ", ""));
+        having.setFirst(removeWhereAndTrim(having.getFirst()));
         return self();
     }
 
@@ -474,6 +474,14 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     public S limit(int offset) {
         this.offset = offset;
         return self();
+    }
+
+    private String removeWhereAndTrim(String criteriaSql) {
+        criteriaSql = criteriaSql.trim();
+        if (criteriaSql.startsWith("WHERE ")) {
+            criteriaSql = criteriaSql.substring("WHERE ".length());
+        }
+        return criteriaSql;
     }
 
     public List<WhereParam> getWhereParams() {

@@ -10,17 +10,18 @@ import com.gysoft.jdbc.tools.CollectionUtil;
 import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.*;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ReflectionUtils;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -251,16 +252,18 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         String sql = "SELECT * FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
         sql = pair.getFirst();
-        Object[] params = pair.getSecond();
-        String pageSql = "SELECT SQL_CALC_FOUND_ROWS * FROM (" + sql + ") temp ";
+        Object[] baseParams = pair.getSecond();
+        String pageSql = "SELECT * FROM (" + sql + ") temp ";
+        Object[] pageParams = baseParams;
         if (page != null) {
             pageSql = pageSql + " LIMIT ?,?";
-            params = appendParams(params, page.getOffset(), page.getPageSize());
+            pageParams = appendParams(baseParams, page.getOffset(), page.getPageSize());
         }
-        List<T> paged = jdbcTemplate.query(pageSql, params, tRowMapper);
-        String countSql = "SELECT FOUND_ROWS() ";
-        int count = jdbcTemplate.queryForObject(countSql, Integer.class);
-        return new PageResult(paged, count);
+        List<T> paged = jdbcTemplate.query(pageSql, pageParams, tRowMapper);
+        //独立统计总数,避免FOUND_ROWS()依赖同一连接在连接池/并发下取到错误计数
+        String countSql = "SELECT COUNT(*) FROM (" + sql + ") temp";
+        Integer count = jdbcTemplate.queryForObject(countSql, baseParams, Integer.class);
+        return new PageResult(paged, count == null ? 0 : count);
     }
 
     @SuppressWarnings("unchecked")
@@ -436,7 +439,6 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public String createWithSql(SQL sql) throws Exception {
         TableMeta tableMeta = sql.getTableMeta();
         String originSqlType = sql.getSqlType();
