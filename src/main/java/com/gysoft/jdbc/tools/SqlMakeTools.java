@@ -247,7 +247,7 @@ public class SqlMakeTools {
                         Object value = whereParam.getValue();
                         sql.append(key).append(" ");
                         if ("IN".equals(opt.toUpperCase()) || "NOT IN".equals(opt.toUpperCase())) {
-                            sql.append(opt).append('(');
+                            sql.append(opt).append(" (");
                             if (value instanceof Collection) {
                                 if (CollectionUtils.isNotEmpty(((Collection) value))) {
                                     Iterator iterator = ((Collection) value).iterator();

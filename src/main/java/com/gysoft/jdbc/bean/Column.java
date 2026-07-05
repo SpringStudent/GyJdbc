@@ -88,6 +88,10 @@ public class Column {
         return this.jdbcType(JDBCType.TINYINT);
     }
 
+    public Column json() {
+        return this.jdbcType(JDBCType.OTHER);
+    }
+
     public Column primary() {
         columnMeta.setPrimaryKey(true);
         return this;
