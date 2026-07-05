@@ -27,15 +27,24 @@ public interface TypeFunction<T, R> extends Serializable, Function<T, R> {
             Method method = lambda.getClass().getDeclaredMethod("writeReplace");
             method.setAccessible(Boolean.TRUE);
             SerializedLambda serializedLambda = (SerializedLambda) method.invoke(lambda);
-            String getter = serializedLambda.getImplMethodName();
-            String fieldName = Introspector.decapitalize(getter.replace("get", ""));
-
+            String implMethodName = serializedLambda.getImplMethodName();
+            // 按前缀截取属性名,兼容getXxx/isXxx;
+            // 不能用replace("get","")——那会误删属性名中间的"get"(如getTarget -> tar)
+            String propertyName;
+            if (implMethodName.startsWith("get") && implMethodName.length() > 3) {
+                propertyName = implMethodName.substring(3);
+            } else if (implMethodName.startsWith("is") && implMethodName.length() > 2) {
+                propertyName = implMethodName.substring(2);
+            } else {
+                propertyName = implMethodName;
+            }
+            String fieldName = Introspector.decapitalize(propertyName);
             // 通过字段名获取字段
             Field field =
                     Class.forName(serializedLambda.getImplClass().replace("/", "."))
                             .getDeclaredField(fieldName);
 
-            com.gysoft.jdbc.annotation.Column anno = field.getAnnotation(Column.class);
+            Column anno = field.getAnnotation(Column.class);
             if (anno != null) {
                 return EntityTools.getColumnName(field);
             } else {

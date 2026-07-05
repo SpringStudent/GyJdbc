@@ -584,11 +584,16 @@ public class CSqlTest {
                 .values("admin", "all")
                 .onDuplicateKeyUpdateValues(Role::getName, Role::getAuths);
 
+        System.out.println(col(Role::getName));
         assertEquals(2, sql.getKvs().size());
         assertEquals("`name`", sql.getKvs().get(0).getFirst());
         assertEquals("VALUES(`name`)", ((FieldReference) sql.getKvs().get(0).getSecond()).getField());
         assertEquals("`auths`", sql.getKvs().get(1).getFirst());
         assertEquals("VALUES(`auths`)", ((FieldReference) sql.getKvs().get(1).getSecond()).getField());
+    }
+
+    private <T, R> String col(TypeFunction<T, R> function) {
+        return TypeFunction.getLambdaColumnName(function);
     }
 
     @Test
