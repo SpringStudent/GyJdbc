@@ -64,6 +64,26 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
 
     S doNothing();
 
+    S notEqual(String key, Object value);
+
+    <T, R> S notEqual(TypeFunction<T, R> function, Object value);
+
+    S betweenAnd(String key, Object v1, Object v2);
+
+    <T, R> S betweenAnd(TypeFunction<T, R> function, Object v1, Object v2);
+
+    S orBetweenAnd(String key, Object v1, Object v2);
+
+    <T, R> S orBetweenAnd(TypeFunction<T, R> function, Object v1, Object v2);
+
+    S and(String key, String opt, Object value);
+
+    <T, R> S and(TypeFunction<T, R> function, String opt, Object value);
+
+    S or(String key, String opt, Object value);
+
+    <T, R> S or(TypeFunction<T, R> function, String opt, Object value);
+
     default S likeIfAbsent(String key, Object value) {
         return likeIfAbsent(key, value, getDefaultPredicate());
     }
@@ -326,6 +346,116 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
     default <T, R> S notInIfAbsent(TypeFunction<T, R> function, Collection<?> args, Predicate<Collection> predicate) {
         if (predicate.test(args)) {
             return notIn(function, args);
+        }
+        return doNothing();
+    }
+
+    default S notEqualIfAbsent(String key, Object value) {
+        return notEqualIfAbsent(key, value, getDefaultPredicate());
+    }
+
+    default S notEqualIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return notEqual(key, value);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S notEqualIfAbsent(TypeFunction<T, R> function, Object value) {
+        return notEqualIfAbsent(function, value, getDefaultPredicate());
+    }
+
+    default <T, R> S notEqualIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return notEqual(function, value);
+        }
+        return doNothing();
+    }
+
+    default S betweenAndIfAbsent(String key, Object v1, Object v2) {
+        return betweenAndIfAbsent(key, v1, v2, getDefaultPredicate());
+    }
+
+    default S betweenAndIfAbsent(String key, Object v1, Object v2, Predicate<Object> predicate) {
+        if (predicate.test(v1) && predicate.test(v2)) {
+            return betweenAnd(key, v1, v2);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S betweenAndIfAbsent(TypeFunction<T, R> function, Object v1, Object v2) {
+        return betweenAndIfAbsent(function, v1, v2, getDefaultPredicate());
+    }
+
+    default <T, R> S betweenAndIfAbsent(TypeFunction<T, R> function, Object v1, Object v2, Predicate<Object> predicate) {
+        if (predicate.test(v1) && predicate.test(v2)) {
+            return betweenAnd(function, v1, v2);
+        }
+        return doNothing();
+    }
+
+    default S orBetweenAndIfAbsent(String key, Object v1, Object v2) {
+        return orBetweenAndIfAbsent(key, v1, v2, getDefaultPredicate());
+    }
+
+    default S orBetweenAndIfAbsent(String key, Object v1, Object v2, Predicate<Object> predicate) {
+        if (predicate.test(v1) && predicate.test(v2)) {
+            return orBetweenAnd(key, v1, v2);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S orBetweenAndIfAbsent(TypeFunction<T, R> function, Object v1, Object v2) {
+        return orBetweenAndIfAbsent(function, v1, v2, getDefaultPredicate());
+    }
+
+    default <T, R> S orBetweenAndIfAbsent(TypeFunction<T, R> function, Object v1, Object v2, Predicate<Object> predicate) {
+        if (predicate.test(v1) && predicate.test(v2)) {
+            return orBetweenAnd(function, v1, v2);
+        }
+        return doNothing();
+    }
+
+    default S andOptIfAbsent(String key, String opt, Object value) {
+        return andOptIfAbsent(key, opt, value, getDefaultPredicate());
+    }
+
+    default S andOptIfAbsent(String key, String opt, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return and(key, opt, value);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S andOptIfAbsent(TypeFunction<T, R> function, String opt, Object value) {
+        return andOptIfAbsent(function, opt, value, getDefaultPredicate());
+    }
+
+    default <T, R> S andOptIfAbsent(TypeFunction<T, R> function, String opt, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return and(function, opt, value);
+        }
+        return doNothing();
+    }
+
+    default S orOptIfAbsent(String key, String opt, Object value) {
+        return orOptIfAbsent(key, opt, value, getDefaultPredicate());
+    }
+
+    default S orOptIfAbsent(String key, String opt, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return or(key, opt, value);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S orOptIfAbsent(TypeFunction<T, R> function, String opt, Object value) {
+        return orOptIfAbsent(function, opt, value, getDefaultPredicate());
+    }
+
+    default <T, R> S orOptIfAbsent(TypeFunction<T, R> function, String opt, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return or(function, opt, value);
         }
         return doNothing();
     }

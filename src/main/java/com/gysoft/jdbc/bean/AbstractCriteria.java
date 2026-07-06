@@ -165,10 +165,12 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return self();
     }
 
+    @Override
     public S notEqual(String key, Object value) {
         return this.where(key, "<>", value);
     }
 
+    @Override
     public <T, R> S notEqual(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), "<>", value);
     }
@@ -199,10 +201,12 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return this.where(TypeFunction.getLambdaColumnName(function), value);
     }
 
+    @Override
     public S and(String key, String opt, Object value) {
         return this.where(key, opt, value);
     }
 
+    @Override
     public <T, R> S and(TypeFunction<T, R> function, String opt, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), opt, value);
     }
@@ -227,6 +231,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return this.or(TypeFunction.getLambdaColumnName(function), "LIKE", "%" + value + "%");
     }
 
+    @Override
     public S or(String key, String opt, Object value) {
         if (CollectionUtils.isEmpty(this.whereParams)) {
             throw new GyjdbcException("sql error,condition \"or\" must be following after \"where\"!");
@@ -242,14 +247,17 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return this.where("NOT EXISTS", "", sql);
     }
 
+    @Override
     public <T, R> S or(TypeFunction<T, R> function, String opt, Object value) {
         return this.or(TypeFunction.getLambdaColumnName(function), opt, value);
     }
 
+    @Override
     public S orBetweenAnd(String key, Object v1, Object v2) {
         return this.or(key, "BETWEEN ? AND ?", new Pair<>(v1, v2));
     }
 
+    @Override
     public <T, R> S orBetweenAnd(TypeFunction<T, R> function, Object v1, Object v2) {
         return this.or(TypeFunction.getLambdaColumnName(function), "BETWEEN ? AND ?", new Pair<>(v1, v2));
     }
@@ -290,10 +298,12 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return this.where(TypeFunction.getLambdaColumnName(function), "NOT IN", sql);
     }
 
+    @Override
     public S betweenAnd(String key, Object v1, Object v2) {
         return this.where(key, "BETWEEN ? AND ?", new Pair<>(v1, v2));
     }
 
+    @Override
     public <T, R> S betweenAnd(TypeFunction<T, R> function, Object v1, Object v2) {
         return this.where(TypeFunction.getLambdaColumnName(function), "BETWEEN ? AND ?", new Pair<>(v1, v2));
     }

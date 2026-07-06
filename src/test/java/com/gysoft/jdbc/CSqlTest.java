@@ -725,6 +725,167 @@ public class CSqlTest {
         assertArrayEquals(new Object[]{"pid", 1, 2, 3,}, pair.getSecond());
     }
 
+    @Test
+    public void notEqualIfAbsentWithValueShouldIncludeCondition() {
+        Criteria criteria = new Criteria().where("name", "zhouning")
+                .notEqualIfAbsent("status", "deleted");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE name = ? AND status <> ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"zhouning", "deleted"}, pair.getSecond());
+    }
+
+    @Test
+    public void notEqualIfAbsentWithNullShouldSkip() {
+        Criteria criteria = new Criteria().where("name", "zhouning")
+                .notEqualIfAbsent("status", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE name = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"zhouning"}, pair.getSecond());
+    }
+
+    @Test
+    public void notEqualIfAbsentWithEmptyStringShouldSkip() {
+        Criteria criteria = new Criteria().where("name", "zhouning")
+                .notEqualIfAbsent("status", "");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE name = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"zhouning"}, pair.getSecond());
+    }
+
+    @Test
+    public void notEqualIfAbsentLambdaWithValueShouldIncludeCondition() {
+        Criteria criteria = new Criteria().where(Role::getName, "zhouning")
+                .notEqualIfAbsent(Role::getAuths, "deleted");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertTrue(pair.getFirst().contains("`name`"));
+        assertTrue(pair.getFirst().contains("`auths`"));
+        assertTrue(pair.getFirst().contains("<>"));
+    }
+
+    @Test
+    public void betweenAndIfAbsentWithBothValuesShouldIncludeCondition() {
+        Criteria criteria = new Criteria().where("name", "zhouning")
+                .betweenAndIfAbsent("createTime", "2020-01-01", "2020-12-31");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertTrue(pair.getFirst().contains("WHERE name = ?"));
+        assertTrue(pair.getFirst().contains("AND createTime BETWEEN ? AND ?"));
+        assertArrayEquals(new Object[]{"zhouning", "2020-01-01", "2020-12-31"}, pair.getSecond());
+    }
+
+    @Test
+    public void betweenAndIfAbsentWithNullV1ShouldSkip() {
+        Criteria criteria = new Criteria().where("name", "zhouning")
+                .betweenAndIfAbsent("createTime", null, "2020-12-31");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE name = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"zhouning"}, pair.getSecond());
+    }
+
+    @Test
+    public void betweenAndIfAbsentWithNullV2ShouldSkip() {
+        Criteria criteria = new Criteria().where("name", "zhouning")
+                .betweenAndIfAbsent("createTime", "2020-01-01", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE name = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"zhouning"}, pair.getSecond());
+    }
+
+    @Test
+    public void betweenAndIfAbsentWithBothNullShouldSkip() {
+        Criteria criteria = new Criteria().where("name", "zhouning")
+                .betweenAndIfAbsent("createTime", null, null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE name = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"zhouning"}, pair.getSecond());
+    }
+
+    @Test
+    public void betweenAndIfAbsentLambdaWithBothValuesShouldIncludeCondition() {
+        Criteria criteria = new Criteria().where(Role::getName, "zhouning")
+                .betweenAndIfAbsent(Role::getAuths, "2020-01-01", "2020-12-31");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertTrue(pair.getFirst().contains("`name`"));
+        assertTrue(pair.getFirst().contains("`auths`"));
+        assertTrue(pair.getFirst().contains("BETWEEN ? AND ?"));
+    }
+
+    @Test
+    public void andOptIfAbsentWithCustomOptAndValueShouldIncludeCondition() {
+        Criteria criteria = new Criteria().where("name", "zhouning")
+                .andOptIfAbsent("score", ">=", 60);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE name = ? AND score >= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"zhouning", 60}, pair.getSecond());
+    }
+
+    @Test
+    public void andOptIfAbsentWithCustomOptAndNullShouldSkip() {
+        Criteria criteria = new Criteria().where("name", "zhouning")
+                .andOptIfAbsent("score", ">=", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE name = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"zhouning"}, pair.getSecond());
+    }
+
+    @Test
+    public void andOptIfAbsentLambdaWithCustomOptShouldIncludeCondition() {
+        Criteria criteria = new Criteria().where(Role::getName, "zhouning")
+                .andOptIfAbsent(Role::getAuths, ">=", "admin");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertTrue(pair.getFirst().contains("`name`"));
+        assertTrue(pair.getFirst().contains("`auths`"));
+        assertTrue(pair.getFirst().contains(">="));
+    }
+
+    @Test
+    public void orBetweenAndIfAbsentWithValuesShouldIncludeOrCondition() {
+        Criteria criteria = new Criteria().where("status", "active")
+                .orBetweenAndIfAbsent("createTime", "2020-01-01", "2020-06-30");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertTrue(pair.getFirst().contains("WHERE status = ?"));
+        assertTrue(pair.getFirst().contains("OR createTime BETWEEN ? AND ?"));
+        assertArrayEquals(new Object[]{"active", "2020-01-01", "2020-06-30"}, pair.getSecond());
+    }
+
+    @Test
+    public void orBetweenAndIfAbsentWithNullShouldSkip() {
+        Criteria criteria = new Criteria().where("status", "active")
+                .orBetweenAndIfAbsent("createTime", null, "2020-06-30");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"active"}, pair.getSecond());
+    }
+
+    @Test
+    public void orOptIfAbsentWithCustomOptShouldIncludeOrCondition() {
+        Criteria criteria = new Criteria().where("status", "active")
+                .orOptIfAbsent("type", "<>", "banned");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE status = ? OR type <> ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"active", "banned"}, pair.getSecond());
+    }
+
+    @Test
+    public void notEqualIfAbsentWithCustomPredicateShouldUsePredicate() {
+        // Custom predicate: only include if value > 0
+        Criteria criteria = new Criteria().where("name", "zhouning")
+                .notEqualIfAbsent("status", 0, v -> v instanceof Number && ((Number) v).intValue() > 0);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE name = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"zhouning"}, pair.getSecond());
+    }
+
+    @Test
+    public void chainMultipleIfAbsentShouldAllSkip() {
+        Criteria criteria = new Criteria().where("name", "zhouning")
+                .notEqualIfAbsent("status", null)
+                .betweenAndIfAbsent("createTime", "", "2020-12-31")
+                .andOptIfAbsent("score", ">=", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE name = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"zhouning"}, pair.getSecond());
+    }
+
     private static class TestDao extends EntityDaoImpl<TestEntity, String> {
         TestDao() {
             this.jdbcTemplate = new JdbcTemplate() {
