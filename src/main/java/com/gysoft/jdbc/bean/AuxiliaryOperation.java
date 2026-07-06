@@ -84,6 +84,14 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
 
     <T, R> S or(TypeFunction<T, R> function, String opt, Object value);
 
+    S where(String key, Object value);
+
+    <T, R> S where(TypeFunction<T, R> function, Object value);
+
+    S where(String key, String opt, Object value);
+
+    <T, R> S where(TypeFunction<T, R> function, String opt, Object value);
+
     default S likeIfAbsent(String key, Object value) {
         return likeIfAbsent(key, value, getDefaultPredicate());
     }
@@ -456,6 +464,50 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
     default <T, R> S orOptIfAbsent(TypeFunction<T, R> function, String opt, Object value, Predicate<Object> predicate) {
         if (predicate.test(value)) {
             return or(function, opt, value);
+        }
+        return doNothing();
+    }
+
+    default S whereIfAbsent(String key, Object value) {
+        return whereIfAbsent(key, value, getDefaultPredicate());
+    }
+
+    default S whereIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return where(key, value);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S whereIfAbsent(TypeFunction<T, R> function, Object value) {
+        return whereIfAbsent(function, value, getDefaultPredicate());
+    }
+
+    default <T, R> S whereIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return where(TypeFunction.getLambdaColumnName(function), value);
+        }
+        return doNothing();
+    }
+
+    default S whereOptIfAbsent(String key, String opt, Object value) {
+        return whereOptIfAbsent(key, opt, value, getDefaultPredicate());
+    }
+
+    default S whereOptIfAbsent(String key, String opt, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return where(key, opt, value);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S whereOptIfAbsent(TypeFunction<T, R> function, String opt, Object value) {
+        return whereOptIfAbsent(function, opt, value, getDefaultPredicate());
+    }
+
+    default <T, R> S whereOptIfAbsent(TypeFunction<T, R> function, String opt, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return where(TypeFunction.getLambdaColumnName(function), opt, value);
         }
         return doNothing();
     }

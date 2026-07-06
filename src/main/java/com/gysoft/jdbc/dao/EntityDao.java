@@ -118,7 +118,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return T 实体对象
      * @throws Exception sql错误抛出异常
      */
-    T queryOne(Id id, RowMapper<T> tRowMapper) throws Exception;
+    <E> E queryOne(Id id, RowMapper<E> tRowMapper) throws Exception;
 
     /**
      * 检索所有持久化对象
@@ -135,7 +135,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return List 实体对象列表
      * @throws Exception sql错误抛出异常
      */
-    List<T> queryAll(RowMapper<T> tRowMapper) throws Exception;
+    <E> List<E> queryAll(RowMapper<E> tRowMapper) throws Exception;
 
     /**
      * 分页查询
@@ -154,7 +154,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return PageResult 分页查询结果
      * @throws Exception sql错误抛出异常
      */
-    PageResult<T> pageQuery(Page page, RowMapper<T> tRowMapper) throws Exception;
+    <E> PageResult<E> pageQuery(Page page, RowMapper<E> tRowMapper) throws Exception;
 
     /**
      * 分页条件查询
@@ -175,7 +175,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return PageResult 分页查询结果
      * @throws Exception sql错误抛出异常
      */
-    PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria, RowMapper<T> tRowMapper) throws Exception;
+    <E> PageResult<E> pageQueryWithCriteria(Page page, Criteria criteria, RowMapper<E> tRowMapper) throws Exception;
 
     /**
      * 条件查询
@@ -203,7 +203,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return List 结果集
      * @throws Exception sql错误抛出异常
      */
-    List<T> queryWithCriteria(Criteria criteria, RowMapper<T> tRowMapper) throws Exception;
+    <E> List<E> queryWithCriteria(Criteria criteria, RowMapper<E> tRowMapper) throws Exception;
 
     /**
      * 根据条件查询
@@ -222,7 +222,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return T 实体对象
      * @throws Exception sql错误抛出异常
      */
-    T queryOne(Criteria criteria, RowMapper<T> tRowMapper) throws Exception;
+    <E> E queryOne(Criteria criteria, RowMapper<E> tRowMapper) throws Exception;
 
     /**
      * 根据sql查询

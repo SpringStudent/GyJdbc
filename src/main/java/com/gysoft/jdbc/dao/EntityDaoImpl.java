@@ -197,9 +197,9 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public T queryOne(Id id, RowMapper<T> tRowMapper) throws Exception {
+    public <E> E queryOne(Id id, RowMapper<E> tRowMapper) {
         String sql = "SELECT * FROM " + tableName + " WHERE " + primaryKey + " = ?";
-        List<T> result = jdbcTemplate.query(sql, tRowMapper, id);
+        List<E> result = jdbcTemplate.query(sql, tRowMapper, id);
         return DataAccessUtils.singleResult(result);
     }
 
@@ -228,7 +228,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public List<T> queryAll(RowMapper<T> tRowMapper) throws Exception {
+    public <E> List<E> queryAll(RowMapper<E> tRowMapper) {
         String sql = "SELECT * FROM " + tableName;
         return jdbcTemplate.query(sql, tRowMapper);
     }
@@ -239,7 +239,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public PageResult<T> pageQuery(Page page, RowMapper<T> tRowMapper) throws Exception {
+    public <E> PageResult<E> pageQuery(Page page, RowMapper<E> tRowMapper) {
         return this.pageQueryWithCriteria(page, null, tRowMapper);
     }
 
@@ -250,7 +250,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria, RowMapper<T> tRowMapper) throws Exception {
+    public <E> PageResult<E> pageQueryWithCriteria(Page page, Criteria criteria, RowMapper<E> tRowMapper) {
         String sql = "SELECT * FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
         sql = pair.getFirst();
@@ -261,14 +261,13 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             pageSql = pageSql + " LIMIT ?,?";
             pageParams = appendParams(baseParams, page.getOffset(), page.getPageSize());
         }
-        List<T> paged = jdbcTemplate.query(pageSql, pageParams, tRowMapper);
+        List<E> paged = jdbcTemplate.query(pageSql, pageParams, tRowMapper);
         //独立统计总数,避免FOUND_ROWS()依赖同一连接在连接池/并发下取到错误计数
         String countSql = "SELECT COUNT(*) FROM (" + sql + ") temp";
         Integer count = jdbcTemplate.queryForObject(countSql, baseParams, Integer.class);
-        return new PageResult(paged, count == null ? 0 : count);
+        return new PageResult<E>(paged, count == null ? 0 : count);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public List<T> queryWithCriteria(Criteria criteria) throws Exception {
         return this.queryWithCriteria(criteria, rowMapper);
@@ -289,7 +288,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public List<T> queryWithCriteria(Criteria criteria, RowMapper<T> tRowMapper) throws Exception {
+    public <E> List<E> queryWithCriteria(Criteria criteria, RowMapper<E> tRowMapper) {
         String sql = "SELECT * FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
         return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), tRowMapper);
@@ -312,8 +311,8 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public T queryOne(Criteria criteria, RowMapper<T> tRowMapper) throws Exception {
-        List<T> result = this.queryWithCriteria(criteria, tRowMapper);
+    public <E> E queryOne(Criteria criteria, RowMapper<E> tRowMapper) {
+        List<E> result = this.queryWithCriteria(criteria, tRowMapper);
         return DataAccessUtils.singleResult(result);
     }
 

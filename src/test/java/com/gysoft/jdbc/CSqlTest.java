@@ -886,6 +886,111 @@ public class CSqlTest {
         assertArrayEquals(new Object[]{"zhouning"}, pair.getSecond());
     }
 
+    @Test
+    public void whereIfAbsentWithValueShouldIncludeCondition() {
+        Criteria criteria = new Criteria()
+                .whereIfAbsent("name", "zhouning");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE name = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"zhouning"}, pair.getSecond());
+    }
+
+    @Test
+    public void whereIfAbsentWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .whereIfAbsent("name", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void whereIfAbsentWithEmptyStringShouldSkip() {
+        Criteria criteria = new Criteria()
+                .whereIfAbsent("name", "");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void whereIfAbsentLambdaWithValueShouldIncludeCondition() {
+        Criteria criteria = new Criteria()
+                .whereIfAbsent(Role::getName, "zhouning");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertTrue(pair.getFirst().contains("`name`"));
+        assertTrue(pair.getFirst().contains("= ?"));
+    }
+
+    @Test
+    public void whereIfAbsentLambdaWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .whereIfAbsent(Role::getName, null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void whereOptIfAbsentWithCustomOptShouldIncludeCondition() {
+        Criteria criteria = new Criteria()
+                .whereOptIfAbsent("score", ">=", 60);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE score >= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{60}, pair.getSecond());
+    }
+
+    @Test
+    public void whereOptIfAbsentWithCustomOptAndNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .whereOptIfAbsent("score", ">=", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void whereOptIfAbsentLambdaWithCustomOptShouldIncludeCondition() {
+        Criteria criteria = new Criteria()
+                .whereOptIfAbsent(Role::getAuths, "<>", "banned");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertTrue(pair.getFirst().contains("`auths`"));
+        assertTrue(pair.getFirst().contains("<>"));
+    }
+
+    @Test
+    public void whereIfAbsentWithCustomPredicateShouldUsePredicate() {
+        // Custom predicate: only include if value >= 10
+        Criteria criteria = new Criteria()
+                .whereIfAbsent("score", 5, v -> v instanceof Number && ((Number) v).intValue() >= 10);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void chainWhereIfAbsentMixedShouldWork() {
+        Criteria criteria = new Criteria()
+                .whereIfAbsent("name", "zhouning")
+                .whereIfAbsent("status", null)
+                .whereOptIfAbsent("score", ">=", 60)
+                .whereIfAbsent("type", "");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE name = ? AND score >= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"zhouning", 60}, pair.getSecond());
+    }
+
+    @Test
+    public void whereIfAbsentAllSkipShouldReturnBaseSql() {
+        Criteria criteria = new Criteria()
+                .whereIfAbsent("name", null)
+                .whereIfAbsent("status", "")
+                .whereIfAbsent("score", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
     private static class TestDao extends EntityDaoImpl<TestEntity, String> {
         TestDao() {
             this.jdbcTemplate = new JdbcTemplate() {

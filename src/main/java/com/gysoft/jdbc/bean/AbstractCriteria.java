@@ -49,6 +49,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         groupFields = new LinkedHashSet<>();
     }
 
+    @Override
     public S where(String key, Object value) {
         return this.where(key, "=", value);
     }
@@ -72,10 +73,12 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         }
     }
 
+    @Override
     public <T, R> S where(TypeFunction<T, R> function, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), "=", value);
     }
 
+    @Override
     public S where(String key, String opt, Object value) {
         this.whereParams.add(new WhereParam(key, opt, value));
         return self();
@@ -85,6 +88,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return (S) this;
     }
 
+    @Override
     public <T, R> S where(TypeFunction<T, R> function, String opt, Object value) {
         return this.where(TypeFunction.getLambdaColumnName(function), opt, value);
     }
