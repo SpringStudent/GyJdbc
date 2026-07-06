@@ -104,15 +104,17 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @Override
     public void saveOrUpdate(T t) throws Exception {
         Field field = ReflectionUtils.findField(entityClass, primaryKey);
+        if (field == null) {
+            throw new GyjdbcException("Primary key field '" + primaryKey + "' not found");
+        }
         field.setAccessible(true);
         Id id = (Id) ReflectionUtils.getField(field, t);
         if (id == null) {
-            throw new GyjdbcException("entity primary key must be not null");
+            throw new GyjdbcException("entity primary key must not be null");
         }
-        if (this.queryOne(id) == null) {
+        int rows = this.update(t);
+        if (rows == 0) {
             this.save(t);
-        } else {
-            this.update(t);
         }
     }
 
