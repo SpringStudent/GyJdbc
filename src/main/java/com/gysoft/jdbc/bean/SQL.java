@@ -87,6 +87,11 @@ public class SQL extends AbstractCriteria<SQL> {
      */
     private String lockClause;
 
+    /**
+     * SELECT DISTINCT 标记
+     */
+    private boolean distinctSelect;
+
     private String id;
 
     public SQL() {
@@ -171,6 +176,16 @@ public class SQL extends AbstractCriteria<SQL> {
             this.sqlType = EntityDao.SQL_SELECT;
         }
         return this;
+    }
+
+    public SQL selectDistinct(Object... fields) {
+        this.distinctSelect = true;
+        return select(fields);
+    }
+
+    public <T, R> SQL selectDistinct(TypeFunction<T, R>... functions) {
+        this.distinctSelect = true;
+        return select(functions);
     }
 
     public SQL forUpdate() {
@@ -673,6 +688,10 @@ public class SQL extends AbstractCriteria<SQL> {
 
     public String getLockClause() {
         return lockClause;
+    }
+
+    public boolean isDistinctSelect() {
+        return distinctSelect;
     }
 
     public String getId() {

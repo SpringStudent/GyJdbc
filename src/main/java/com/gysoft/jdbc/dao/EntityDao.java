@@ -196,6 +196,15 @@ public interface EntityDao<T, Id extends Serializable> {
     boolean existsWithCriteria(Criteria criteria) throws Exception;
 
     /**
+     * 根据criteria统计数量
+     *
+     * @param criteria 查询条件
+     * @return long 满足条件的记录数
+     * @throws Exception sql错误抛出异常
+     */
+    long countWithCriteria(Criteria criteria) throws Exception;
+
+    /**
      * 条件查询
      *
      * @param criteria   查询条件
@@ -232,6 +241,40 @@ public interface EntityDao<T, Id extends Serializable> {
      * @throws Exception sql错误抛出异常
      */
     <E> Result<E> queryWithSql(Class<E> clss, SQL sql) throws Exception;
+
+    /**
+     * 根据sql查询，直接返回对象列表
+     *
+     * @param clss 结果类型
+     * @param sql  sql拼接器
+     * @param <E>  查询结果类型
+     * @return List 结果集
+     * @throws Exception sql错误抛出异常
+     */
+    <E> List<E> queryListWithSql(Class<E> clss, SQL sql) throws Exception;
+
+    /**
+     * 根据sql查询，直接返回单个对象
+     *
+     * @param clss 结果类型
+     * @param sql  sql拼接器
+     * @param <E>  查询结果类型
+     * @return E 单个实体对象
+     * @throws Exception sql错误抛出异常
+     */
+    <E> E queryOneWithSql(Class<E> clss, SQL sql) throws Exception;
+
+    /**
+     * 根据sql分页查询
+     *
+     * @param page 分页条件
+     * @param clss 结果类型
+     * @param sql  sql拼接器
+     * @param <E>  查询结果类型
+     * @return PageResult 分页查询结果
+     * @throws Exception sql错误抛出异常
+     */
+    <E> PageResult<E> pageQueryWithSql(Page page, Class<E> clss, SQL sql) throws Exception;
 
     /**
      * 根据sql更新
@@ -289,6 +332,15 @@ public interface EntityDao<T, Id extends Serializable> {
      * @throws Exception sql错误抛出异常
      */
     boolean existsWithSql(SQL sql) throws Exception;
+
+    /**
+     * 根据sql统计数量，内部自动将select替换为SELECT COUNT(*)
+     *
+     * @param sql sql拼接器
+     * @return long 满足条件的记录数
+     * @throws Exception sql错误抛出异常
+     */
+    long countWithSql(SQL sql) throws Exception;
 
     /**
      * 根据sql插入数据

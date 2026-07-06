@@ -288,6 +288,14 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
+    public long countWithCriteria(Criteria criteria) throws Exception {
+        String sql = "SELECT COUNT(*) FROM " + tableName;
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
+        Long count = jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), Long.class);
+        return count == null ? 0L : count;
+    }
+
+    @Override
     public <E> List<E> queryWithCriteria(Criteria criteria, RowMapper<E> tRowMapper) {
         String sql = "SELECT * FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
@@ -320,6 +328,32 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     public <E> Result<E> queryWithSql(Class<E> clss, SQL sql) throws Exception {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         return new Result<>(clss, pair.getFirst(), pair.getSecond(), jdbcTemplate);
+    }
+
+    @Override
+    public <E> List<E> queryListWithSql(Class<E> clss, SQL sql) throws Exception {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), BeanPropertyRowMapper.newInstance(clss));
+    }
+
+    @Override
+    public <E> E queryOneWithSql(Class<E> clss, SQL sql) throws Exception {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        List<E> results = jdbcTemplate.query(pair.getFirst(), pair.getSecond(), BeanPropertyRowMapper.newInstance(clss));
+        return DataAccessUtils.singleResult(results);
+    }
+
+    @Override
+    public <E> PageResult<E> pageQueryWithSql(Page page, Class<E> clss, SQL sql) throws Exception {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        String baseSql = pair.getFirst();
+        Object[] baseParams = pair.getSecond();
+        String pageSql = "SELECT * FROM (" + baseSql + ") temp LIMIT ?,?";
+        Object[] pageParams = appendParams(baseParams, page.getOffset(), page.getPageSize());
+        List<E> paged = jdbcTemplate.query(pageSql, pageParams, BeanPropertyRowMapper.newInstance(clss));
+        String countSql = "SELECT COUNT(*) FROM (" + baseSql + ") temp";
+        Integer count = jdbcTemplate.queryForObject(countSql, baseParams, Integer.class);
+        return new PageResult<>(paged, count == null ? 0 : count);
     }
 
     @Override
@@ -361,6 +395,24 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         Object[] params = appendParams(pair.getSecond(), 1);
         List<Object> results = jdbcTemplate.query(existsSql, params, (rs, rowNum) -> rs.getObject(1));
         return !results.isEmpty();
+    }
+
+    @Override
+    public long countWithSql(SQL sql) throws Exception {
+        String originSqlType = sql.getSqlType();
+        if (originSqlType == null) {
+            sql.changeSqlType(EntityDao.SQL_SELECT);
+        }
+        try {
+            Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+            String countSql = "SELECT COUNT(*) FROM (" + pair.getFirst() + ") gy_count";
+            Long count = jdbcTemplate.queryForObject(countSql, pair.getSecond(), Long.class);
+            return count == null ? 0L : count;
+        } finally {
+            if (originSqlType == null) {
+                sql.changeSqlType(null);
+            }
+        }
     }
 
     private Object[] appendParams(Object[] params, Object... extraParams) {

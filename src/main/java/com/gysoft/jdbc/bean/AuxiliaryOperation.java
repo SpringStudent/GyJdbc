@@ -38,6 +38,30 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
 
     <T, R> S orLike(TypeFunction<T, R> function, Object value);
 
+    S notLike(String key, Object value);
+
+    <T, R> S notLike(TypeFunction<T, R> function, Object value);
+
+    S startsWith(String key, Object value);
+
+    <T, R> S startsWith(TypeFunction<T, R> function, Object value);
+
+    S endsWith(String key, Object value);
+
+    <T, R> S endsWith(TypeFunction<T, R> function, Object value);
+
+    S orNotLike(String key, Object value);
+
+    <T, R> S orNotLike(TypeFunction<T, R> function, Object value);
+
+    S orStartsWith(String key, Object value);
+
+    <T, R> S orStartsWith(TypeFunction<T, R> function, Object value);
+
+    S orEndsWith(String key, Object value);
+
+    <T, R> S orEndsWith(TypeFunction<T, R> function, Object value);
+
     S in(String key, Collection<?> args);
 
     <T, R> S in(TypeFunction<T, R> function, Collection<?> args);
@@ -464,6 +488,138 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
     default <T, R> S orOptIfAbsent(TypeFunction<T, R> function, String opt, Object value, Predicate<Object> predicate) {
         if (predicate.test(value)) {
             return or(function, opt, value);
+        }
+        return doNothing();
+    }
+
+    default S notLikeIfAbsent(String key, Object value) {
+        return notLikeIfAbsent(key, value, getDefaultPredicate());
+    }
+
+    default S notLikeIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return notLike(key, value);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S notLikeIfAbsent(TypeFunction<T, R> function, Object value) {
+        return notLikeIfAbsent(function, value, getDefaultPredicate());
+    }
+
+    default <T, R> S notLikeIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return notLike(function, value);
+        }
+        return doNothing();
+    }
+
+    default S startsWithIfAbsent(String key, Object value) {
+        return startsWithIfAbsent(key, value, getDefaultPredicate());
+    }
+
+    default S startsWithIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return startsWith(key, value);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S startsWithIfAbsent(TypeFunction<T, R> function, Object value) {
+        return startsWithIfAbsent(function, value, getDefaultPredicate());
+    }
+
+    default <T, R> S startsWithIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return startsWith(function, value);
+        }
+        return doNothing();
+    }
+
+    default S endsWithIfAbsent(String key, Object value) {
+        return endsWithIfAbsent(key, value, getDefaultPredicate());
+    }
+
+    default S endsWithIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return endsWith(key, value);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S endsWithIfAbsent(TypeFunction<T, R> function, Object value) {
+        return endsWithIfAbsent(function, value, getDefaultPredicate());
+    }
+
+    default <T, R> S endsWithIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return endsWith(function, value);
+        }
+        return doNothing();
+    }
+
+    default S orNotLikeIfAbsent(String key, Object value) {
+        return orNotLikeIfAbsent(key, value, getDefaultPredicate());
+    }
+
+    default S orNotLikeIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return orNotLike(key, value);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S orNotLikeIfAbsent(TypeFunction<T, R> function, Object value) {
+        return orNotLikeIfAbsent(function, value, getDefaultPredicate());
+    }
+
+    default <T, R> S orNotLikeIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return orNotLike(function, value);
+        }
+        return doNothing();
+    }
+
+    default S orStartsWithIfAbsent(String key, Object value) {
+        return orStartsWithIfAbsent(key, value, getDefaultPredicate());
+    }
+
+    default S orStartsWithIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return orStartsWith(key, value);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S orStartsWithIfAbsent(TypeFunction<T, R> function, Object value) {
+        return orStartsWithIfAbsent(function, value, getDefaultPredicate());
+    }
+
+    default <T, R> S orStartsWithIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return orStartsWith(function, value);
+        }
+        return doNothing();
+    }
+
+    default S orEndsWithIfAbsent(String key, Object value) {
+        return orEndsWithIfAbsent(key, value, getDefaultPredicate());
+    }
+
+    default S orEndsWithIfAbsent(String key, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return orEndsWith(key, value);
+        }
+        return doNothing();
+    }
+
+    default <T, R> S orEndsWithIfAbsent(TypeFunction<T, R> function, Object value) {
+        return orEndsWithIfAbsent(function, value, getDefaultPredicate());
+    }
+
+    default <T, R> S orEndsWithIfAbsent(TypeFunction<T, R> function, Object value, Predicate<Object> predicate) {
+        if (predicate.test(value)) {
+            return orEndsWith(function, value);
         }
         return doNothing();
     }

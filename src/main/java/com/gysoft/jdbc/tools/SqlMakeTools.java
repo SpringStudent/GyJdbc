@@ -448,7 +448,7 @@ public class SqlMakeTools {
         List<Object> params = new ArrayList<>();
         StringBuilder sql = new StringBuilder();
         if (sqlObj.getSqlType().equals(EntityDao.SQL_SELECT)) {
-            sql.append("SELECT ");
+            sql.append(sqlObj.isDistinctSelect() ? "SELECT DISTINCT " : "SELECT ");
             if (CollectionUtils.isNotEmpty(sqlObj.getSelectFields())) {
                 List<Object> selects = sqlObj.getSelectFields();
                 for (Object obj : selects) {

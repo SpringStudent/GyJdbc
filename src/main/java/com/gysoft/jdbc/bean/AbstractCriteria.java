@@ -236,6 +236,66 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     @Override
+    public S notLike(String key, Object value) {
+        return this.where(key, "NOT LIKE", "%" + value + "%");
+    }
+
+    @Override
+    public <T, R> S notLike(TypeFunction<T, R> function, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "NOT LIKE", "%" + value + "%");
+    }
+
+    @Override
+    public S startsWith(String key, Object value) {
+        return this.where(key, "LIKE", value + "%");
+    }
+
+    @Override
+    public <T, R> S startsWith(TypeFunction<T, R> function, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "LIKE", value + "%");
+    }
+
+    @Override
+    public S endsWith(String key, Object value) {
+        return this.where(key, "LIKE", "%" + value);
+    }
+
+    @Override
+    public <T, R> S endsWith(TypeFunction<T, R> function, Object value) {
+        return this.where(TypeFunction.getLambdaColumnName(function), "LIKE", "%" + value);
+    }
+
+    @Override
+    public S orNotLike(String key, Object value) {
+        return this.or(key, "NOT LIKE", "%" + value + "%");
+    }
+
+    @Override
+    public <T, R> S orNotLike(TypeFunction<T, R> function, Object value) {
+        return this.or(TypeFunction.getLambdaColumnName(function), "NOT LIKE", "%" + value + "%");
+    }
+
+    @Override
+    public S orStartsWith(String key, Object value) {
+        return this.or(key, "LIKE", value + "%");
+    }
+
+    @Override
+    public <T, R> S orStartsWith(TypeFunction<T, R> function, Object value) {
+        return this.or(TypeFunction.getLambdaColumnName(function), "LIKE", value + "%");
+    }
+
+    @Override
+    public S orEndsWith(String key, Object value) {
+        return this.or(key, "LIKE", "%" + value);
+    }
+
+    @Override
+    public <T, R> S orEndsWith(TypeFunction<T, R> function, Object value) {
+        return this.or(TypeFunction.getLambdaColumnName(function), "LIKE", "%" + value);
+    }
+
+    @Override
     public S or(String key, String opt, Object value) {
         if (CollectionUtils.isEmpty(this.whereParams)) {
             throw new GyjdbcException("sql error,condition \"or\" must be following after \"where\"!");
@@ -428,6 +488,12 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
             where = where.notExists((SQL) wp.getValue());
         } else if (wp.getOptEnum().equals(WhereParam.OptEnum.Like)) {
             where = where.like(wp.getValue());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.NotLike)) {
+            where = where.notLike(wp.getValue());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.StartsWith)) {
+            where = where.startsWith(wp.getValue());
+        } else if (wp.getOptEnum().equals(WhereParam.OptEnum.EndsWith)) {
+            where = where.endsWith(wp.getValue());
         } else if (wp.getOptEnum().equals(WhereParam.OptEnum.In)) {
             where = where.in((Collection<?>) wp.getValue());
         } else if (wp.getOptEnum().equals(WhereParam.OptEnum.NotIn)) {

@@ -93,6 +93,21 @@ public class Where {
         return this;
     }
 
+    public Where notLike(Object val) {
+        criteria.notLike(key, val);
+        return this;
+    }
+
+    public Where startsWith(Object val) {
+        criteria.startsWith(key, val);
+        return this;
+    }
+
+    public Where endsWith(Object val) {
+        criteria.endsWith(key, val);
+        return this;
+    }
+
     public Where isNull() {
         criteria.isNull(key);
         return this;

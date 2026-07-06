@@ -8,7 +8,8 @@ import java.util.Collection;
 public class WhereParam {
 
     public enum OptEnum {
-        Like, Gt, Gte, Lt, Let, NotEqual, IsNull, IsNotNull,
+        Like, NotLike, StartsWith, EndsWith,
+        Gt, Gte, Lt, Let, NotEqual, IsNull, IsNotNull,
         Equal, Exists, NotExists, BetweenAnd, In, NotIn;
     }
 
@@ -125,6 +126,24 @@ public class WhereParam {
     public WhereParam like(Object val) {
         this.optEnum = OptEnum.Like;
         this.value =val;
+        return this;
+    }
+
+    public WhereParam notLike(Object val) {
+        this.optEnum = OptEnum.NotLike;
+        this.value = val;
+        return this;
+    }
+
+    public WhereParam startsWith(Object val) {
+        this.optEnum = OptEnum.StartsWith;
+        this.value = val;
+        return this;
+    }
+
+    public WhereParam endsWith(Object val) {
+        this.optEnum = OptEnum.EndsWith;
+        this.value = val;
         return this;
     }
 
