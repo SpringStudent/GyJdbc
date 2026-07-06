@@ -370,6 +370,9 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public Where buildWhere(Opt opt, WhereParam... whereParams) {
+        if (whereParams == null || whereParams.length == 0) {
+            return new Where("1").equal(1);
+        }
         WhereParam first = whereParams[0];
         Where where = new Where(first.getKey());
         where = whereParam(first, where);

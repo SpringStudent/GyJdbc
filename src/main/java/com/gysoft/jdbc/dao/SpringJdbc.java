@@ -235,7 +235,7 @@ public class SpringJdbc implements ISpringJdbc {
             if (argTypes == null) {
                 jdbcTemplate.batchUpdate(sql.toString(), params);
             } else {
-                jdbcTemplate.update(sql.toString(), params, argTypes);
+                jdbcTemplate.batchUpdate(sql.toString(), params, argTypes);
             }
         }
     }
