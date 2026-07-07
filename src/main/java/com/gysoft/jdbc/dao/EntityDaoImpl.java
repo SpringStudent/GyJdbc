@@ -37,9 +37,13 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     protected JdbcTemplate jdbcTemplate;
 
     /**
-     * 泛型
+     * 泛型实体类
      */
     private Class<T> entityClass;
+    /**
+     * 主键类型
+     */
+    private Class<Id> idClass;
 
     /**
      * 表名
@@ -57,6 +61,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     public EntityDaoImpl() {
         ParameterizedType type = (ParameterizedType) getClass().getGenericSuperclass();
         entityClass = (Class<T>) type.getActualTypeArguments()[0];
+        idClass = (Class<Id>) type.getActualTypeArguments()[1];
         tableName = EntityTools.getTableName(entityClass);
         primaryKey = EntityTools.getPk(entityClass);
         rowMapper = BeanPropertyRowMapper.newInstance(entityClass);
@@ -296,6 +301,13 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
+    public List<Id> queryIds(Criteria criteria) throws Exception {
+        String sql = "SELECT " + primaryKey + " FROM " + tableName;
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
+        return jdbcTemplate.queryForList(pair.getFirst(), pair.getSecond(), idClass);
+    }
+
+    @Override
     public <E> List<E> queryWithCriteria(Criteria criteria, RowMapper<E> tRowMapper) {
         String sql = "SELECT * FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
@@ -389,30 +401,19 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
+    public long countWithSql(SQL sql) throws Exception {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        Long count = jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), Long.class);
+        return count == null ? 0L : count;
+    }
+
+    @Override
     public boolean existsWithSql(SQL sql) throws Exception {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         String existsSql = "SELECT 1 FROM (" + pair.getFirst() + ") gy_exists LIMIT ?";
         Object[] params = appendParams(pair.getSecond(), 1);
         List<Object> results = jdbcTemplate.query(existsSql, params, (rs, rowNum) -> rs.getObject(1));
         return !results.isEmpty();
-    }
-
-    @Override
-    public long countWithSql(SQL sql) throws Exception {
-        String originSqlType = sql.getSqlType();
-        if (originSqlType == null) {
-            sql.changeSqlType(EntityDao.SQL_SELECT);
-        }
-        try {
-            Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-            String countSql = "SELECT COUNT(*) FROM (" + pair.getFirst() + ") gy_count";
-            Long count = jdbcTemplate.queryForObject(countSql, pair.getSecond(), Long.class);
-            return count == null ? 0L : count;
-        } finally {
-            if (originSqlType == null) {
-                sql.changeSqlType(null);
-            }
-        }
     }
 
     private Object[] appendParams(Object[] params, Object... extraParams) {

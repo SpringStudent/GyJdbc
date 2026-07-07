@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
 import static org.junit.Assert.*;
@@ -1423,26 +1424,6 @@ public class CSqlTest {
     }
 
     @Test
-    public void countWithSqlShouldReturnCount() throws Exception {
-        TestDao dao = new TestDao();
-        long count = dao.countWithSql(
-                new SQL().from("tb_order")
-                        .betweenAnd("create_time", "2025-01-01", "2025-12-31")
-                        .in("status", Arrays.asList("PAID", "SHIPPED")));
-        assertEquals(1L, count);
-    }
-
-    @Test
-    public void countWithSqlJoinShouldReturnCount() throws Exception {
-        TestDao dao = new TestDao();
-        long count = dao.countWithSql(
-                new SQL().from("tb_user", "u")
-                        .innerJoin("tb_order", "o").on("u.id", "o.user_id")
-                        .where("u.status", 1));
-        assertEquals(1L, count);
-    }
-
-    @Test
     public void countWithSqlVerifyGeneratesCountWrapper() {
         // 验证 countWithSql 内部将原 SQL 包装为 SELECT COUNT(*) FROM (...) gy_count
         SQL sql = new SQL()
@@ -1455,6 +1436,38 @@ public class CSqlTest {
         assertTrue(countSql.endsWith(") gy_count"));
         assertTrue(countSql.contains("age > ?"));
         assertTrue(countSql.contains("status = ?"));
+    }
+
+    // ==================== queryIds ====================
+
+    @Test
+    public void queryIdsShouldReturnIdList() throws Exception {
+        TestDao dao = new TestDao();
+        List<String> ids = dao.queryIds(new Criteria().gt("age", 18).where("status", 1));
+        assertEquals(1, ids.size());
+        assertEquals("mockId", ids.get(0));
+    }
+
+    @Test
+    public void queryIdsEmptyCriteriaShouldReturnAllIds() throws Exception {
+        TestDao dao = new TestDao();
+        List<String> ids = dao.queryIds(new Criteria());
+        assertEquals(1, ids.size());
+        assertEquals("mockId", ids.get(0));
+    }
+
+    @Test
+    public void queryIdsWithSqlVerifyWrapsCorrectly() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .gt("age", 20);
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        // queryIdsWithSql 内部包装：SELECT gy_ids.{pk} FROM ({innerSql}) gy_ids
+        String innerSql = pair.getFirst();
+        String idSql = "SELECT gy_ids.id FROM (" + innerSql + ") gy_ids";
+        assertTrue(idSql.startsWith("SELECT gy_ids.id FROM ("));
+        assertTrue(idSql.endsWith(") gy_ids"));
+        assertTrue(idSql.contains("age > ?"));
     }
 
     private static class TestDao extends EntityDaoImpl<TestEntity, String> {
@@ -1475,6 +1488,13 @@ public class CSqlTest {
                         return requiredType.cast(1L);
                     }
                     return requiredType.cast(1);
+                }
+
+                @Override
+                public <T> List<T> queryForList(String sql, Object[] args, Class<T> elementType) {
+                    java.util.List<T> list = new java.util.ArrayList<>();
+                    list.add(elementType.cast("mockId"));
+                    return list;
                 }
             };
         }

@@ -3,12 +3,11 @@ package com.gysoft.jdbc.dao;
 import com.gysoft.jdbc.bean.*;
 import com.gysoft.jdbc.multi.balance.LoadBalance;
 import org.springframework.jdbc.core.ResultSetExtractor;
+import org.springframework.jdbc.core.RowMapper;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-
-import org.springframework.jdbc.core.RowMapper;
 
 /**
  * @author 周宁
@@ -205,6 +204,15 @@ public interface EntityDao<T, Id extends Serializable> {
     long countWithCriteria(Criteria criteria) throws Exception;
 
     /**
+     * 根据criteria查询主键列表，只查主键字段，适合批量操作前获取id集合
+     *
+     * @param criteria 查询条件
+     * @return List 主键列表
+     * @throws Exception sql错误抛出异常
+     */
+    List<Id> queryIds(Criteria criteria) throws Exception;
+
+    /**
      * 条件查询
      *
      * @param criteria   查询条件
@@ -325,6 +333,15 @@ public interface EntityDao<T, Id extends Serializable> {
     Integer queryIntegerWithSql(SQL sql) throws Exception;
 
     /**
+     * 根据sql统计数量
+     *
+     * @param sql sql拼接器
+     * @return Integer 结果类型，一般为查询数量
+     * @throws Exception sql错误抛出异常
+     */
+    long countWithSql(SQL sql) throws Exception;
+
+    /**
      * 根据sql判断是否有满足条件的数据
      *
      * @param sql sql拼接器
@@ -332,15 +349,6 @@ public interface EntityDao<T, Id extends Serializable> {
      * @throws Exception sql错误抛出异常
      */
     boolean existsWithSql(SQL sql) throws Exception;
-
-    /**
-     * 根据sql统计数量，内部自动将select替换为SELECT COUNT(*)
-     *
-     * @param sql sql拼接器
-     * @return long 满足条件的记录数
-     * @throws Exception sql错误抛出异常
-     */
-    long countWithSql(SQL sql) throws Exception;
 
     /**
      * 根据sql插入数据

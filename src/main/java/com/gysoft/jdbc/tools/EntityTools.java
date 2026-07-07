@@ -103,7 +103,7 @@ public class EntityTools {
      */
     public static boolean isPk(Class<?> entity, Field field) {
         String pk = getPk(entity);
-        String columnName = field.getName();
+        String columnName = getColumnName(field);
         //该字段是主键
         if (pk.equals(columnName)) {
             return true;
