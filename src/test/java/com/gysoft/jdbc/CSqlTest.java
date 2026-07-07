@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
@@ -1292,6 +1293,107 @@ public class CSqlTest {
         assertArrayEquals(new Object[]{1, "%@gmail.com"}, pair.getSecond());
     }
 
+    // ==================== inIfAbsent / notInIfAbsent 补充 ====================
+
+    @Test
+    public void inIfAbsentLambdaWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .inIfAbsent(Role::getAuths, Arrays.asList("admin", "user"));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ? AND `auths` IN(?,?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "admin", "user"}, pair.getSecond());
+    }
+
+    @Test
+    public void inIfAbsentLambdaWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .inIfAbsent(Role::getAuths, null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void inIfAbsentLambdaWithEmptyListShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .inIfAbsent(Role::getAuths, Arrays.asList());
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void inIfAbsentWithCustomPredicateShouldUsePredicate() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .inIfAbsent("type", Arrays.asList(1, 2), c -> c instanceof Collection && ((Collection<?>) c).size() > 3);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void inIfAbsentWithCustomPredicatePassingShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .inIfAbsent("type", Arrays.asList(1, 2), c -> c instanceof Collection && ((Collection<?>) c).size() > 0);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ? AND type IN(?,?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 1, 2}, pair.getSecond());
+    }
+
+    @Test
+    public void notInIfAbsentWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .notInIfAbsent("type", Arrays.asList("deleted", "banned"));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ? AND type NOT IN(?,?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "deleted", "banned"}, pair.getSecond());
+    }
+
+    @Test
+    public void notInIfAbsentWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .notInIfAbsent("type", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void notInIfAbsentWithEmptyListShouldSkip() {
+        Criteria criteria = new Criteria()
+                .notInIfAbsent("type", Arrays.asList());
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void notInIfAbsentLambdaWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .notInIfAbsent(Role::getAuths, Arrays.asList("banned"));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ? AND `auths` NOT IN(?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "banned"}, pair.getSecond());
+    }
+
+    @Test
+    public void notInIfAbsentLambdaWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .notInIfAbsent(Role::getAuths, null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
     // ==================== Lambda IfAbsent ====================
 
     @Test
@@ -1329,6 +1431,236 @@ public class CSqlTest {
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
         assertEquals("SELECT * FROM tb_role WHERE `name` LIKE ?", pair.getFirst());
         assertArrayEquals(new Object[]{"%role"}, pair.getSecond());
+    }
+
+    // ==================== gtIfAbsent / gteIfAbsent / ltIfAbsent / letIfAbsent ====================
+
+    @Test
+    public void gtIfAbsentWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .gtIfAbsent("score", 60);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ? AND score > ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 60}, pair.getSecond());
+    }
+
+    @Test
+    public void gtIfAbsentWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .gtIfAbsent("score", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void gtIfAbsentWithZeroShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .gtIfAbsent("score", 0);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE score > ?", pair.getFirst());
+        assertArrayEquals(new Object[]{0}, pair.getSecond());
+    }
+
+    @Test
+    public void gtIfAbsentLambdaWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .gtIfAbsent(Token::getSize, 10);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_token"));
+        assertEquals("SELECT * FROM tb_token WHERE status = ? AND `size` > ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 10}, pair.getSecond());
+    }
+
+    @Test
+    public void gtIfAbsentLambdaWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .gtIfAbsent(Token::getSize, null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_token"));
+        assertEquals("SELECT * FROM tb_token WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void gteIfAbsentWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .gteIfAbsent("score", 60);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ? AND score >= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 60}, pair.getSecond());
+    }
+
+    @Test
+    public void gteIfAbsentWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .gteIfAbsent("score", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void gteIfAbsentLambdaWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .gteIfAbsent(Token::getSize, 5);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_token"));
+        assertEquals("SELECT * FROM tb_token WHERE status = ? AND `size` >= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 5}, pair.getSecond());
+    }
+
+    @Test
+    public void ltIfAbsentWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .ltIfAbsent("score", 100);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ? AND score < ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 100}, pair.getSecond());
+    }
+
+    @Test
+    public void ltIfAbsentWithEmptyStringShouldSkip() {
+        Criteria criteria = new Criteria()
+                .ltIfAbsent("score", "");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void ltIfAbsentLambdaWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .ltIfAbsent(Token::getSize, 50);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_token"));
+        assertEquals("SELECT * FROM tb_token WHERE status = ? AND `size` < ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 50}, pair.getSecond());
+    }
+
+    @Test
+    public void letIfAbsentWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .letIfAbsent("score", 100);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ? AND score <= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 100}, pair.getSecond());
+    }
+
+    @Test
+    public void letIfAbsentWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .letIfAbsent("score", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void letIfAbsentLambdaWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .letIfAbsent(Token::getSize, 200);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_token"));
+        assertEquals("SELECT * FROM tb_token WHERE status = ? AND `size` <= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 200}, pair.getSecond());
+    }
+
+    // ==================== andIfAbsent / orIfAbsent / orLikeIfAbsent ====================
+
+    @Test
+    public void andIfAbsentWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .andIfAbsent("type", "active");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ? AND type = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "active"}, pair.getSecond());
+    }
+
+    @Test
+    public void andIfAbsentWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .andIfAbsent("type", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void andIfAbsentLambdaWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .andIfAbsent(Role::getName, "admin");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ? AND `name` = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "admin"}, pair.getSecond());
+    }
+
+    @Test
+    public void orIfAbsentWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .orIfAbsent("type", "vip");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ? OR type = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "vip"}, pair.getSecond());
+    }
+
+    @Test
+    public void orIfAbsentWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .orIfAbsent("type", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void orIfAbsentLambdaWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .orIfAbsent(Role::getName, "guest");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ? OR `name` = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "guest"}, pair.getSecond());
+    }
+
+    @Test
+    public void orLikeIfAbsentWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .orLikeIfAbsent("name", "test");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ? OR name LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "%test%"}, pair.getSecond());
+    }
+
+    @Test
+    public void orLikeIfAbsentWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .orLikeIfAbsent("name", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void orLikeIfAbsentLambdaWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .orLikeIfAbsent(Role::getName, "admin");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ? OR `name` LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "%admin%"}, pair.getSecond());
     }
 
     // ==================== Where / WhereParam ====================
@@ -1407,6 +1739,427 @@ public class CSqlTest {
         assertArrayEquals(new Object[]{1, "%zhou%", "%test%", "%@demo.com"}, pair.getSecond());
     }
 
+    // ==================== likeIfAbsent / likeLIfAbsent / likeRIfAbsent ====================
+
+    @Test
+    public void likeIfAbsentWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .likeIfAbsent("name", "zhou");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ? AND name LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "%zhou%"}, pair.getSecond());
+    }
+
+    @Test
+    public void likeIfAbsentWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .likeIfAbsent("name", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void likeIfAbsentWithEmptyStringShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .likeIfAbsent("name", "");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void likeIfAbsentAsFirstConditionShouldUseWhere() {
+        Criteria criteria = new Criteria()
+                .likeIfAbsent("name", "test");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE name LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"%test%"}, pair.getSecond());
+    }
+
+    @Test
+    public void likeIfAbsentWithCustomPredicateShouldUsePredicate() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .likeIfAbsent("name", "short", v -> v instanceof String && ((String) v).length() > 5);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void likeIfAbsentLambdaWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .likeIfAbsent(Role::getName, "admin");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ? AND `name` LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "%admin%"}, pair.getSecond());
+    }
+
+    @Test
+    public void likeIfAbsentLambdaWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .likeIfAbsent(Role::getName, null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void likeIfAbsentLambdaWithCustomPredicateShouldUsePredicate() {
+        Criteria criteria = new Criteria()
+                .likeIfAbsent(Role::getName, "ok", v -> v instanceof String && ((String) v).length() > 5);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void likeLIfAbsentWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .likeLIfAbsent("name", "ning");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ? AND name LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "%ning"}, pair.getSecond());
+    }
+
+    @Test
+    public void likeLIfAbsentWithNullShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .likeLIfAbsent("name", null);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void likeLIfAbsentWithCustomPredicateShouldUsePredicate() {
+        Criteria criteria = new Criteria()
+                .likeLIfAbsent("name", "x", v -> v instanceof String && !((String) v).isEmpty() && ((String) v).length() >= 3);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void likeRIfAbsentWithValueShouldAddCondition() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .likeRIfAbsent("name", "zho");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ? AND name LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "zho%"}, pair.getSecond());
+    }
+
+    @Test
+    public void likeRIfAbsentWithEmptyStringShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .likeRIfAbsent("name", "");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    // ==================== Lambda 重载核心方法测试 ====================
+
+    @Test
+    public void likeLambdaShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from(Role.class)
+                .like(Role::getName, "admin");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_role WHERE `name` LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"%admin%"}, pair.getSecond());
+    }
+
+    @Test
+    public void likeRLambdaShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from(Role.class)
+                .likeR(Role::getName, "super");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_role WHERE `name` LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"super%"}, pair.getSecond());
+    }
+
+    @Test
+    public void likeLLambdaShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from(Role.class)
+                .likeL(Role::getName, "role");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_role WHERE `name` LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"%role"}, pair.getSecond());
+    }
+
+    @Test
+    public void orLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .or(Token::getTk, "abc");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_token"));
+        assertEquals("SELECT * FROM tb_token WHERE status = ? OR ddd = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "abc"}, pair.getSecond());
+    }
+
+    @Test
+    public void orLikeLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .orLike(Role::getName, "guest");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ? OR `name` LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "%guest%"}, pair.getSecond());
+    }
+
+    @Test
+    public void orNotLikeLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .orNotLike(Role::getName, "spam");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ? OR `name` NOT LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "%spam%"}, pair.getSecond());
+    }
+
+    @Test
+    public void orStartsWithLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .orStartsWith(Role::getName, "admin");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ? OR `name` LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "admin%"}, pair.getSecond());
+    }
+
+    @Test
+    public void orEndsWithLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .orEndsWith(Role::getName, "role");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ? OR `name` LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "%role"}, pair.getSecond());
+    }
+
+    @Test
+    public void gteLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .gte(Token::getSize, 100);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_token"));
+        assertEquals("SELECT * FROM tb_token WHERE status = ? AND `size` >= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 100}, pair.getSecond());
+    }
+
+    @Test
+    public void ltLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .lt(Token::getSize, 50);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_token"));
+        assertEquals("SELECT * FROM tb_token WHERE status = ? AND `size` < ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 50}, pair.getSecond());
+    }
+
+    @Test
+    public void letLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .let(Token::getSize, 200);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_token"));
+        assertEquals("SELECT * FROM tb_token WHERE status = ? AND `size` <= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 200}, pair.getSecond());
+    }
+
+    @Test
+    public void notEqualLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .notEqual(Role::getName, "deleted");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ? AND `name` <> ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "deleted"}, pair.getSecond());
+    }
+
+    @Test
+    public void betweenAndLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .betweenAnd(Token::getSize, 10, 100);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_token"));
+        assertTrue(pair.getFirst().contains("`size` BETWEEN ? AND ?"));
+        assertArrayEquals(new Object[]{1, 10, 100}, pair.getSecond());
+    }
+
+    @Test
+    public void orBetweenAndLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .orBetweenAnd(Token::getSize, 10, 100);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_token"));
+        assertTrue(pair.getFirst().contains("OR `size` BETWEEN ? AND ?"));
+        assertArrayEquals(new Object[]{1, 10, 100}, pair.getSecond());
+    }
+
+    @Test
+    public void notInLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .notIn(Role::getAuths, Arrays.asList("banned", "deleted"));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ? AND `auths` NOT IN(?,?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "banned", "deleted"}, pair.getSecond());
+    }
+
+    @Test
+    public void orOptLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .or(Role::getName, ">=", "admin");
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ? OR `name` >= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "admin"}, pair.getSecond());
+    }
+
+    // ==================== AbstractCriteria 额外方法 ====================
+
+    @Test
+    public void isNullLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .isNull(Role::getAuths);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE status = ? AND `auths` IS NULL", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void isNotNullLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .isNotNull(Role::getName);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertEquals("SELECT * FROM tb_role WHERE `name` IS NOT NULL", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void existsShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("dept_id", 1)
+                .exists(new SQL().select("1").from("tb_dept").where("id", 1));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE dept_id = ? AND EXISTS (SELECT 1 FROM tb_dept WHERE id = ?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 1}, pair.getSecond());
+    }
+
+    @Test
+    public void notExistsShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("dept_id", 1)
+                .notExists(new SQL().select("1").from("tb_dept").where("id", 1));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE dept_id = ? AND NOT EXISTS (SELECT 1 FROM tb_dept WHERE id = ?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 1}, pair.getSecond());
+    }
+
+    @Test
+    public void orWhereWithOptAndWhereParamsShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .orWhere(Opt.OR,
+                        WhereParam.where("type").equal("A"),
+                        WhereParam.where("type").equal("B"));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ? OR (type = ? OR type = ?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "A", "B"}, pair.getSecond());
+    }
+
+    @Test
+    public void orWhereWithOptAndListShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .orWhere(Opt.AND, Arrays.asList(
+                        WhereParam.where("a").equal(1),
+                        WhereParam.where("b").equal(2)));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ? OR (a = ? AND b = ?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 1, 2}, pair.getSecond());
+    }
+
+    @Test
+    public void orWithOptAndWhereParamsShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .or(Opt.OR,
+                        WhereParam.where("type").equal("A"),
+                        WhereParam.where("type").equal("B"));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertTrue(pair.getFirst().contains("type = ?"));
+        assertTrue(pair.getFirst().contains("OR"));
+    }
+
+    @Test
+    public void orWithWhereShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where("status", 1)
+                .or(Where.where("type").equal("vip"));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertTrue(pair.getFirst().contains("type = ?"));
+    }
+
+    @Test
+    public void groupByLambdaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .groupBy(Role::getName, Role::getAuths);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_role"));
+        assertTrue(pair.getFirst().contains("GROUP BY `name`,`auths`"));
+    }
+
+    @Test
+    public void limitSingleParamShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .limit(10);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user LIMIT ?", pair.getFirst());
+        assertArrayEquals(new Object[]{10}, pair.getSecond());
+    }
+
+    @Test
+    public void whereWithStringArrayShouldBuildInCondition() {
+        Criteria criteria = new Criteria()
+                .where(new String[]{"a", "b"}, 1);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE (a,b) = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void whereWithStringArrayAndOptShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where(new String[]{"a", "b"}, ">", 0);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE (a,b) > ?", pair.getFirst());
+        assertArrayEquals(new Object[]{0}, pair.getSecond());
+    }
+
+    @Test
+    public void whereWithSingleElementArrayShouldUseSingleColumn() {
+        Criteria criteria = new Criteria()
+                .where(new String[]{"id"}, 1);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE id = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
     // ==================== countWithCriteria / countWithSql ====================
 
     @Test
@@ -1468,6 +2221,651 @@ public class CSqlTest {
         assertTrue(idSql.startsWith("SELECT gy_ids.id FROM ("));
         assertTrue(idSql.endsWith(") gy_ids"));
         assertTrue(idSql.contains("age > ?"));
+    }
+
+    // ==================== Where 构造器方法测试 ====================
+
+    @Test
+    public void whereNotEqualShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Where.where("status").notEqual("deleted"));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE status <> ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"deleted"}, pair.getSecond());
+    }
+
+    @Test
+    public void whereLtShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Where.where("score").lt(60));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE score < ?", pair.getFirst());
+        assertArrayEquals(new Object[]{60}, pair.getSecond());
+    }
+
+    @Test
+    public void whereLetShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Where.where("score").let(100));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE score <= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{100}, pair.getSecond());
+    }
+
+    @Test
+    public void whereGtShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Where.where("age").gt(18));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE age > ?", pair.getFirst());
+        assertArrayEquals(new Object[]{18}, pair.getSecond());
+    }
+
+    @Test
+    public void whereGteShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Where.where("level").gte(3));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE level >= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{3}, pair.getSecond());
+    }
+
+    @Test
+    public void whereInShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Where.where("type").in(Arrays.asList("A", "B", "C")));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE type IN(?,?,?)", pair.getFirst());
+        assertArrayEquals(new Object[]{"A", "B", "C"}, pair.getSecond());
+    }
+
+    @Test
+    public void whereNotInShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Where.where("status").notIn(Arrays.asList("deleted", "banned")));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE status NOT IN(?,?)", pair.getFirst());
+        assertArrayEquals(new Object[]{"deleted", "banned"}, pair.getSecond());
+    }
+
+    @Test
+    public void whereIsNullShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Where.where("deletedAt").isNull());
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE deletedAt IS NULL", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void whereIsNotNullShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Where.where("email").isNotNull());
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE email IS NOT NULL", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void whereExistsShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Where.where("1").exists(new SQL().select("1").from("tb_dept").where("id", 1)));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE EXISTS (SELECT 1 FROM tb_dept WHERE id = ?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void whereNotExistsShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Where.where("1").notExists(new SQL().select("1").from("tb_dept").where("id", 1)));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE NOT EXISTS (SELECT 1 FROM tb_dept WHERE id = ?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void whereBetweenAndShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Where.where("createTime").betweenAnd("2020-01-01", "2020-12-31"));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE createTime BETWEEN ? AND ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"2020-01-01", "2020-12-31"}, pair.getSecond());
+    }
+
+    @Test
+    public void whereLikeShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Where.where("name").like("test"));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE name LIKE ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"%test%"}, pair.getSecond());
+    }
+
+    @Test
+    public void whereStaticFactoryWithLambdaShouldWork() {
+        SQL sql = new SQL()
+                .select("*").from(Role.class)
+                .and(Where.where(Role::getName).equal("admin"));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_role WHERE `name` = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"admin"}, pair.getSecond());
+    }
+
+    @Test
+    public void whereOrLambdaShouldWork() {
+        SQL sql = new SQL()
+                .select("*").from(Role.class)
+                .and(Where.where("status").equal(1).or(Role::getName).equal("admin"));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_role WHERE status = ? OR `name` = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "admin"}, pair.getSecond());
+    }
+
+    @Test
+    public void whereAndLambdaShouldWork() {
+        SQL sql = new SQL()
+                .select("*").from(Role.class)
+                .and(Where.where("status").equal(1).and(Role::getName).equal("admin"));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_role WHERE status = ? AND `name` = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "admin"}, pair.getSecond());
+    }
+
+    // ==================== WhereParam 构造器方法测试 ====================
+
+    @Test
+    public void whereParamNotEqualShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Opt.AND, WhereParam.where("status").notEqual("deleted"));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE status <> ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"deleted"}, pair.getSecond());
+    }
+
+    @Test
+    public void whereParamLtShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Opt.AND, WhereParam.where("score").lt(60));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE score < ?", pair.getFirst());
+        assertArrayEquals(new Object[]{60}, pair.getSecond());
+    }
+
+    @Test
+    public void whereParamLetShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Opt.AND, WhereParam.where("score").let(100));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE score <= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{100}, pair.getSecond());
+    }
+
+    @Test
+    public void whereParamGtShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Opt.AND, WhereParam.where("age").gt(18));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE age > ?", pair.getFirst());
+        assertArrayEquals(new Object[]{18}, pair.getSecond());
+    }
+
+    @Test
+    public void whereParamGteShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Opt.AND, WhereParam.where("level").gte(3));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE level >= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{3}, pair.getSecond());
+    }
+
+    @Test
+    public void whereParamInShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Opt.AND, WhereParam.where("type").in(Arrays.asList("A", "B")));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE type IN(?,?)", pair.getFirst());
+        assertArrayEquals(new Object[]{"A", "B"}, pair.getSecond());
+    }
+
+    @Test
+    public void whereParamNotInShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Opt.AND, WhereParam.where("status").notIn(Arrays.asList("deleted")));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE status NOT IN(?)", pair.getFirst());
+        assertArrayEquals(new Object[]{"deleted"}, pair.getSecond());
+    }
+
+    @Test
+    public void whereParamIsNullShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Opt.AND, WhereParam.where("deletedAt").isNull());
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE deletedAt IS NULL", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void whereParamIsNotNullShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Opt.AND, WhereParam.where("email").isNotNull());
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE email IS NOT NULL", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void whereParamExistsShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Opt.AND, WhereParam.where("1").exists(new SQL().select("1").from("tb_dept").where("id", 1)));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE EXISTS (SELECT 1 FROM tb_dept WHERE id = ?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void whereParamNotExistsShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Opt.AND, WhereParam.where("1").notExists(new SQL().select("1").from("tb_dept").where("id", 1)));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE NOT EXISTS (SELECT 1 FROM tb_dept WHERE id = ?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void whereParamBetweenAndShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("tb_user")
+                .and(Opt.AND, WhereParam.where("score").betweenAnd(60, 100));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE score BETWEEN ? AND ?", pair.getFirst());
+        assertArrayEquals(new Object[]{60, 100}, pair.getSecond());
+    }
+
+    @Test
+    public void whereParamStaticFactoryWithLambdaShouldWork() {
+        SQL sql = new SQL()
+                .select("*").from(Role.class)
+                .and(Opt.AND, WhereParam.where(Role::getName).equal("admin"));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_role WHERE `name` = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"admin"}, pair.getSecond());
+    }
+
+    // ==================== SQL 构造器特殊变体 ====================
+
+    @Test
+    public void selectWithLambdaShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select(Role::getName, Role::getAuths)
+                .from(Role.class);
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT `name`, `auths` FROM tb_role", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void updateWithAliasShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .update("tb_user", "u")
+                .set("u.name", "test")
+                .where("u.id", 1);
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("UPDATE tb_user u SET u.name = ? WHERE u.id = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"test", 1}, pair.getSecond());
+    }
+
+    @Test
+    public void updateWithClassShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .update(Role.class)
+                .set(Role::getName, "admin")
+                .where(Role::getAuths, "all");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("UPDATE tb_role SET `name` = ? WHERE `auths` = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"admin", "all"}, pair.getSecond());
+    }
+
+    @Test
+    public void updateWithClassAndAliasShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .update(Role.class, "r")
+                .set("r.name", "admin")
+                .where("r.name", "guest");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("UPDATE tb_role r SET r.name = ? WHERE r.name = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"admin", "guest"}, pair.getSecond());
+    }
+
+    @Test
+    public void setWithLambdaShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .update("tb_user")
+                .set(Token::getSize, 100)
+                .where("id", 1);
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("UPDATE tb_user SET `size` = ? WHERE id = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{100, 1}, pair.getSecond());
+    }
+
+    @Test
+    public void deleteWithAliasShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .delete("a")
+                .from("tb_user")
+                .as("a")
+                .where("a.status", 0);
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("DELETE a FROM tb_user a WHERE a.status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{0}, pair.getSecond());
+    }
+
+    @Test
+    public void replaceIntoWithStringFieldsShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .replaceInto("tb_user", "name", "status")
+                .values("test", 1);
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().startsWith("REPLACE INTO tb_user"));
+        assertTrue(pair.getFirst().contains("(name,status)"));
+    }
+
+    @Test
+    public void replaceIntoWithClassAndLambdaShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .replaceInto(Role.class, Role::getName, Role::getAuths)
+                .values("admin", "all");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().startsWith("REPLACE INTO tb_role"));
+        assertTrue(pair.getFirst().contains("(`name`,`auths`)"));
+    }
+
+    @Test
+    public void replaceIntoWithClassAndStringsShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .replaceInto(Role.class, "name", "auths")
+                .values("admin", "all");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().startsWith("REPLACE INTO tb_role"));
+        assertTrue(pair.getFirst().contains("(name,auths)"));
+    }
+
+    @Test
+    public void insertIgnoreIntoWithStringFieldsShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .insertIgnoreInto("tb_user", "name", "email")
+                .values("test", "test@test.com");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().startsWith("INSERT IGNORE INTO tb_user"));
+        assertTrue(pair.getFirst().contains("(name,email)"));
+    }
+
+    @Test
+    public void insertIgnoreIntoWithClassAndLambdaShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .insertIgnoreInto(Role.class, Role::getName, Role::getAuths)
+                .values("guest", "read");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().startsWith("INSERT IGNORE INTO tb_role"));
+        assertTrue(pair.getFirst().contains("(`name`,`auths`)"));
+    }
+
+    @Test
+    public void insertIgnoreIntoWithClassAndStringsShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .insertIgnoreInto(Role.class, "name", "auths")
+                .values("guest", "read");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().startsWith("INSERT IGNORE INTO tb_role"));
+        assertTrue(pair.getFirst().contains("(name,auths)"));
+    }
+
+    @Test
+    public void insertIntoWithTableOnlyShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .insertInto("tb_log")
+                .values("data");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().startsWith("INSERT INTO tb_log"));
+    }
+
+    @Test
+    public void insertIntoWithLambdaFieldsShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .insertInto("tb_role", Role::getName, Role::getAuths)
+                .values("admin", "all");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().contains("(`name`,`auths`)"));
+    }
+
+    @Test
+    public void insertIntoClassOnlyShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .insertInto(Role.class)
+                .values("admin");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().startsWith("INSERT INTO tb_role"));
+    }
+
+    @Test
+    public void replaceIntoTableOnlyShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .replaceInto("tb_log")
+                .values("data");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().startsWith("REPLACE INTO tb_log"));
+    }
+
+    @Test
+    public void insertIgnoreIntoTableOnlyShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .insertIgnoreInto("tb_log")
+                .values("data");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().startsWith("INSERT IGNORE INTO tb_log"));
+    }
+
+    @Test
+    public void onDuplicateKeyUpdateWithLambdaShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .insertInto("tb_role", "name", "auths")
+                .values("admin", "all")
+                .onDuplicateKeyUpdate(Role::getAuths, "updated");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().startsWith("INSERT INTO tb_role"));
+    }
+
+    @Test
+    public void valuesWithListShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .insertInto("tb_user", "name", "age")
+                .values(Arrays.asList(
+                        new Object[]{"a", 1},
+                        new Object[]{"b", 2},
+                        new Object[]{"c", 3}
+                ));
+        assertEquals(3, sql.getInsertValues().size());
+        assertArrayEquals(new Object[]{"a", 1}, sql.getInsertValues().get(0));
+        assertArrayEquals(new Object[]{"b", 2}, sql.getInsertValues().get(1));
+        assertArrayEquals(new Object[]{"c", 3}, sql.getInsertValues().get(2));
+    }
+
+    @Test
+    public void truncateShouldBuildCorrectSql() {
+        SQL sql = new SQL().truncate().table("tb_log");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("TRUNCATE TABLE tb_log;\n", pair.getFirst());
+    }
+
+    @Test
+    public void dropShouldBuildCorrectSql() {
+        SQL sql = new SQL().drop().table("tb_temp");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("DROP TABLE tb_temp", pair.getFirst());
+    }
+
+    @Test
+    public void dropIfExistsShouldBuildCorrectSql() {
+        SQL sql = new SQL().drop().ifExists().table("tb_temp");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("DROP TABLE IF EXISTS tb_temp", pair.getFirst());
+    }
+
+    @Test
+    public void tableWithClassShouldBuildCorrectSql() {
+        SQL sql = new SQL().truncate().table(Role.class);
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("TRUNCATE TABLE tb_role;\n", pair.getFirst());
+    }
+
+    @Test
+    public void natureJoinWithTableShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("a")
+                .natureJoin("b");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().contains(", b"));
+    }
+
+    @Test
+    public void natureJoinWithAliasShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("a")
+                .natureJoin("b", "bb")
+                .on("a.id", "bb.id");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().contains(", b bb ON a.id = bb.id"));
+    }
+
+    @Test
+    public void natureJoinWithConsumerShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("a")
+                .natureJoin("b", "bb", c -> c.on("a.id", "bb.id"));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().contains(", b bb ON a.id = bb.id"));
+    }
+
+    @Test
+    public void leftJoinTableOnlyShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("a")
+                .leftJoin("b");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().contains("LEFT JOIN b"));
+    }
+
+    @Test
+    public void rightJoinTableOnlyShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("a")
+                .rightJoin("b");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().contains("RIGHT JOIN b"));
+    }
+
+    @Test
+    public void innerJoinTableOnlyShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("a")
+                .innerJoin("b");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().contains("INNER JOIN b"));
+    }
+
+    @Test
+    public void natureJoinTableOnlyShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("a")
+                .natureJoin("b");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().contains(", b"));
+    }
+
+    @Test
+    public void havingWithFullCriteriaShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .groupBy("dept_id")
+                .having(new Criteria().where("cnt", ">", 5));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT dept_id, COUNT(*) cnt FROM tb_user"));
+        assertTrue(pair.getFirst().contains("HAVING cnt > ?"));
+        assertArrayEquals(new Object[]{5}, pair.getSecond());
+    }
+
+    // ==================== 边界/异常场景测试 ====================
+
+    @Test
+    public void orWithoutPrecedingWhereShouldThrowException() {
+        try {
+            new Criteria().or("name", "test");
+            fail("or without preceding where should throw GyjdbcException");
+        } catch (GyjdbcException expected) {
+            assertTrue(expected.getMessage().contains("must be following after \"where\""));
+        }
+    }
+
+    @Test
+    public void orCriteriaWithoutPrecedingWhereShouldThrowException() {
+        try {
+            new Criteria().orCriteria(new Criteria().where("name", "test"));
+            fail("orCriteria without preceding where should throw GyjdbcException");
+        } catch (GyjdbcException expected) {
+            assertTrue(expected.getMessage().contains("must be following after \"where\""));
+        }
+    }
+
+    @Test
+    public void whereWithEmptyStringArrayShouldThrowException() {
+        try {
+            new Criteria().where(new String[]{}, 1);
+            fail("where with empty array should throw GyjdbcException");
+        } catch (GyjdbcException expected) {
+            assertTrue(expected.getMessage().contains("keys cannot be null"));
+        }
+    }
+
+    @Test
+    public void whereWithNullStringArrayShouldThrowException() {
+        try {
+            new Criteria().where((String[]) null, 1);
+            fail("where with null array should throw GyjdbcException");
+        } catch (GyjdbcException expected) {
+            assertTrue(expected.getMessage().contains("keys cannot be null"));
+        }
+    }
+
+    @Test
+    public void whereWithSingleElementArrayAndCustomOptShouldBuildCorrectSql() {
+        Criteria criteria = new Criteria()
+                .where(new String[]{"score"}, ">=", 60);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE score >= ?", pair.getFirst());
+        assertArrayEquals(new Object[]{60}, pair.getSecond());
     }
 
     private static class TestDao extends EntityDaoImpl<TestEntity, String> {
