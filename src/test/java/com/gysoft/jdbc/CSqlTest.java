@@ -151,7 +151,47 @@ public class CSqlTest {
                 .where("flag", 1)
                 .orCriteria(new Criteria().where("type", "A"));
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
-        assertTrue("OR criteria missing: " + pair.getFirst(), pair.getFirst().contains("OR (type = ?)"));
+       assertTrue("OR criteria missing: " + pair.getFirst(), pair.getFirst().contains("OR (type = ?)"));
+   }
+
+    @Test
+    public void andCriteriaWithConditionTrueShouldInclude() {
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .andCriteria(c -> c.where("type", "A").or("type", "B"), true);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertTrue(pair.getFirst().contains("AND (type = ? OR type = ?)"));
+        assertArrayEquals(new Object[]{1, "A", "B"}, pair.getSecond());
+    }
+
+    @Test
+    public void andCriteriaWithConditionFalseShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .andCriteria(c -> c.where("type", "A").or("type", "B"), false);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE flag = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void orCriteriaWithConditionTrueShouldInclude() {
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .orCriteria(c -> c.where("type", "A"), true);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertTrue(pair.getFirst().contains("OR (type = ?)"));
+        assertArrayEquals(new Object[]{1, "A"}, pair.getSecond());
+    }
+
+    @Test
+    public void orCriteriaWithConditionFalseShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .orCriteria(c -> c.where("type", "A"), false);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE flag = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
     }
 
     @Test

@@ -412,7 +412,6 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         Criteria sub = new Criteria();
         consumer.accept(sub);
         return andCriteria(sub, condition);
-
     }
 
     public S orCriteria(Consumer<Criteria> consumer) {
