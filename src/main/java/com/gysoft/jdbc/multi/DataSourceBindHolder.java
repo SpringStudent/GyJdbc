@@ -11,7 +11,6 @@ public abstract class DataSourceBindHolder {
     private static Map<String, Integer> activeCountMap = new ConcurrentHashMap<>();
 
     public static void setDataSource(DataSourceBind dataSourceBind) {
-        //上个线程设置的DataSourceBind
         dataSourceBind.setPrev(DataSourceBindHolder.get());
         DataSourceBindHolder.set(dataSourceBind);
     }

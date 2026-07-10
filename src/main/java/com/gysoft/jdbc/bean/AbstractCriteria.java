@@ -6,7 +6,6 @@ import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
