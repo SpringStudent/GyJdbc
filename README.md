@@ -34,7 +34,7 @@
  <dependency>
      <groupId>io.github.springstudent</groupId>
      <artifactId>GyJdbc</artifactId>
-     <version>7.0.0.RELEASE</version>
+     <version>8.0.0.RELEASE</version>
  </dependency>
  ```
  

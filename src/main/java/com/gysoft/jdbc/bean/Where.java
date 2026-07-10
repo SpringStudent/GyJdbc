@@ -1,6 +1,7 @@
 package com.gysoft.jdbc.bean;
 
 import java.util.Collection;
+import java.util.function.Predicate;
 
 /**
  * @author zhouning
@@ -103,10 +104,11 @@ public class Where {
         return this;
     }
 
-    public Where endsWith(Object val) {
-        criteria.endsWith(key, val);
-        return this;
-    }
+   public Where endsWith(Object val) {
+       criteria.endsWith(key, val);
+       return this;
+   }
+
 
     public Where isNull() {
         criteria.isNull(key);
@@ -130,6 +132,141 @@ public class Where {
 
     public Where betweenAnd(Object v1, Object v2) {
         criteria.betweenAnd(key, v1, v2);
+        return this;
+    }
+
+    public Where likeIfAbsent(Object val) {
+        return likeIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where likeIfAbsent(Object val, Predicate<Object> predicate) {
+        if (predicate.test(val)) criteria.like(key, val);
+        return this;
+    }
+
+    public Where likeRIfAbsent(Object val) {
+        return likeRIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where likeRIfAbsent(Object val, Predicate<Object> predicate) {
+        if (predicate.test(val)) criteria.likeR(key, val);
+        return this;
+    }
+
+    public Where likeLIfAbsent(Object val) {
+        return likeLIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where likeLIfAbsent(Object val, Predicate<Object> predicate) {
+        if (predicate.test(val)) criteria.likeL(key, val);
+        return this;
+    }
+
+    public Where equalIfAbsent(Object val) {
+        return equalIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where equalIfAbsent(Object val, Predicate<Object> predicate) {
+        if (predicate.test(val)) criteria.and(key, val);
+        return this;
+    }
+
+    public Where notEqualIfAbsent(Object val) {
+        return notEqualIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where notEqualIfAbsent(Object val, Predicate<Object> predicate) {
+        if (predicate.test(val)) criteria.notEqual(key, val);
+        return this;
+    }
+
+    public Where gtIfAbsent(Object val) {
+        return gtIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where gtIfAbsent(Object val, Predicate<Object> predicate) {
+        if (predicate.test(val)) criteria.gt(key, val);
+        return this;
+    }
+
+    public Where gteIfAbsent(Object val) {
+        return gteIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where gteIfAbsent(Object val, Predicate<Object> predicate) {
+        if (predicate.test(val)) criteria.gte(key, val);
+        return this;
+    }
+
+    public Where ltIfAbsent(Object val) {
+        return ltIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where ltIfAbsent(Object val, Predicate<Object> predicate) {
+        if (predicate.test(val)) criteria.lt(key, val);
+        return this;
+    }
+
+    public Where letIfAbsent(Object val) {
+        return letIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where letIfAbsent(Object val, Predicate<Object> predicate) {
+        if (predicate.test(val)) criteria.let(key, val);
+        return this;
+    }
+
+    public Where inIfAbsent(Collection<?> val) {
+        return inIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where inIfAbsent(Collection<?> val, Predicate<Collection> predicate) {
+        if (predicate.test(val)) criteria.in(key, val);
+        return this;
+    }
+
+    public Where notInIfAbsent(Collection<?> val) {
+        return notInIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where notInIfAbsent(Collection<?> val, Predicate<Collection> predicate) {
+        if (predicate.test(val)) criteria.notIn(key, val);
+        return this;
+    }
+
+    public Where notLikeIfAbsent(Object val) {
+        return notLikeIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where notLikeIfAbsent(Object val, Predicate<Object> predicate) {
+        if (predicate.test(val)) criteria.notLike(key, val);
+        return this;
+    }
+
+    public Where startsWithIfAbsent(Object val) {
+        return startsWithIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where startsWithIfAbsent(Object val, Predicate<Object> predicate) {
+        if (predicate.test(val)) criteria.startsWith(key, val);
+        return this;
+    }
+
+    public Where endsWithIfAbsent(Object val) {
+        return endsWithIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where endsWithIfAbsent(Object val, Predicate<Object> predicate) {
+        if (predicate.test(val)) criteria.endsWith(key, val);
+        return this;
+    }
+
+    public Where betweenAndIfAbsent(Object v1, Object v2) {
+        return betweenAndIfAbsent(v1, v2, AuxiliaryOperation.getDefaultPredicate());
+    }
+
+    public Where betweenAndIfAbsent(Object v1, Object v2, Predicate<Object> predicate) {
+        if (predicate.test(v1) && predicate.test(v2)) criteria.betweenAnd(key, v1, v2);
         return this;
     }
 

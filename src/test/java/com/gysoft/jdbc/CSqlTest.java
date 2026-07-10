@@ -990,7 +990,93 @@ public class CSqlTest {
                 .whereIfAbsent("score", null);
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
         assertEquals("SELECT * FROM tb_test", pair.getFirst());
-        assertArrayEquals(new Object[]{}, pair.getSecond());
+       assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void whereIfAbsentShouldSkipNullValues() {
+        Criteria criteria = new Criteria()
+                .where("is_active", 1)
+                .and(Where.where("name").likeIfAbsent(null).and("age").gtIfAbsent(null).and("email").endsWithIfAbsent(null));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE is_active = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void whereIfAbsentShouldSkipEmptyStrings() {
+        Criteria criteria = new Criteria()
+                .where("status", "active")
+                .and(Where.where("remark").likeIfAbsent(""))
+                .and(Where.where("phone").startsWithIfAbsent(""));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"active"}, pair.getSecond());
+    }
+
+    @Test
+    public void whereIfAbsentShouldIncludeNonEmptyValues() {
+        Criteria criteria = new Criteria()
+                .where("is_active", 1)
+                .and(Where.where("name").likeIfAbsent("zhou").and("age").gteIfAbsent(18).and("email").endsWithIfAbsent("@example.com"));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertTrue(pair.getFirst().contains("name LIKE ?"));
+        assertTrue(pair.getFirst().contains("age >= ?"));
+        assertTrue(pair.getFirst().contains("email LIKE ?"));
+        assertArrayEquals(new Object[]{1, "%zhou%", 18, "%@example.com"}, pair.getSecond());
+    }
+
+    @Test
+    public void whereInIfAbsentShouldSkipEmptyCollection() {
+        Criteria criteria = new Criteria()
+                .where("is_active", 1)
+                .and(Where.where("role_id").inIfAbsent(new java.util.ArrayList<>()).and("dept_id").notInIfAbsent(new java.util.ArrayList<>()));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE is_active = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void whereBetweenAndIfAbsentShouldSkipWhenAnyBoundIsNull() {
+        Criteria criteria = new Criteria()
+                .where("is_active", 1)
+                .and(Where.where("age").betweenAndIfAbsent(18, null).and("score").betweenAndIfAbsent(null, 100));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE is_active = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void whereBetweenAndIfAbsentShouldIncludeValidBounds() {
+        Criteria criteria = new Criteria()
+                .where("is_active", 1)
+                .and(Where.where("age").betweenAndIfAbsent(18, 60));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertTrue(pair.getFirst().contains("BETWEEN ? AND ?"));
+        assertArrayEquals(new Object[]{1, 18, 60}, pair.getSecond());
+    }
+
+    @Test
+    public void whereIfAbsentWithCustomPredicateShouldWork() {
+        Criteria criteria = new Criteria()
+                .where("is_active", 1)
+                .and(Where.where("score").gtIfAbsent(5, v -> v instanceof Number && ((Number) v).intValue() >= 10).and("level").gtIfAbsent(15, v -> v instanceof Number && ((Number) v).intValue() >= 10));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE is_active = ? AND level > ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 15}, pair.getSecond());
+    }
+
+    @Test
+    public void whereIfAbsentMixRegularAndSkippedShouldWork() {
+        Criteria criteria = new Criteria()
+                .where("is_active", 1)
+                .and(Where.where("name").likeIfAbsent("zhou").and("email").equalIfAbsent(null).and("age").gtIfAbsent(18).and("phone").likeIfAbsent(""));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertTrue(pair.getFirst().contains("name LIKE ?"));
+        assertTrue(pair.getFirst().contains("age > ?"));
+        assertFalse(pair.getFirst().contains("email"));
+        assertFalse(pair.getFirst().contains("phone"));
+        assertArrayEquals(new Object[]{1, "%zhou%", 18}, pair.getSecond());
     }
 
     @Test

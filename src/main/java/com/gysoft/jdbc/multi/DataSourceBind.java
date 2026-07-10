@@ -82,8 +82,20 @@ public class DataSourceBind {
     }
 
     public void setPrev(DataSourceBind prev) {
-        if (this.getBindType().equals(BindType.byMethod) && prev != null && prev.getBindType().equals(BindType.byAnno)) {
-            this.prev = prev;
+        if (this.getBindType().equals(BindType.byMethod) && prev != null) {
+            // Walk the prev chain to find the outermost byAnno binding.
+            // When byMethod calls stack (e.g. bindKey("a").bindKey("b")),
+            // the first byMethod may have saved a byAnno as its prev.
+            // Instead of discarding it (the original code only accepted
+            // direct byAnno prev), we traverse the chain so that the
+            // outermost byAnno is preserved for restoration.
+            DataSourceBind root = prev;
+            while (root.getPrev() != null && root.getBindType().equals(BindType.byMethod)) {
+                root = root.getPrev();
+            }
+            if (root.getBindType().equals(BindType.byAnno)) {
+                this.prev = root;
+            }
         }
     }
 

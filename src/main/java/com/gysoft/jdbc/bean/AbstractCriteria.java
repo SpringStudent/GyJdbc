@@ -6,6 +6,7 @@ import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -376,6 +377,13 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return criteria(criteria, "AND");
     }
 
+    public S andCriteria(Criteria criteria, boolean condition) {
+        if (condition) {
+            return criteria(criteria, "AND");
+        }
+        return self();
+    }
+
     public S orCriteria(Criteria criteria) {
         if (CollectionUtils.isEmpty(whereParams)) {
             throw new GyjdbcException("sql error,condition \"orCriteria\" must be following after \"where\"!");
@@ -383,16 +391,40 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return criteria(criteria, "OR");
     }
 
+    public S orCriteria(Criteria criteria, boolean condition) {
+        if (condition) {
+            if (CollectionUtils.isEmpty(whereParams)) {
+                throw new GyjdbcException("sql error,condition \"orCriteria\" must be following after \"where\"!");
+            }
+            return criteria(criteria, "OR");
+        }
+        return self();
+    }
+
+
     public S andCriteria(Consumer<Criteria> consumer) {
         Criteria sub = new Criteria();
         consumer.accept(sub);
         return andCriteria(sub);
     }
 
+    public S andCriteria(Consumer<Criteria> consumer, boolean condition) {
+        Criteria sub = new Criteria();
+        consumer.accept(sub);
+        return andCriteria(sub, condition);
+
+    }
+
     public S orCriteria(Consumer<Criteria> consumer) {
         Criteria sub = new Criteria();
         consumer.accept(sub);
         return orCriteria(sub);
+    }
+
+    public S orCriteria(Consumer<Criteria> consumer, boolean condition) {
+        Criteria sub = new Criteria();
+        consumer.accept(sub);
+        return orCriteria(sub, condition);
     }
 
     public S and(Where where) {
@@ -540,10 +572,16 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     public S having(Criteria criteria) {
         having = SqlMakeTools.doCriteria(criteria, new StringBuilder());
         having.setFirst(removeWhereAndTrim(having.getFirst()));
-        return self();
+       return self();
+   }
+
+    public S having(Consumer<Criteria> consumer) {
+        Criteria criteria = new Criteria();
+        consumer.accept(criteria);
+        return having(criteria);
     }
 
-    public S orderBy(Sort... sort) {
+   public S orderBy(Sort... sort) {
         sorts.addAll(Arrays.stream(sort).collect(Collectors.toList()));
         return self();
     }

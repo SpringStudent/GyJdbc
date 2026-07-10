@@ -25,7 +25,7 @@ public class SpringJdbc implements ISpringJdbc {
     private static final Map<Integer, String> paramSymbol = new HashMap<Integer, String>();
 
     @Override
-    public String insertForId(String sql) throws Exception {
+    public String insertForId(String sql) {
         return this.insertForId(sql, null);
     }
 
@@ -44,7 +44,7 @@ public class SpringJdbc implements ISpringJdbc {
     }
 
     @Override
-    public String insertForId(final String sql, final Object[] args) throws Exception {
+    public String insertForId(final String sql, final Object[] args) {
         String id = jdbcTemplate.execute((ConnectionCallback<String>) con -> {
             PreparedStatement ps = (PreparedStatement) con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);// 传入参数：Statement.RETURN_GENERATED_KEYS
             if (args != null) {
@@ -65,22 +65,22 @@ public class SpringJdbc implements ISpringJdbc {
     }
 
     @Override
-    public int batchInsert(String sql, List<Object[]> batchArgs) throws Exception {
+    public int batchInsert(String sql, List<Object[]> batchArgs) {
         return this.batchInsert(sql, batchArgs, null, 0);
     }
 
     @Override
-    public int batchInsert(String sql, List<Object[]> batchArgs, int batchPageSize) throws Exception {
+    public int batchInsert(String sql, List<Object[]> batchArgs, int batchPageSize) {
         return this.batchInsert(sql, batchArgs, null, batchPageSize);
     }
 
     @Override
-    public int batchInsert(String sql, List<Object[]> batchArgs, int[] types) throws Exception {
+    public int batchInsert(String sql, List<Object[]> batchArgs, int[] types) {
         return this.batchInsert(sql, batchArgs, types, 0);
     }
 
     @Override
-    public int batchInsert(String sql, List<Object[]> batchArgs, int[] types, int batchPageSize) throws Exception {
+    public int batchInsert(String sql, List<Object[]> batchArgs, int[] types, int batchPageSize) {
         if (batchPageSize <= 0) {
             batchPageSize = BATCH_PAGE_SIZE;
         }
@@ -168,17 +168,17 @@ public class SpringJdbc implements ISpringJdbc {
     }
 
     @Override
-    public void batchUpdate(String sql, List<Object[]> batchArgs) throws Exception {
+    public void batchUpdate(String sql, List<Object[]> batchArgs) {
         this.batchUpdate(sql, batchArgs, null, 0);
     }
 
     @Override
-    public void batchUpdate(String sql, List<Object[]> batchArgs, int batchPageSize) throws Exception {
+    public void batchUpdate(String sql, List<Object[]> batchArgs, int batchPageSize) {
         this.batchUpdate(sql, batchArgs, null, batchPageSize);
     }
 
     @Override
-    public void batchUpdate(String sql, List<Object[]> batchArgs, int[] types, int batchPageSize) throws Exception {
+    public void batchUpdate(String sql, List<Object[]> batchArgs, int[] types, int batchPageSize) {
         if (batchPageSize <= 0) {
             batchPageSize = BATCH_PAGE_SIZE;
         }
@@ -242,58 +242,58 @@ public class SpringJdbc implements ISpringJdbc {
 
 
     @Override
-    public void batchUpdate(String sql, List<Object[]> batchArgs, int[] types) throws Exception {
+    public void batchUpdate(String sql, List<Object[]> batchArgs, int[] types) {
         this.batchUpdate(sql, batchArgs, types, 0);
     }
 
 
     @Override
-    public int update(String sql, Object[] args) throws Exception {
+    public int update(String sql, Object[] args) {
         Object[] obj = this.changeMessage(sql, args);
         return jdbcTemplate.update((String) obj[0], (Object[]) obj[1], (int[]) obj[2]);
     }
 
     @Override
-    public <T> T query(String sql, ResultSetExtractor<T> rse) throws Exception {
+    public <T> T query(String sql, ResultSetExtractor<T> rse) {
         return jdbcTemplate.query(sql, rse);
     }
 
     @Override
-    public <T> T query(String sql, Object[] args, ResultSetExtractor<T> rse) throws Exception {
+    public <T> T query(String sql, Object[] args, ResultSetExtractor<T> rse) {
         Object[] obj = this.changeMessage(sql, args);
         return jdbcTemplate.query((String) obj[0], (Object[]) obj[1], (int[]) obj[2], rse);
     }
 
     @Override
-    public <T> List<T> query(String sql, RowMapper<T> rowMapper) throws Exception {
+    public <T> List<T> query(String sql, RowMapper<T> rowMapper) {
         return jdbcTemplate.query(sql, rowMapper);
     }
 
     @Override
-    public <T> List<T> query(String sql, Object[] args, RowMapper<T> rowMapper) throws Exception {
+    public <T> List<T> query(String sql, Object[] args, RowMapper<T> rowMapper) {
         Object[] obj = this.changeMessage(sql, args);
         return jdbcTemplate.query((String) obj[0], (Object[]) obj[1], (int[]) obj[2], rowMapper);
     }
 
     @Override
-    public <T> List<T> query(String sql, Class<T> elementType) throws Exception {
+    public <T> List<T> query(String sql, Class<T> elementType) {
         return jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(elementType));
     }
 
     @Override
-    public <T> List<T> query(String sql, Object[] args, Class<T> elementType) throws Exception {
+    public <T> List<T> query(String sql, Object[] args, Class<T> elementType) {
         Object[] obj = this.changeMessage(sql, args);
         return jdbcTemplate.query((String) obj[0], (Object[]) obj[1], (int[]) obj[2],
                 BeanPropertyRowMapper.newInstance(elementType));
     }
 
     @Override
-    public <T> T queryForObject(String sql, Class<T> requiredType) throws Exception {
+    public <T> T queryForObject(String sql, Class<T> requiredType) {
         return jdbcTemplate.queryForObject(sql, requiredType);
     }
 
     @Override
-    public <T> T queryForObject(String sql, Object[] args, Class<T> requiredType) throws Exception {
+    public <T> T queryForObject(String sql, Object[] args, Class<T> requiredType) {
         List<T> results = null;
         if (args != null && args.length > 0) {
             Object[] obj = this.changeMessage(sql, args);
@@ -308,21 +308,21 @@ public class SpringJdbc implements ISpringJdbc {
     }
 
     @Override
-    public <T> List<T> query(String sql, Map<String, Object> paramMap, Class<T> elementType) throws Exception {
+    public <T> List<T> query(String sql, Map<String, Object> paramMap, Class<T> elementType) {
         Object[] args = NamedParameterUtils.buildValueArray(sql,paramMap);
         sql = NamedParameterUtils.parseSqlStatementIntoString(sql);
         return this.query(sql,args,elementType);
     }
 
     @Override
-    public List<Map<String, Object>> queryForList(String sql, Object[] args) throws Exception {
+    public List<Map<String, Object>> queryForList(String sql, Object[] args) {
         Object[] obj = this.changeMessage(sql, args);
         return jdbcTemplate.queryForList((String) obj[0], (Object[]) obj[1]);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
-    public <T> PageResult<T> queryForPageResult(Page page, String sql, Object[] args, Class<T> requiredType) throws Exception {
+    public <T> PageResult<T> queryForPageResult(Page page, String sql, Object[] args, Class<T> requiredType) {
         Object[] obj = this.changeMessage(sql, args);
         String baseSql = (String) obj[0];
         Object[] baseParams = (Object[]) obj[1];
@@ -345,13 +345,13 @@ public class SpringJdbc implements ISpringJdbc {
     }
 
     @Override
-    public <T> PageResult<T> queryForPageResult(Page page, String sql, Map<String, Object> paramMap, Class<T> requiredType) throws Exception {
+    public <T> PageResult<T> queryForPageResult(Page page, String sql, Map<String, Object> paramMap, Class<T> requiredType) {
         Object[] args = NamedParameterUtils.buildValueArray(sql,paramMap);
         sql = NamedParameterUtils.parseSqlStatementIntoString(sql);
         return this.queryForPageResult(page, sql, args, requiredType);
     }
 
-    private Object[] changeMessage(String sql, Object[] args) throws Exception {
+    private Object[] changeMessage(String sql, Object[] args) {
         List<Object> params = new ArrayList<Object>();
         List<Integer> types = new ArrayList<Integer>();
         List<Object[]> paramList = new ArrayList<Object[]>();

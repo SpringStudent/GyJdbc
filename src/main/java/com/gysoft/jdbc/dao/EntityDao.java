@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.RowMapper;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author 周宁
@@ -33,7 +34,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @param t 实体对象
      * @throws Exception sql错误抛出异常
      */
-    int save(T t) throws Exception;
+    int save(T t);
 
     /**
      * 修改指定的持久化对象
@@ -41,7 +42,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @param t 实体对象
      * @throws Exception sql错误抛出异常
      */
-    int update(T t) throws Exception;
+    int update(T t);
 
     /**
      * 批量保存指定的持久化对象
@@ -49,7 +50,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @param list 实体对象集合
      * @throws Exception sql错误抛出异常
      */
-    void batchSave(List<T> list) throws Exception;
+    void batchSave(List<T> list);
 
     /**
      * 保存或更新持久化对象
@@ -57,7 +58,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @param t 实体对象
      * @throws Exception sql错误抛出异常
      */
-    void saveOrUpdate(T t) throws Exception;
+    void saveOrUpdate(T t);
 
     /**
      * 批量保存指定的持久化对象
@@ -66,7 +67,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return int插入记录的条数
      * @throws Exception
      */
-    int saveAll(List<T> list) throws Exception;
+    int saveAll(List<T> list);
 
     /**
      * 批量更新指定的持久化对象
@@ -74,7 +75,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @param list 实体对象集合
      * @throws Exception sql错误抛出异常
      */
-    void batchUpdate(List<T> list) throws Exception;
+    void batchUpdate(List<T> list);
 
     /**
      * 根据主键删除
@@ -82,7 +83,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @param id 实体主键
      * @throws Exception sql错误抛出异常
      */
-    int delete(Id id) throws Exception;
+    int delete(Id id);
 
     /**
      * 根据where条件删除
@@ -90,7 +91,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @param criteria 条件参数
      * @throws Exception sql错误抛出异常
      */
-    int deleteWithCriteria(Criteria criteria) throws Exception;
+    int deleteWithCriteria(Criteria criteria);
 
     /**
      * 根据主键批量删除
@@ -98,7 +99,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @param ids 主键集合
      * @throws Exception sql错误抛出异常
      */
-    int batchDelete(List<Id> ids) throws Exception;
+    int batchDelete(List<Id> ids);
 
     /**
      * 根据ID检索持久化对象
@@ -107,7 +108,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return T 实体对象
      * @throws Exception sql错误抛出异常
      */
-    T queryOne(Id id) throws Exception;
+    T queryOne(Id id);
 
     /**
      * 根据ID检索持久化对象
@@ -117,7 +118,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return T 实体对象
      * @throws Exception sql错误抛出异常
      */
-    <E> E queryOne(Id id, RowMapper<E> tRowMapper) throws Exception;
+    <E> E queryOne(Id id, RowMapper<E> tRowMapper);
 
     /**
      * 检索所有持久化对象
@@ -125,7 +126,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return List 实体对象列表
      * @throws Exception sql错误抛出异常
      */
-    List<T> queryAll() throws Exception;
+    List<T> queryAll();
 
     /**
      * 检索所有持久化对象
@@ -134,7 +135,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return List 实体对象列表
      * @throws Exception sql错误抛出异常
      */
-    <E> List<E> queryAll(RowMapper<E> tRowMapper) throws Exception;
+    <E> List<E> queryAll(RowMapper<E> tRowMapper);
 
     /**
      * 分页查询
@@ -143,7 +144,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return PageResult 分页查询结果
      * @throws Exception sql错误抛出异常
      */
-    PageResult<T> pageQuery(Page page) throws Exception;
+    PageResult<T> pageQuery(Page page);
 
     /**
      * 分页查询
@@ -153,7 +154,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return PageResult 分页查询结果
      * @throws Exception sql错误抛出异常
      */
-    <E> PageResult<E> pageQuery(Page page, RowMapper<E> tRowMapper) throws Exception;
+    <E> PageResult<E> pageQuery(Page page, RowMapper<E> tRowMapper);
 
     /**
      * 分页条件查询
@@ -163,7 +164,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return PageResult 分页查询结果
      * @throws Exception sql错误抛出异常
      */
-    PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria) throws Exception;
+    PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria);
 
     /**
      * 分页条件查询
@@ -174,7 +175,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return PageResult 分页查询结果
      * @throws Exception sql错误抛出异常
      */
-    <E> PageResult<E> pageQueryWithCriteria(Page page, Criteria criteria, RowMapper<E> tRowMapper) throws Exception;
+    <E> PageResult<E> pageQueryWithCriteria(Page page, Criteria criteria, RowMapper<E> tRowMapper);
 
     /**
      * 条件查询
@@ -183,7 +184,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return List 结果集
      * @throws Exception sql错误抛出异常
      */
-    List<T> queryWithCriteria(Criteria criteria) throws Exception;
+    List<T> queryWithCriteria(Criteria criteria);
 
     /**
      * 根据criteria判断是否有满足条件的数据
@@ -192,7 +193,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return boolean 结果类型，数据是否存在
      * @throws Exception sql错误抛出异常
      */
-    boolean existsWithCriteria(Criteria criteria) throws Exception;
+    boolean existsWithCriteria(Criteria criteria);
 
     /**
      * 根据criteria统计数量
@@ -201,7 +202,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return long 满足条件的记录数
      * @throws Exception sql错误抛出异常
      */
-    long countWithCriteria(Criteria criteria) throws Exception;
+    long countWithCriteria(Criteria criteria);
 
     /**
      * 根据criteria查询主键列表，只查主键字段，适合批量操作前获取id集合
@@ -210,7 +211,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return List 主键列表
      * @throws Exception sql错误抛出异常
      */
-    List<Id> queryIds(Criteria criteria) throws Exception;
+    List<Id> queryIds(Criteria criteria);
 
     /**
      * 条件查询
@@ -220,7 +221,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return List 结果集
      * @throws Exception sql错误抛出异常
      */
-    <E> List<E> queryWithCriteria(Criteria criteria, RowMapper<E> tRowMapper) throws Exception;
+    <E> List<E> queryWithCriteria(Criteria criteria, RowMapper<E> tRowMapper);
 
     /**
      * 根据条件查询
@@ -229,7 +230,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return T 实体对象
      * @throws Exception sql错误抛出异常
      */
-    T queryOne(Criteria criteria) throws Exception;
+    T queryOne(Criteria criteria);
 
     /**
      * 根据条件查询
@@ -239,16 +240,16 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return T 实体对象
      * @throws Exception sql错误抛出异常
      */
-    <E> E queryOne(Criteria criteria, RowMapper<E> tRowMapper) throws Exception;
+   <E> E queryOne(Criteria criteria, RowMapper<E> tRowMapper);
 
-    /**
-     * 根据sql查询
-     *
-     * @param sql sql拼接器
-     * @param <E> 查询结果类型
-     * @throws Exception sql错误抛出异常
-     */
-    <E> Result<E> queryWithSql(Class<E> clss, SQL sql) throws Exception;
+   /**
+    * 根据sql查询
+    *
+    * @param sql sql拼接器
+    * @param <E> 查询结果类型
+    * @throws Exception sql错误抛出异常
+    */
+   <E> Result<E> queryWithSql(Class<E> clss, SQL sql);
 
     /**
      * 根据sql查询，直接返回对象列表
@@ -259,7 +260,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return List 结果集
      * @throws Exception sql错误抛出异常
      */
-    <E> List<E> queryListWithSql(Class<E> clss, SQL sql) throws Exception;
+    <E> List<E> queryListWithSql(Class<E> clss, SQL sql);
 
     /**
      * 根据sql查询，直接返回单个对象
@@ -270,7 +271,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return E 单个实体对象
      * @throws Exception sql错误抛出异常
      */
-    <E> E queryOneWithSql(Class<E> clss, SQL sql) throws Exception;
+    <E> E queryOneWithSql(Class<E> clss, SQL sql);
 
     /**
      * 根据sql分页查询
@@ -282,7 +283,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return PageResult 分页查询结果
      * @throws Exception sql错误抛出异常
      */
-    <E> PageResult<E> pageQueryWithSql(Page page, Class<E> clss, SQL sql) throws Exception;
+    <E> PageResult<E> pageQueryWithSql(Page page, Class<E> clss, SQL sql);
 
     /**
      * 根据sql更新
@@ -291,7 +292,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return int 更新条目数量
      * @throws Exception sql错误抛出异常
      */
-    int updateWithSql(SQL sql) throws Exception;
+    int updateWithSql(SQL sql);
 
     /**
      * 根据sql删除
@@ -300,7 +301,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return int 删除条目数量
      * @throws Exception sql错误抛出异常
      */
-    int deleteWithSql(SQL sql) throws Exception;
+    int deleteWithSql(SQL sql);
 
     /**
      * 键值对查询
@@ -312,7 +313,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return Map 返回类型Map
      * @throws Exception sql错误抛出异常
      */
-    <K, V> Map<K, V> queryMapWithSql(SQL sql, ResultSetExtractor<Map<K, V>> resultSetExtractor) throws Exception;
+    <K, V> Map<K, V> queryMapWithSql(SQL sql, ResultSetExtractor<Map<K, V>> resultSetExtractor);
 
     /**
      * 根据条件查询Map集合
@@ -321,7 +322,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return List 结果集
      * @throws Exception sql错误抛出异常
      */
-    List<Map<String, Object>> queryMapsWithSql(SQL sql) throws Exception;
+    List<Map<String, Object>> queryMapsWithSql(SQL sql);
 
     /**
      * 根据sql查询一个int值
@@ -330,7 +331,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return Integer 结果类型，一般为查询数量
      * @throws Exception sql错误抛出异常
      */
-    Integer queryIntegerWithSql(SQL sql) throws Exception;
+    Integer queryIntegerWithSql(SQL sql);
 
     /**
      * 根据sql统计数量
@@ -339,7 +340,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return Integer 结果类型，一般为查询数量
      * @throws Exception sql错误抛出异常
      */
-    long countWithSql(SQL sql) throws Exception;
+    long countWithSql(SQL sql);
 
     /**
      * 根据sql判断是否有满足条件的数据
@@ -348,7 +349,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return boolean 结果类型，数据是否存在
      * @throws Exception sql错误抛出异常
      */
-    boolean existsWithSql(SQL sql) throws Exception;
+    boolean existsWithSql(SQL sql);
 
     /**
      * 根据sql插入数据
@@ -357,7 +358,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return int 更新条目数量
      * @throws Exception sql错误抛出异常
      */
-    int insertWithSql(SQL sql) throws Exception;
+    int insertWithSql(SQL sql);
 
     /**
      * 根据sql创建表;如果有指定数据将数据插入
@@ -366,14 +367,14 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return String 表名称
      * @throws Exception sql错误抛出异常
      */
-    String createWithSql(SQL sql) throws Exception;
+    String createWithSql(SQL sql);
 
     /**
      * 删除表
      *
      * @throws Exception sql错误抛出异常
      */
-    void drop() throws Exception;
+    void drop();
 
     /**
      * 清除表数据和delete不同的是，该方法不需要where
@@ -381,7 +382,7 @@ public interface EntityDao<T, Id extends Serializable> {
      *
      * @throws Exception sql错误抛出异常
      */
-    void truncate() throws Exception;
+    void truncate();
 
     /**
      * 喝醉了干一些犯浑的事情，比如删除表，清楚数据
@@ -389,7 +390,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @param sql sql拼接器
      * @throws Exception sql错误抛出异常
      */
-    void drunk(SQL sql) throws Exception;
+    void drunk(SQL sql);
 
     /**
      * 绑定指定key的数据源
@@ -398,7 +399,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return EntityDao 当前的dao对象
      * @throws Exception sql错误抛出异常
      */
-    EntityDao<T, Id> bindKey(String bindKey) throws Exception;
+    EntityDao<T, Id> bindKey(String bindKey);
 
     /**
      * 绑定指定组的数据源
@@ -408,7 +409,7 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return EntityDao 当前的dao对象
      * @throws Exception sql错误抛出异常
      */
-    EntityDao<T, Id> bindGroup(String group, Class<? extends LoadBalance> loadBalance) throws Exception;
+    EntityDao<T, Id> bindGroup(String group, Class<? extends LoadBalance> loadBalance);
 
     /**
      * 绑定指定组的数据源
@@ -417,6 +418,45 @@ public interface EntityDao<T, Id extends Serializable> {
      * @return EntityDao 当前的dao对象
      * @throws Exception sql错误抛出异常
      */
-    EntityDao<T, Id> bindGroup(String group) throws Exception;
+    EntityDao<T, Id> bindGroup(String group);
 
+    default Optional<T> queryOneOpt(Id id) {
+        try {
+            return Optional.ofNullable(queryOne(id));
+        } catch (Exception e) {
+            throw new GyjdbcException(e);
+        }
+    }
+
+    default <E> Optional<E> queryOneOpt(Id id, RowMapper<E> tRowMapper) {
+        try {
+            return Optional.ofNullable(queryOne(id, tRowMapper));
+        } catch (Exception e) {
+            throw new GyjdbcException(e);
+        }
+    }
+
+    default Optional<T> queryOneOpt(Criteria criteria) {
+        try {
+            return Optional.ofNullable(queryOne(criteria));
+        } catch (Exception e) {
+            throw new GyjdbcException(e);
+        }
+    }
+
+    default <E> Optional<E> queryOneOpt(Criteria criteria, RowMapper<E> tRowMapper) {
+        try {
+            return Optional.ofNullable(queryOne(criteria, tRowMapper));
+        } catch (Exception e) {
+            throw new GyjdbcException(e);
+        }
+    }
+
+    default <E> Optional<E> queryOneWithSqlOpt(Class<E> clss, SQL sql) {
+        try {
+            return Optional.ofNullable(queryOneWithSql(clss, sql));
+        } catch (Exception e) {
+            throw new GyjdbcException(e);
+        }
+    }
 }

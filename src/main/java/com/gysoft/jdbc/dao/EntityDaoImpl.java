@@ -69,7 +69,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public int save(T t) throws Exception {
+    public int save(T t) {
         String sql = SqlMakeTools.makeSql(entityClass, tableName, SQL_INSERT);
         Object[] args = SqlMakeTools.setArgs(t, SQL_INSERT);
         int[] argTypes = SqlMakeTools.setArgTypes(t, SQL_INSERT);
@@ -77,7 +77,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public int update(T t) throws Exception {
+    public int update(T t) {
         String sql = SqlMakeTools.makeSql(entityClass, tableName, SQL_UPDATE);
         Object[] args = SqlMakeTools.setArgs(t, SQL_UPDATE);
         int[] argTypes = SqlMakeTools.setArgTypes(t, SQL_UPDATE);
@@ -85,7 +85,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public void batchSave(List<T> list) throws Exception {
+    public void batchSave(List<T> list) {
         if (CollectionUtils.isEmpty(list)) {
             return;
         }
@@ -107,7 +107,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public void saveOrUpdate(T t) throws Exception {
+    public void saveOrUpdate(T t) {
         Field field = ReflectionUtils.findField(entityClass, primaryKey);
         if (field == null) {
             throw new GyjdbcException("Primary key field '" + primaryKey + "' not found");
@@ -124,7 +124,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public int saveAll(List<T> list) throws Exception {
+    public int saveAll(List<T> list) {
         if (CollectionUtils.isEmpty(list)) {
             return 0;
         }
@@ -173,7 +173,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public void batchUpdate(List<T> list) throws Exception {
+    public void batchUpdate(List<T> list) {
         if (CollectionUtils.isEmpty(list)) {
             return;
         }
@@ -197,7 +197,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @SuppressWarnings("unchecked")
     @Override
-    public T queryOne(Id id) throws Exception {
+    public T queryOne(Id id) {
         return this.queryOne(id, rowMapper);
     }
 
@@ -209,12 +209,12 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public int delete(Id id) throws Exception {
+    public int delete(Id id) {
         return this.batchDelete(Collections.singletonList(id));
     }
 
     @Override
-    public int batchDelete(List<Id> ids) throws Exception {
+    public int batchDelete(List<Id> ids) {
         if (CollectionUtils.isNotEmpty(ids)) {
             StringBuilder sql = new StringBuilder();
             List<String> marks = ids.stream().map(s -> "?").collect(Collectors.toList());
@@ -228,7 +228,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @SuppressWarnings("unchecked")
     @Override
-    public List<T> queryAll() throws Exception {
+    public List<T> queryAll() {
         return this.queryAll(rowMapper);
     }
 
@@ -239,7 +239,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public PageResult<T> pageQuery(Page page) throws Exception {
+    public PageResult<T> pageQuery(Page page) {
         return this.pageQueryWithCriteria(page, null);
     }
 
@@ -248,9 +248,8 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         return this.pageQueryWithCriteria(page, null, tRowMapper);
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria) throws Exception {
+    public PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria) {
         return this.pageQueryWithCriteria(page, criteria, rowMapper);
     }
 
@@ -274,12 +273,12 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public List<T> queryWithCriteria(Criteria criteria) throws Exception {
+    public List<T> queryWithCriteria(Criteria criteria) {
         return this.queryWithCriteria(criteria, rowMapper);
     }
 
     @Override
-    public boolean existsWithCriteria(Criteria criteria) throws Exception {
+    public boolean existsWithCriteria(Criteria criteria) {
         String sql = "SELECT 1 FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
         String existsSql = pair.getFirst();
@@ -293,7 +292,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public long countWithCriteria(Criteria criteria) throws Exception {
+    public long countWithCriteria(Criteria criteria) {
         String sql = "SELECT COUNT(*) FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
         Long count = jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), Long.class);
@@ -301,7 +300,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public List<Id> queryIds(Criteria criteria) throws Exception {
+    public List<Id> queryIds(Criteria criteria) {
         String sql = "SELECT " + primaryKey + " FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
         return jdbcTemplate.queryForList(pair.getFirst(), pair.getSecond(), idClass);
@@ -315,7 +314,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public int deleteWithCriteria(Criteria criteria) throws Exception {
+    public int deleteWithCriteria(Criteria criteria) {
         if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
             throw new GyjdbcException("不支持的操作!");
         }
@@ -325,7 +324,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public T queryOne(Criteria criteria) throws Exception {
+    public T queryOne(Criteria criteria) {
         List<T> result = this.queryWithCriteria(criteria);
         return DataAccessUtils.singleResult(result);
     }
@@ -337,26 +336,26 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public <E> Result<E> queryWithSql(Class<E> clss, SQL sql) throws Exception {
+    public <E> Result<E> queryWithSql(Class<E> clss, SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         return new Result<>(clss, pair.getFirst(), pair.getSecond(), jdbcTemplate);
     }
 
     @Override
-    public <E> List<E> queryListWithSql(Class<E> clss, SQL sql) throws Exception {
+    public <E> List<E> queryListWithSql(Class<E> clss, SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), BeanPropertyRowMapper.newInstance(clss));
     }
 
     @Override
-    public <E> E queryOneWithSql(Class<E> clss, SQL sql) throws Exception {
+    public <E> E queryOneWithSql(Class<E> clss, SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         List<E> results = jdbcTemplate.query(pair.getFirst(), pair.getSecond(), BeanPropertyRowMapper.newInstance(clss));
         return DataAccessUtils.singleResult(results);
     }
 
     @Override
-    public <E> PageResult<E> pageQueryWithSql(Page page, Class<E> clss, SQL sql) throws Exception {
+    public <E> PageResult<E> pageQueryWithSql(Page page, Class<E> clss, SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         String baseSql = pair.getFirst();
         Object[] baseParams = pair.getSecond();
@@ -369,13 +368,13 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public int updateWithSql(SQL sql) throws Exception {
+    public int updateWithSql(SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         return jdbcTemplate.update(pair.getFirst(), pair.getSecond());
     }
 
     @Override
-    public int deleteWithSql(SQL sql) throws Exception {
+    public int deleteWithSql(SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         return jdbcTemplate.update(pair.getFirst(), pair.getSecond());
     }
@@ -383,32 +382,32 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @Override
     public <K, V> Map<K, V> queryMapWithSql(SQL sql,
                                             ResultSetExtractor<Map<K, V>> resultSetExtractor)
-            throws Exception {
+            {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), resultSetExtractor);
     }
 
     @Override
-    public List<Map<String, Object>> queryMapsWithSql(SQL sql) throws Exception {
+    public List<Map<String, Object>> queryMapsWithSql(SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), new ColumnMapRowMapper());
     }
 
     @Override
-    public Integer queryIntegerWithSql(SQL sql) throws Exception {
+    public Integer queryIntegerWithSql(SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         return jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), Integer.class);
     }
 
     @Override
-    public long countWithSql(SQL sql) throws Exception {
+    public long countWithSql(SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         Long count = jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), Long.class);
         return count == null ? 0L : count;
     }
 
     @Override
-    public boolean existsWithSql(SQL sql) throws Exception {
+    public boolean existsWithSql(SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         String existsSql = "SELECT 1 FROM (" + pair.getFirst() + ") gy_exists LIMIT ?";
         Object[] params = appendParams(pair.getSecond(), 1);
@@ -426,7 +425,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public int insertWithSql(SQL sql) throws Exception {
+    public int insertWithSql(SQL sql) {
         String originTbName = sql.tableName();
         String originSqlType = sql.getSqlType();
         try {
@@ -493,7 +492,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public String createWithSql(SQL sql) throws Exception {
+    public String createWithSql(SQL sql) {
         TableMeta tableMeta = sql.getTableMeta();
         String originSqlType = sql.getSqlType();
         String originInsertTbName = sql.getInsert().getFirst();
@@ -519,19 +518,19 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public void drop() throws Exception {
+    public void drop() {
         String sql = "DROP TABLE IF EXISTS " + tableName;
         jdbcTemplate.execute(sql);
     }
 
     @Override
-    public void truncate() throws Exception {
+    public void truncate() {
         String sql = "TRUNCATE TABLE " + tableName;
         jdbcTemplate.execute(sql);
     }
 
     @Override
-    public void drunk(SQL sql) throws Exception {
+    public void drunk(SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         if (sql.getSqlType().equals(EntityDao.SQL_TRUNCATE)) {
             String truncateSql = pair.getFirst();
@@ -545,20 +544,20 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public EntityDaoImpl<T, Id> bindKey(String bindKey) throws Exception {
+    public EntityDaoImpl<T, Id> bindKey(String bindKey) {
         DataSourceBindHolder.setDataSource(DataSourceBind.bindKey(bindKey));
         return this;
     }
 
     @Override
     public EntityDao<T, Id> bindGroup(String group, Class<? extends LoadBalance> loadBalance)
-            throws Exception {
+            {
         DataSourceBindHolder.setDataSource(DataSourceBind.bindGroup(group, loadBalance));
         return this;
     }
 
     @Override
-    public EntityDao<T, Id> bindGroup(String group) throws Exception {
+    public EntityDao<T, Id> bindGroup(String group) {
         return bindGroup(group, RoundRobinLoadBalance.class);
     }
 
