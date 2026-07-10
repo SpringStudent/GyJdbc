@@ -28,27 +28,27 @@ public class Result<E> {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public E queryOne() throws Exception {
+    public E queryOne() {
         return DataAccessUtils.singleResult(queryList());
     }
 
-    public E queryObject() throws Exception {
+    public E queryObject() {
         return jdbcTemplate.queryForObject(sql, params, type);
     }
 
-    public List<E> queryList() throws Exception {
+    public List<E> queryList() {
         return jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(type), params);
     }
 
-    public List<E> queryForList()throws Exception{
+    public List<E> queryForList() {
         return jdbcTemplate.queryForList(sql, type, params);
     }
 
-    public List<Map<String, Object>> queryMaps() throws Exception {
+    public List<Map<String, Object>> queryMaps() {
         return jdbcTemplate.query(sql, params, new ColumnMapRowMapper());
     }
 
-    public PageResult<E> pageQuery(Page page) throws Exception {
+    public PageResult<E> pageQuery(Page page) {
         String pageSql = "SELECT * FROM (" + sql + ") temp LIMIT ?,?";
         Object[] pageParams = appendParams(params, page.getOffset(), page.getPageSize());
         List<E> paged = jdbcTemplate.query(pageSql, pageParams, BeanPropertyRowMapper.newInstance(type));
