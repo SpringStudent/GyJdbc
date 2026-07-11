@@ -103,7 +103,9 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
                 j = 0;
             }
         }
-        jdbcTemplate.batchUpdate(sql, batchArgs, argTypes);
+        if (!batchArgs.isEmpty()) {
+            jdbcTemplate.batchUpdate(sql, batchArgs, argTypes);
+        }
     }
 
     @Override
@@ -191,7 +193,9 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
                 j = 0;
             }
         }
-        jdbcTemplate.batchUpdate(sql, batchArgs, argTypes);
+        if (!batchArgs.isEmpty()) {
+            jdbcTemplate.batchUpdate(sql, batchArgs, argTypes);
+        }
     }
 
 

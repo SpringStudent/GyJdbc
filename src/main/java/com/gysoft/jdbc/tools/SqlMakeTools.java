@@ -156,15 +156,19 @@ public class SqlMakeTools {
             }
             return argTypes;
         } else if (sqlFlag.equals(SQL_UPDATE)) {
-            int[] tempArgTypes = new int[fields.length];
             int[] argTypes = new int[fields.length];
+            int primaryType = Types.OTHER;
             try {
-                for (int i = 0; tempArgTypes != null && i < tempArgTypes.length; i++) {
-                    tempArgTypes[i] = getTypes(fields[i]);
+                int j = 0;
+                for (int i = 0; i < fields.length; i++) {
+                    if (EntityTools.isPk(entity.getClass(), fields[i])) { // id 代表主键
+                        primaryType = getTypes(fields[i]);
+                        continue;
+                    }
+                    argTypes[j] = getTypes(fields[i]);
+                    j++;
                 }
-                System.arraycopy(tempArgTypes, 1, argTypes, 0, tempArgTypes.length - 1); // 数组拷贝
-                argTypes[argTypes.length - 1] = tempArgTypes[0];
-
+                argTypes[argTypes.length - 1] = primaryType;
             } catch (Exception e) {
                 throw new GyjdbcException(e);
             }
@@ -173,7 +177,12 @@ public class SqlMakeTools {
         } else if (sqlFlag.equals(SQL_DELETE)) {
             int[] argTypes = new int[1]; // 长度是1
             try {
-                argTypes[0] = getTypes(fields[0]);
+                for (Field field : fields) {
+                    if (EntityTools.isPk(entity.getClass(), field)) { // id 代表主键
+                        argTypes[0] = getTypes(field);
+                        break;
+                    }
+                }
             } catch (Exception e) {
                 throw new GyjdbcException(e);
             }
@@ -257,7 +266,7 @@ public class SqlMakeTools {
                                     }
                                     sql.setLength(sql.length() - 1);
                                 }else{
-                                    throw new GyjdbcException("in condition collection cannot be null");
+                                    throw new GyjdbcException("in condition collection cannot be empty");
                                 }
                             } else if (value instanceof SQL) {
                                 SQL inSql = (SQL) value;
