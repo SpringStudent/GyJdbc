@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  */
 public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, Id> {
 
-    private static final int BATCH_PAGE_SIZE = 2000;
+    public static int BATCH_PAGE_SIZE = 2000;
 
     @Autowired
     protected JdbcTemplate jdbcTemplate;
@@ -207,7 +207,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public <E> E queryOne(Id id, RowMapper<E> tRowMapper) {
-        String sql = "SELECT * FROM " + tableName + " WHERE " + primaryKey + " = ?";
+        String sql = "SELECT * FROM " + tableName + " WHERE " + primaryKey + " = ? LIMIT 1";
         List<E> result = jdbcTemplate.query(sql, tRowMapper, id);
         return DataAccessUtils.singleResult(result);
     }
