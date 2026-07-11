@@ -400,7 +400,7 @@ public class SqlMakeTools {
     public static Pair<String, Object[]> useSql(SQL sqlObj) {
         //只有查询语句才需要虚拟查询树，其他场景不需要
         if (!SQL_SELECT.equals(sqlObj.getSqlType())) {
-            return doSql(sqlObj);
+            return renderSql(sqlObj).toPair();
         } else {
             //虚拟出查询的根节点，兼容处理联合查询和子查询
             SQL parentSQL = new SQL().select("*").from(sqlObj);
@@ -435,8 +435,10 @@ public class SqlMakeTools {
         List<SQL> subSqls = sql.getSubSqls();
         for (int i = 0; i < subSqls.size(); i++) {
             //单个sql对象对应的sql和参数组装
-            Pair<String, Object[]> pair = doSql(subSqls.get(i));
-            SQLTree cTree = new SQLTree(pair.getFirst(), pair.getSecond(), new ArrayList<>(), UUID.randomUUID().toString().replace("-", ""), subSqls.get(i).getUnionType(), subSqls.get(i).getAsTable(), subSqls.get(i).getFromAsTable());
+            SqlRenderResult result = renderSql(subSqls.get(i));
+            SQLTree cTree = new SQLTree(result.getSql(), result.getParams(), new ArrayList<>(), UUID.randomUUID().toString().replace("-", ""), subSqls.get(i).getUnionType(), subSqls.get(i).getAsTable(), subSqls.get(i).getFromAsTable());
+            cTree.setFromIndex(result.getFromIndex());
+            cTree.setParamsBeforeFrom(result.getParamsBeforeFrom());
             //加入子查询列表
             sqlTree.getChilds().add(cTree);
             buildSQLTree(subSqls.get(i), cTree);
@@ -451,11 +453,13 @@ public class SqlMakeTools {
      * @author 周宁
      * @version 1.0
      */
-    private static Pair<String, Object[]> doSql(SQL sqlObj) {
+    private static SqlRenderResult renderSql(SQL sqlObj) {
         //先拼接基础查询
         Pair<String, Object[]> pair;
         List<Object> params = new ArrayList<>();
         StringBuilder sql = new StringBuilder();
+        int fromIndex = -1;
+        int paramsBeforeFrom = 0;
         if (sqlObj.getSqlType().equals(EntityDao.SQL_SELECT)) {
             sql.append(sqlObj.isDistinctSelect() ? "SELECT DISTINCT " : "SELECT ");
             if (CollectionUtils.isNotEmpty(sqlObj.getSelectFields())) {
@@ -479,6 +483,8 @@ public class SqlMakeTools {
                 }
                 sql.setLength(sql.length() - 2);
             }
+            fromIndex = sql.length() + 1;
+            paramsBeforeFrom = params.size();
             sql.append(" FROM ");
             if (StringUtils.isNotEmpty(sqlObj.getTbName())) {
                 sql.append(sqlObj.getTbName());
@@ -516,7 +522,7 @@ public class SqlMakeTools {
             for (String tb : tables) {
                 sql.append("TRUNCATE TABLE " + tb + ";\n");
             }
-            return new Pair<>(sql.toString(), new Object[]{});
+            return new SqlRenderResult(sql.toString(), new Object[]{}, fromIndex, paramsBeforeFrom);
 
         } else if (sqlObj.getSqlType().equals(EntityDao.SQL_DROP)) {
             Drunk drunk = sqlObj.getDrunk();
@@ -531,7 +537,7 @@ public class SqlMakeTools {
                 }
                 sql.setLength(sql.length() - 1);
             }
-            return new Pair<>(sql.toString(), new Object[]{});
+            return new SqlRenderResult(sql.toString(), new Object[]{}, fromIndex, paramsBeforeFrom);
 
         } else if (sqlObj.getSqlType().equals(SQL_INSERT) || sqlObj.getSqlType().equals(SQL_INSERTIGNORE) || sqlObj.getSqlType().equals(SQL_REPLACE)) {
             sql.append(sqlObj.getSqlType().toUpperCase()).append(" INTO ");
@@ -543,7 +549,7 @@ public class SqlMakeTools {
             if (CollectionUtils.isNotEmpty(insertFields)) {
                 sql.append("(").append(insertFields.stream().collect(Collectors.joining(","))).append(")");
             }
-            return new Pair<>(sql.toString(), new Object[]{});
+            return new SqlRenderResult(sql.toString(), new Object[]{}, fromIndex, paramsBeforeFrom);
         } else if (sqlObj.getSqlType().equals(SQL_CREATE)) {
             TableMeta tableMeta = sqlObj.getTableMeta();
             List<ColumnMeta> columns = tableMeta.getColumns();
@@ -629,7 +635,7 @@ public class SqlMakeTools {
             if (StringUtils.isNotEmpty(tableMeta.getComment())) {
                 createSql.append(" COMMENT=" + "'" + tableMeta.getComment() + "'");
             }
-            return new Pair<>(createSql.toString(), new Object[]{tbName});
+            return new SqlRenderResult(createSql.toString(), new Object[]{tbName}, fromIndex, paramsBeforeFrom);
         }
         //连接查询sql组装
         if (CollectionUtils.isNotEmpty(sqlObj.getJoins())) {
@@ -668,7 +674,41 @@ public class SqlMakeTools {
         if (EntityDao.SQL_SELECT.equals(sqlObj.getSqlType()) && StringUtils.isNotEmpty(sqlObj.getLockClause())) {
             pair.setFirst(pair.getFirst() + " " + sqlObj.getLockClause());
         }
-        return new Pair<>(pair.getFirst(), params.toArray());
+        return new SqlRenderResult(pair.getFirst(), params.toArray(), fromIndex, paramsBeforeFrom);
+    }
+
+    private static final class SqlRenderResult {
+        private final String sql;
+        private final Object[] params;
+        private final int fromIndex;
+        private final int paramsBeforeFrom;
+
+        private SqlRenderResult(String sql, Object[] params, int fromIndex, int paramsBeforeFrom) {
+            this.sql = sql;
+            this.params = params;
+            this.fromIndex = fromIndex;
+            this.paramsBeforeFrom = paramsBeforeFrom;
+        }
+
+        private String getSql() {
+            return sql;
+        }
+
+        private Object[] getParams() {
+            return params;
+        }
+
+        private int getFromIndex() {
+            return fromIndex;
+        }
+
+        private int getParamsBeforeFrom() {
+            return paramsBeforeFrom;
+        }
+
+        private Pair<String, Object[]> toPair() {
+            return new Pair<>(sql, params);
+        }
     }
 
     /**
@@ -692,9 +732,16 @@ public class SqlMakeTools {
             boolean isRootSql = "0".equals(sqlTree.getId());
             // 安全地分割FROM子句
             String parentSql = sqlTree.getSql();
-            int fromIndex = parentSql.indexOf("FROM");
+            int fromIndex = sqlTree.getFromIndex();
             String beforeFrom = fromIndex >= 0 ? parentSql.substring(0, fromIndex) : parentSql;
             String afterFrom = fromIndex >= 0 && fromIndex + 4 < parentSql.length() ? parentSql.substring(fromIndex + 4) : "";
+            Object[] parentParams = sqlTree.getParams();
+            int paramsBeforeFrom = Math.min(sqlTree.getParamsBeforeFrom(), parentParams == null ? 0 : parentParams.length);
+            if (parentParams != null) {
+                for (int i = 0; i < paramsBeforeFrom; i++) {
+                    paramsList.add(parentParams[i]);
+                }
+            }
             boolean hasMultipleChildren = childs.size() > 1;
             boolean hasFromAsTable = StringUtils.isNotEmpty(sqlTree.getFromAsTable());
             // 处理FROM之前的SQL部分
@@ -748,8 +795,10 @@ public class SqlMakeTools {
                 sqlBuilder.append(afterFrom);
             }
             // 添加当前节点的参数
-            if (sqlTree.getParams() != null) {
-                Collections.addAll(paramsList, sqlTree.getParams());
+            if (parentParams != null) {
+                for (int i = paramsBeforeFrom; i < parentParams.length; i++) {
+                    paramsList.add(parentParams[i]);
+                }
             }
         } else {
             // 叶子节点：直接添加SQL和参数

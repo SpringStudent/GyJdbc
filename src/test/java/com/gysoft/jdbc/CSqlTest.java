@@ -2994,6 +2994,76 @@ public class CSqlTest {
         assertArrayEquals(new Object[]{60}, pair.getSecond());
     }
 
+    @Test
+    public void fromSubqueryShouldPreserveParentAndChildParameterOrder() {
+        SQL child = new SQL()
+                .select("*").from("child_table")
+                .where("child_id", "child-where")
+                .asTable("c");
+        SQL sql = new SQL()
+                .select(ValueReference.newValueRef("parent-select"), "c.id")
+                .from(child)
+                .where("parent_id", "parent-where");
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+
+        assertEquals("SELECT ?, c.id FROM( (SELECT * FROM child_table WHERE child_id = ?) c)  WHERE parent_id = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"parent-select", "child-where", "parent-where"}, pair.getSecond());
+    }
+
+    @Test
+    public void fromSubqueryShouldNotSplitExpressionFrom() {
+        SQL child = new SQL()
+                .select("*").from("event_table")
+                .where("event_type", "created")
+                .asTable("e");
+        SQL sql = new SQL()
+                .select("EXTRACT(YEAR FROM created_at)")
+                .from(child);
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+
+        assertEquals("SELECT EXTRACT(YEAR FROM created_at) FROM( (SELECT * FROM event_table WHERE event_type = ?) e)", pair.getFirst());
+        assertArrayEquals(new Object[]{"created"}, pair.getSecond());
+    }
+
+    @Test
+    public void multipleFromSubqueriesShouldPreserveParameterOrder() {
+        SQL first = new SQL().select("*").from("first_table").where("first_id", "first").asTable("f");
+        SQL second = new SQL().select("*").from("second_table").where("second_id", "second").asTable("s");
+        SQL sql = new SQL()
+                .select(ValueReference.newValueRef("parent-select"), "f.id", "s.id")
+                .from(first, second)
+                .where("parent_id", "parent-where");
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+
+        assertEquals("SELECT ?, f.id, s.id FROM( (SELECT * FROM first_table WHERE first_id = ?) f , (SELECT * FROM second_table WHERE second_id = ?) s)  WHERE parent_id = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"parent-select", "first", "second", "parent-where"}, pair.getSecond());
+    }
+
+    @Test
+    public void nestedFromSubqueriesShouldPreserveParameterOrder() {
+        SQL inner = new SQL()
+                .select("*").from("leaf_table")
+                .where("leaf_id", "leaf")
+                .asTable("l");
+        SQL middle = new SQL()
+                .select(ValueReference.newValueRef("middle-select"), "l.id")
+                .from(inner)
+                .where("middle_id", "middle")
+                .asTable("m");
+        SQL sql = new SQL()
+                .select(ValueReference.newValueRef("outer-select"), "m.id")
+                .from(middle)
+                .where("outer_id", "outer");
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+
+        assertEquals("SELECT ?, m.id FROM( (SELECT ?, l.id FROM( (SELECT * FROM leaf_table WHERE leaf_id = ?) l)  WHERE middle_id = ?) m)  WHERE outer_id = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"outer-select", "middle-select", "leaf", "middle", "outer"}, pair.getSecond());
+    }
+
     private static class TestDao extends EntityDaoImpl<TestEntity, String> {
         TestDao() {
             this.jdbcTemplate = new JdbcTemplate() {

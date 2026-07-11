@@ -18,6 +18,14 @@ public class SQLTree {
      */
     private Object[] params;
     /**
+     * 主FROM关键字在sql中的位置
+     */
+    private int fromIndex = -1;
+    /**
+     * 主FROM子句之前的参数数量
+     */
+    private int paramsBeforeFrom;
+    /**
      * 子sql
      */
     private List<SQLTree> childs;
@@ -52,6 +60,22 @@ public class SQLTree {
 
     public void setParams(Object[] params) {
         this.params = params;
+    }
+
+    public int getFromIndex() {
+        return fromIndex;
+    }
+
+    public void setFromIndex(int fromIndex) {
+        this.fromIndex = fromIndex;
+    }
+
+    public int getParamsBeforeFrom() {
+        return paramsBeforeFrom;
+    }
+
+    public void setParamsBeforeFrom(int paramsBeforeFrom) {
+        this.paramsBeforeFrom = paramsBeforeFrom;
     }
 
     public List<SQLTree> getChilds() {
