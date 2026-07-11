@@ -1,49 +1,38 @@
-# Private Render Node Refactor Design
+# Lightweight SQLTree Metadata Design
 
 ## Objective
 
 Improve the internal structure of the FROM-subquery fix without changing SQL output, parameter order, or any public SQL builder API.
 
-The refactor must remove rendering-only metadata from the public `SQLTree` bean and replace the current two-stage `SqlRenderResult` to `SQLTree` data transfer with one private rendering model owned by `SqlMakeTools`.
+The refactor must remove `SqlRenderResult` while preserving the original `doSql(SQL)` method and its `Pair<String, Object[]>` return contract.
 
 ## Current Problem
 
 The first fix is behaviorally correct, but its implementation has unnecessary structure:
 
-- `SQLTree` exposes `fromIndex` and `paramsBeforeFrom`, although these values are meaningful only during one rendering operation.
 - `SqlRenderResult` duplicates SQL text and parameter metadata before those values are copied into `SQLTree`.
-- `buildSQLTree()` creates UUID node identifiers even though the renderer only needs to distinguish the virtual root.
 - The result object requires getter methods solely for data transfer inside one class.
 
 ## Design
 
-`SqlMakeTools` will define one private static `RenderNode`. It will contain the complete state required by recursive rendering:
+The original `doSql(SQL)` method will be restored unchanged. It will continue returning only the SQL text and JDBC parameters as `Pair<String, Object[]>`.
 
-- Rendered SQL text and parameters.
-- Exact main `FROM` index and the number of parameters before it.
-- Child render nodes.
-- Union type and alias metadata.
-- A boolean virtual-root marker.
+`buildSQLTree()` will continue to call `doSql()` and use that pair to construct each `SQLTree`. For SELECT nodes it will make one additional lightweight metadata pass over the source `SQL` and obtain:
 
-Because `RenderNode` is private to `SqlMakeTools`, the enclosing class will access its fields directly. No getter/setter layer is needed.
+- The exact index of the main `FROM` keyword in the rendered SQL.
+- The number of rendered parameters that occur before that main `FROM`.
 
-`renderSql(SQL)` will create and return a fully populated `RenderNode`. For a SELECT node it records the main FROM boundary while rendering the SELECT list. For non-SELECT statements it leaves the boundary unset and retains the existing SQL and parameter behavior.
+The metadata helper will return `Pair<Integer, Integer>`, where the first value is `fromIndex` and the second is `paramsBeforeFrom`. It will derive both values from the SELECT-list structure rather than searching the final SQL text for the first `FROM` token. This preserves correct handling of expressions such as `EXTRACT(YEAR FROM created_at)`.
 
-`buildRenderTree(SQL, RenderNode)` will recursively create child nodes directly from each source `SQL`. It will replace `buildSQLTree()` and will not create UUID identifiers.
+The helper is called only from `buildSQLTree()` for SELECT nodes. Non-SELECT behavior is untouched.
 
-`recurSql(RenderNode, Pair<String, Object[]>)` will keep the verified merge order:
+`recurSql(SQLTree, Pair<String, Object[]>)` will keep the verified merge order:
 
 1. Parent parameters before the main FROM.
 2. Child-node parameters in SQL order.
 3. Parent parameters after the main FROM.
 
-The virtual root will be represented by `virtualRoot == true`, replacing the special string ID `"0"`.
-
-For non-SELECT statements, `useSql()` will convert the private node back to the existing `Pair<String, Object[]>` return type. No public signature changes.
-
-## SQLTree Compatibility
-
-The two fields introduced by the first fix, plus their accessors, will be removed from `SQLTree`. All fields, constructors, and methods that existed before that fix remain unchanged. `SQLTree` itself will not be deleted or otherwise refactored.
+`SQLTree` retains `fromIndex` and `paramsBeforeFrom` because it is the object consumed by `recurSql()`. No additional model or result class is introduced.
 
 ## Workspace Preservation
 
@@ -56,13 +45,14 @@ The lesson recorded in `tasks/lessons.md` is separate from production implementa
 - Keep the four FROM-subquery regression tests unchanged.
 - Run `CSqlTest` and confirm all SQL text and parameter assertions pass.
 - Run the complete Maven test suite.
-- Confirm the final production diff removes the `SQLTree` rendering metadata and `SqlRenderResult`.
-- Confirm `SQLTree` has no new public API compared with its state before the original fix.
+- Confirm the final production diff removes `SqlRenderResult` and restores the original `doSql()` contract.
+- Confirm no private `RenderNode` or other transfer object is introduced.
 - Report user-owned uncommitted files separately.
 
 ## Out Of Scope
 
 - Changing SQL formatting.
+- Removing the two rendering metadata fields from `SQLTree`.
 - Changing the FROM-subquery parameter-order algorithm.
 - Replacing the broader SQL tree algorithm with a parser.
 - Refactoring unrelated sections of `SqlMakeTools`.
