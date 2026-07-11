@@ -572,6 +572,9 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public S having(Criteria criteria) {
+        if (criteria == null || CollectionUtils.isEmpty(criteria.getWhereParams())) {
+            throw new GyjdbcException("having criteria cannot be empty");
+        }
         having = SqlMakeTools.doCriteria(criteria, new StringBuilder());
         having.setFirst(removeWhereAndTrim(having.getFirst()));
         return self();

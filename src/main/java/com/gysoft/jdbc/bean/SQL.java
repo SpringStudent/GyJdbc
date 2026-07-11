@@ -161,6 +161,9 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public SQL select(Object... fields) {
+        if (fields == null) {
+            throw new GyjdbcException("select fields cannot contain null");
+        }
         selectFields.addAll(Arrays.stream(fields).collect(Collectors.toList()));
         //复合查询insert/create select语法BUG修复
         if (this.sqlType == null) {
@@ -170,6 +173,9 @@ public class SQL extends AbstractCriteria<SQL> {
     }
 
     public <T, R> SQL select(TypeFunction<T, R>... functions) {
+        if (functions == null) {
+            throw new GyjdbcException("select fields cannot contain null");
+        }
         selectFields.addAll(Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()));
         //复合查询insert/create select语法BUG修复
         if (this.sqlType == null) {

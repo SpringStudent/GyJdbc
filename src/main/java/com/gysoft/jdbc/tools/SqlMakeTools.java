@@ -491,28 +491,32 @@ public class SqlMakeTools {
         List<Object> params = new ArrayList<>();
         StringBuilder sql = new StringBuilder();
         if (sqlObj.getSqlType().equals(EntityDao.SQL_SELECT)) {
-            sql.append(sqlObj.isDistinctSelect() ? "SELECT DISTINCT " : "SELECT ");
-            if (CollectionUtils.isNotEmpty(sqlObj.getSelectFields())) {
-                List<Object> selects = sqlObj.getSelectFields();
-                for (Object obj : selects) {
-                    if (obj instanceof ValueReference) {
-                        sql.append("?, ");
-                        params.add(((ValueReference) obj).getValue());
-                    } else if (obj instanceof SQL) {
-                        //兼容select字段为一条sql
-                        Pair<String, Object[]> temp = SqlMakeTools.useSql((SQL) obj);
-                        if (temp.getFirst().startsWith("(")) {
-                            sql.append(temp.getFirst()).append(", ");
-                        } else {
-                            sql.append("(").append(temp.getFirst()).append("), ");
-                        }
-                        addAll(params, temp.getSecond());
-                    } else {
-                        sql.append(obj.toString() + ", ");
-                    }
-                }
-                sql.setLength(sql.length() - 2);
+            if (CollectionUtils.isEmpty(sqlObj.getSelectFields())) {
+                throw new GyjdbcException("select fields cannot be empty");
             }
+            if (sqlObj.getSelectFields().contains(null)) {
+                throw new GyjdbcException("select fields cannot contain null");
+            }
+            sql.append(sqlObj.isDistinctSelect() ? "SELECT DISTINCT " : "SELECT ");
+            List<Object> selects = sqlObj.getSelectFields();
+            for (Object obj : selects) {
+                if (obj instanceof ValueReference) {
+                    sql.append("?, ");
+                    params.add(((ValueReference) obj).getValue());
+                } else if (obj instanceof SQL) {
+                    //兼容select字段为一条sql
+                    Pair<String, Object[]> temp = SqlMakeTools.useSql((SQL) obj);
+                    if (temp.getFirst().startsWith("(")) {
+                        sql.append(temp.getFirst()).append(", ");
+                    } else {
+                        sql.append("(").append(temp.getFirst()).append("), ");
+                    }
+                    addAll(params, temp.getSecond());
+                } else {
+                    sql.append(obj.toString() + ", ");
+                }
+            }
+            sql.setLength(sql.length() - 2);
             sql.append(" FROM ");
             if (StringUtils.isNotEmpty(sqlObj.getTbName())) {
                 sql.append(sqlObj.getTbName());
@@ -676,25 +680,26 @@ public class SqlMakeTools {
         }
         //update字段拼接
         if (sqlObj.getSqlType().equals(EntityDao.SQL_UPDATE)) {
-            sql.append(" SET ");
             List<Pair> kvs = sqlObj.getKvs();
-            if (CollectionUtils.isNotEmpty(kvs)) {
-                for (int i = 0; i < kvs.size(); i++) {
-                    Pair p = kvs.get(i);
-                    if (p.getSecond() instanceof FieldReference) {
-                        FieldReference fieldReference = (FieldReference) p.getSecond();
-                        sql.append(p.getFirst() + " = " + fieldReference.getField() + ", ");
-                    } else if (p.getSecond() instanceof SQL) {
-                        Pair<String, Object[]> updatePair = useSql((SQL) p.getSecond());
-                        sql.append(p.getFirst() + " = (" + updatePair.getFirst() + "), ");
-                        addAll(params, updatePair.getSecond());
-                    } else {
-                        sql.append(p.getFirst() + " = ?, ");
-                        params.add(p.getSecond());
-                    }
-                }
-                sql.setLength(sql.length() - 2);
+            if (CollectionUtils.isEmpty(kvs)) {
+                throw new GyjdbcException("update fields cannot be empty");
             }
+            sql.append(" SET ");
+            for (int i = 0; i < kvs.size(); i++) {
+                Pair p = kvs.get(i);
+                if (p.getSecond() instanceof FieldReference) {
+                    FieldReference fieldReference = (FieldReference) p.getSecond();
+                    sql.append(p.getFirst() + " = " + fieldReference.getField() + ", ");
+                } else if (p.getSecond() instanceof SQL) {
+                    Pair<String, Object[]> updatePair = useSql((SQL) p.getSecond());
+                    sql.append(p.getFirst() + " = (" + updatePair.getFirst() + "), ");
+                    addAll(params, updatePair.getSecond());
+                } else {
+                    sql.append(p.getFirst() + " = ?, ");
+                    params.add(p.getSecond());
+                }
+            }
+            sql.setLength(sql.length() - 2);
         }
         //组装条件
         pair = doCriteria(sqlObj, sql);

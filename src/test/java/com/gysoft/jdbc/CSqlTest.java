@@ -3064,6 +3064,56 @@ public class CSqlTest {
         assertArrayEquals(new Object[]{"outer-select", "middle-select", "leaf", "middle", "outer"}, pair.getSecond());
     }
 
+    @Test
+    public void emptySelectShouldThrowClearException() {
+        try {
+            SqlMakeTools.useSql(new SQL().select().from("tb_user"));
+            fail("empty select should throw GyjdbcException");
+        } catch (GyjdbcException expected) {
+            assertEquals("select fields cannot be empty", expected.getMessage());
+        }
+    }
+
+    @Test
+    public void nullSelectFieldShouldThrowClearException() {
+        try {
+            SqlMakeTools.useSql(new SQL().select("id", null).from("tb_user"));
+            fail("null select field should throw GyjdbcException");
+        } catch (GyjdbcException expected) {
+            assertEquals("select fields cannot contain null", expected.getMessage());
+        }
+    }
+
+    @Test
+    public void nullSelectFieldArrayShouldThrowClearException() {
+        try {
+            new SQL().select((Object[]) null);
+            fail("null select field array should throw GyjdbcException");
+        } catch (GyjdbcException expected) {
+            assertEquals("select fields cannot contain null", expected.getMessage());
+        }
+    }
+
+    @Test
+    public void updateWithoutSetShouldThrowClearException() {
+        try {
+            SqlMakeTools.useSql(new SQL().update("tb_user").where("id", 1));
+            fail("update without set should throw GyjdbcException");
+        } catch (GyjdbcException expected) {
+            assertEquals("update fields cannot be empty", expected.getMessage());
+        }
+    }
+
+    @Test
+    public void emptyHavingShouldThrowClearException() {
+        try {
+            new SQL().select("dept_id").from("tb_user").groupBy("dept_id").having(new Criteria());
+            fail("empty having should throw GyjdbcException");
+        } catch (GyjdbcException expected) {
+            assertEquals("having criteria cannot be empty", expected.getMessage());
+        }
+    }
+
     private static class TestDao extends EntityDaoImpl<TestEntity, String> {
         TestDao() {
             this.jdbcTemplate = new JdbcTemplate() {
