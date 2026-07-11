@@ -771,6 +771,11 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
+
+        sql = SQL.newSQL().select(ValueReference.newValueRef("selectValue")).from(SQL.newSQL().select("*").from("child").where("x","x")).where("y","y");
+        pair = SqlMakeTools.useSql(sql);
+        System.out.println(pair.getFirst());
+        System.out.println(ArrayUtils.toString(pair.getSecond()));
     }
 
 }

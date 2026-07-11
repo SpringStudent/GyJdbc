@@ -265,7 +265,7 @@ public class SqlMakeTools {
                                         sql.append("?,");
                                     }
                                     sql.setLength(sql.length() - 1);
-                                }else{
+                                } else {
                                     throw new GyjdbcException("in condition collection cannot be empty");
                                 }
                             } else if (value instanceof SQL) {
@@ -400,7 +400,7 @@ public class SqlMakeTools {
     public static Pair<String, Object[]> useSql(SQL sqlObj) {
         //只有查询语句才需要虚拟查询树，其他场景不需要
         if (!SQL_SELECT.equals(sqlObj.getSqlType())) {
-            return renderSql(sqlObj).toPair();
+            return doSql(sqlObj);
         } else {
             //虚拟出查询的根节点，兼容处理联合查询和子查询
             SQL parentSQL = new SQL().select("*").from(sqlObj);
@@ -435,14 +435,46 @@ public class SqlMakeTools {
         List<SQL> subSqls = sql.getSubSqls();
         for (int i = 0; i < subSqls.size(); i++) {
             //单个sql对象对应的sql和参数组装
-            SqlRenderResult result = renderSql(subSqls.get(i));
-            SQLTree cTree = new SQLTree(result.getSql(), result.getParams(), new ArrayList<>(), UUID.randomUUID().toString().replace("-", ""), subSqls.get(i).getUnionType(), subSqls.get(i).getAsTable(), subSqls.get(i).getFromAsTable());
-            cTree.setFromIndex(result.getFromIndex());
-            cTree.setParamsBeforeFrom(result.getParamsBeforeFrom());
+            SQL subSql = subSqls.get(i);
+            Pair<String, Object[]> pair = doSql(subSql);
+            SQLTree cTree = new SQLTree(pair.getFirst(), pair.getSecond(), new ArrayList<>(), UUID.randomUUID().toString().replace("-", ""), subSql.getUnionType(), subSql.getAsTable(), subSql.getFromAsTable());
+            if (SQL_SELECT.equals(subSql.getSqlType())) {
+                Pair<Integer, Integer> metadata = getFromMetadata(subSql);
+                cTree.setFromIndex(metadata.getFirst());
+                cTree.setParamsBeforeFrom(metadata.getSecond());
+            }
             //加入子查询列表
             sqlTree.getChilds().add(cTree);
-            buildSQLTree(subSqls.get(i), cTree);
+            buildSQLTree(subSql, cTree);
         }
+    }
+
+    /**
+     * 获取sql的from下表位置和from之前的参数下标
+     *
+     * @param sqlObj sql对象的封装
+     * @author 周宁
+     * @version 1.0
+     */
+    private static Pair<Integer, Integer> getFromMetadata(SQL sqlObj) {
+        int selectLength = sqlObj.isDistinctSelect() ? "SELECT DISTINCT ".length() : "SELECT ".length();
+        int paramsBeforeFrom = 0;
+        if (CollectionUtils.isNotEmpty(sqlObj.getSelectFields())) {
+            for (Object field : sqlObj.getSelectFields()) {
+                if (field instanceof ValueReference) {
+                    selectLength += "?, ".length();
+                    paramsBeforeFrom++;
+                } else if (field instanceof SQL) {
+                    Pair<String, Object[]> pair = useSql((SQL) field);
+                    selectLength += pair.getFirst().length() + (pair.getFirst().startsWith("(") ? 0 : 2) + 2;
+                    paramsBeforeFrom += pair.getSecond().length;
+                } else {
+                    selectLength += field.toString().length() + 2;
+                }
+            }
+            selectLength -= 2;
+        }
+        return new Pair<>(selectLength + 1, paramsBeforeFrom);
     }
 
     /**
@@ -453,13 +485,11 @@ public class SqlMakeTools {
      * @author 周宁
      * @version 1.0
      */
-    private static SqlRenderResult renderSql(SQL sqlObj) {
+    private static Pair<String, Object[]> doSql(SQL sqlObj) {
         //先拼接基础查询
         Pair<String, Object[]> pair;
         List<Object> params = new ArrayList<>();
         StringBuilder sql = new StringBuilder();
-        int fromIndex = -1;
-        int paramsBeforeFrom = 0;
         if (sqlObj.getSqlType().equals(EntityDao.SQL_SELECT)) {
             sql.append(sqlObj.isDistinctSelect() ? "SELECT DISTINCT " : "SELECT ");
             if (CollectionUtils.isNotEmpty(sqlObj.getSelectFields())) {
@@ -483,8 +513,6 @@ public class SqlMakeTools {
                 }
                 sql.setLength(sql.length() - 2);
             }
-            fromIndex = sql.length() + 1;
-            paramsBeforeFrom = params.size();
             sql.append(" FROM ");
             if (StringUtils.isNotEmpty(sqlObj.getTbName())) {
                 sql.append(sqlObj.getTbName());
@@ -522,7 +550,7 @@ public class SqlMakeTools {
             for (String tb : tables) {
                 sql.append("TRUNCATE TABLE " + tb + ";\n");
             }
-            return new SqlRenderResult(sql.toString(), new Object[]{}, fromIndex, paramsBeforeFrom);
+            return new Pair<>(sql.toString(), new Object[]{});
 
         } else if (sqlObj.getSqlType().equals(EntityDao.SQL_DROP)) {
             Drunk drunk = sqlObj.getDrunk();
@@ -537,7 +565,7 @@ public class SqlMakeTools {
                 }
                 sql.setLength(sql.length() - 1);
             }
-            return new SqlRenderResult(sql.toString(), new Object[]{}, fromIndex, paramsBeforeFrom);
+            return new Pair<>(sql.toString(), new Object[]{});
 
         } else if (sqlObj.getSqlType().equals(SQL_INSERT) || sqlObj.getSqlType().equals(SQL_INSERTIGNORE) || sqlObj.getSqlType().equals(SQL_REPLACE)) {
             sql.append(sqlObj.getSqlType().toUpperCase()).append(" INTO ");
@@ -549,7 +577,7 @@ public class SqlMakeTools {
             if (CollectionUtils.isNotEmpty(insertFields)) {
                 sql.append("(").append(insertFields.stream().collect(Collectors.joining(","))).append(")");
             }
-            return new SqlRenderResult(sql.toString(), new Object[]{}, fromIndex, paramsBeforeFrom);
+            return new Pair<>(sql.toString(), new Object[]{});
         } else if (sqlObj.getSqlType().equals(SQL_CREATE)) {
             TableMeta tableMeta = sqlObj.getTableMeta();
             List<ColumnMeta> columns = tableMeta.getColumns();
@@ -635,7 +663,7 @@ public class SqlMakeTools {
             if (StringUtils.isNotEmpty(tableMeta.getComment())) {
                 createSql.append(" COMMENT=" + "'" + tableMeta.getComment() + "'");
             }
-            return new SqlRenderResult(createSql.toString(), new Object[]{tbName}, fromIndex, paramsBeforeFrom);
+            return new Pair<>(createSql.toString(), new Object[]{tbName});
         }
         //连接查询sql组装
         if (CollectionUtils.isNotEmpty(sqlObj.getJoins())) {
@@ -674,41 +702,7 @@ public class SqlMakeTools {
         if (EntityDao.SQL_SELECT.equals(sqlObj.getSqlType()) && StringUtils.isNotEmpty(sqlObj.getLockClause())) {
             pair.setFirst(pair.getFirst() + " " + sqlObj.getLockClause());
         }
-        return new SqlRenderResult(pair.getFirst(), params.toArray(), fromIndex, paramsBeforeFrom);
-    }
-
-    private static final class SqlRenderResult {
-        private final String sql;
-        private final Object[] params;
-        private final int fromIndex;
-        private final int paramsBeforeFrom;
-
-        private SqlRenderResult(String sql, Object[] params, int fromIndex, int paramsBeforeFrom) {
-            this.sql = sql;
-            this.params = params;
-            this.fromIndex = fromIndex;
-            this.paramsBeforeFrom = paramsBeforeFrom;
-        }
-
-        private String getSql() {
-            return sql;
-        }
-
-        private Object[] getParams() {
-            return params;
-        }
-
-        private int getFromIndex() {
-            return fromIndex;
-        }
-
-        private int getParamsBeforeFrom() {
-            return paramsBeforeFrom;
-        }
-
-        private Pair<String, Object[]> toPair() {
-            return new Pair<>(sql, params);
-        }
+        return new Pair<>(pair.getFirst(), params.toArray());
     }
 
     /**
