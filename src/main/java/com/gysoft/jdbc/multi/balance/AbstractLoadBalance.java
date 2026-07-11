@@ -1,7 +1,7 @@
 package com.gysoft.jdbc.multi.balance;
 
 import com.gysoft.jdbc.multi.DataSourceBind;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;

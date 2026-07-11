@@ -1,7 +1,7 @@
 package com.gysoft.jdbc.tools;
 
 import com.gysoft.jdbc.bean.GyjdbcException;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;

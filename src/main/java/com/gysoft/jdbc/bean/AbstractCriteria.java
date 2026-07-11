@@ -1,8 +1,8 @@
 package com.gysoft.jdbc.bean;
 
 import com.gysoft.jdbc.tools.SqlMakeTools;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -567,11 +567,15 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return having(new Criteria().where(funcField, opt, value));
     }
 
+    public <T, R> S having(TypeFunction<T, R> function, String opt, Object value) {
+        return having(TypeFunction.getLambdaColumnName(function), opt, value);
+    }
+
     public S having(Criteria criteria) {
         having = SqlMakeTools.doCriteria(criteria, new StringBuilder());
         having.setFirst(removeWhereAndTrim(having.getFirst()));
-       return self();
-   }
+        return self();
+    }
 
     public S having(Consumer<Criteria> consumer) {
         Criteria criteria = new Criteria();
@@ -579,7 +583,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return having(criteria);
     }
 
-   public S orderBy(Sort... sort) {
+    public S orderBy(Sort... sort) {
         sorts.addAll(Arrays.stream(sort).collect(Collectors.toList()));
         return self();
     }

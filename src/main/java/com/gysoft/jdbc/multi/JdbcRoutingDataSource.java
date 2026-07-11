@@ -1,7 +1,7 @@
 package com.gysoft.jdbc.multi;
 
 import com.gysoft.jdbc.multi.balance.AbstractLoadBalance;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 
 import java.util.Map;

@@ -2,7 +2,7 @@ package com.gysoft.jdbc.bean;
 
 import com.gysoft.jdbc.dao.EntityDao;
 import com.gysoft.jdbc.tools.EntityTools;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;

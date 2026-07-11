@@ -9,7 +9,7 @@ import com.gysoft.jdbc.multi.balance.RoundRobinLoadBalance;
 import com.gysoft.jdbc.tools.CollectionUtil;
 import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.*;
@@ -119,8 +119,10 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         if (id == null) {
             throw new GyjdbcException("entity primary key must not be null");
         }
-        int rows = this.update(t);
-        if (rows == 0) {
+        T existing = this.queryOne(id);
+        if (existing != null) {
+            this.update(t);
+        } else {
             this.save(t);
         }
     }
