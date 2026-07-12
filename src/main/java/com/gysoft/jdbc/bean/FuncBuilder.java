@@ -724,8 +724,13 @@ public class FuncBuilder {
             return caseSql + " END";
         }
 
+        @Deprecated
         public FuncBuilder asBuilder() {
             return new FuncBuilder(end());
+        }
+
+        public String as(String as){
+            return new FuncBuilder(end()).as(as);
         }
     }
 

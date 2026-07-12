@@ -308,11 +308,11 @@ public class SQL extends AbstractCriteria<SQL> {
         return this;
     }
 
-    public <T, R> SQL insertInto(Class clss, String... fields) {
+    public SQL insertInto(Class clss, String... fields) {
         return insertInto(EntityTools.getTableName(clss), fields);
     }
 
-    public <T, R> SQL replaceInto(Class clss, String... fields) {
+    public SQL replaceInto(Class clss, String... fields) {
         return replaceInto(EntityTools.getTableName(clss), fields);
     }
 
@@ -324,15 +324,15 @@ public class SQL extends AbstractCriteria<SQL> {
         return replaceInto(EntityTools.getTableName(clss), functions);
     }
 
-    public <T, R> SQL insertInto(Class clss) {
+    public SQL insertInto(Class clss) {
         return insertInto(EntityTools.getTableName(clss));
     }
 
-    public <T, R> SQL replaceInto(Class clss) {
+    public SQL replaceInto(Class clss) {
         return replaceInto(EntityTools.getTableName(clss));
     }
 
-    public <T, R> SQL insertIgnoreInto(Class clss, String... fields) {
+    public SQL insertIgnoreInto(Class clss, String... fields) {
         return insertIgnoreInto(EntityTools.getTableName(clss), fields);
     }
 
@@ -340,7 +340,7 @@ public class SQL extends AbstractCriteria<SQL> {
         return insertIgnoreInto(EntityTools.getTableName(clss), functions);
     }
 
-    public <T, R> SQL insertIgnoreInto(Class clss) {
+    public SQL insertIgnoreInto(Class clss) {
         return insertIgnoreInto(EntityTools.getTableName(clss));
     }
 

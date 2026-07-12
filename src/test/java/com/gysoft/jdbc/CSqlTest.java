@@ -448,7 +448,7 @@ public class CSqlTest {
         assertEquals("CASE WHEN score >= 90 THEN 'A' WHEN score >= 60 THEN 'B' ELSE 'C' END",
                 caseWhen("score >= 90", "'A'").when("score >= 60", "'B'").elseThen("'C'").end());
         assertEquals("CASE WHEN status = 1 THEN 'enabled' ELSE 'disabled' END AS statusName",
-                caseWhen("status = 1", "'enabled'").elseThen("'disabled'").asBuilder().as("statusName"));
+                caseWhen("status = 1", "'enabled'").elseThen("'disabled'").as("statusName"));
     }
 
     @Test
