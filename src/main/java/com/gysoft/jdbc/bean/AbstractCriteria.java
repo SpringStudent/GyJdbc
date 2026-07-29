@@ -5,6 +5,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -383,6 +384,13 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return self();
     }
 
+    public S andCriteria(Criteria criteria, BooleanSupplier condition) {
+        if (condition.getAsBoolean()) {
+            return criteria(criteria, "AND");
+        }
+        return self();
+    }
+
     public S orCriteria(Criteria criteria) {
         if (CollectionUtils.isEmpty(whereParams)) {
             throw new GyjdbcException("sql error,condition \"orCriteria\" must be following after \"where\"!");
@@ -400,6 +408,16 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return self();
     }
 
+    public S orCriteria(Criteria criteria, BooleanSupplier condition) {
+        if (condition.getAsBoolean()) {
+            if (CollectionUtils.isEmpty(whereParams)) {
+                throw new GyjdbcException("sql error,condition \"orCriteria\" must be following after \"where\"!");
+            }
+            return criteria(criteria, "OR");
+        }
+        return self();
+    }
+
 
     public S andCriteria(Consumer<Criteria> consumer) {
         Criteria sub = new Criteria();
@@ -408,9 +426,12 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public S andCriteria(Consumer<Criteria> consumer, boolean condition) {
-        Criteria sub = new Criteria();
-        consumer.accept(sub);
-        return andCriteria(sub, condition);
+        if (condition) {
+            Criteria sub = new Criteria();
+            consumer.accept(sub);
+            return andCriteria(sub);
+        }
+        return self();
     }
 
     public S orCriteria(Consumer<Criteria> consumer) {
@@ -420,9 +441,30 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public S orCriteria(Consumer<Criteria> consumer, boolean condition) {
-        Criteria sub = new Criteria();
-        consumer.accept(sub);
-        return orCriteria(sub, condition);
+        if (condition) {
+            Criteria sub = new Criteria();
+            consumer.accept(sub);
+            return orCriteria(sub);
+        }
+        return self();
+    }
+
+    public S andCriteria(Consumer<Criteria> consumer, BooleanSupplier condition) {
+        if (condition.getAsBoolean()) {
+            Criteria sub = new Criteria();
+            consumer.accept(sub);
+            return andCriteria(sub);
+        }
+        return self();
+    }
+
+    public S orCriteria(Consumer<Criteria> consumer, BooleanSupplier condition) {
+        if (condition.getAsBoolean()) {
+            Criteria sub = new Criteria();
+            consumer.accept(sub);
+            return orCriteria(sub);
+        }
+        return self();
     }
 
     public S and(Where where) {
@@ -534,7 +576,16 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
 
     private S criteria(Criteria criteria, String criteriaType) {
         if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
-            throw new GyjdbcException("unsupport doCriteria operate");
+            throw new GyjdbcException("unsupport orderBy in nested criteria");
+        }
+        if (CollectionUtils.isNotEmpty(criteria.getGroupFields())) {
+            throw new GyjdbcException("unsupport groupBy in nested criteria");
+        }
+        if (criteria.getHaving() != null) {
+            throw new GyjdbcException("unsupport having in nested criteria");
+        }
+        if (criteria.getOffset() >= 0) {
+            throw new GyjdbcException("unsupport limit in nested criteria");
         }
         //如果子查询中的子查询条件为空直接返回
         if (CollectionUtils.isEmpty(criteria.getWhereParams())) {

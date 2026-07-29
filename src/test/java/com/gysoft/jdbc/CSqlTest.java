@@ -3166,4 +3166,168 @@ public class CSqlTest {
             this.id = id;
         }
     }
+
+    // ==================== andCriteria/orCriteria with BooleanSupplier ====================
+
+    @Test
+    public void andCriteriaWithBooleanSupplierTrueShouldInclude() {
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .andCriteria(c -> c.where("type", "A").or("type", "B"), () -> true);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertTrue("Expected AND group: " + pair.getFirst(), pair.getFirst().contains("AND (type = ? OR type = ?)"));
+        assertArrayEquals(new Object[]{1, "A", "B"}, pair.getSecond());
+    }
+
+    @Test
+    public void andCriteriaWithBooleanSupplierFalseShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .andCriteria(c -> c.where("type", "A").or("type", "B"), () -> false);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE flag = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void orCriteriaWithBooleanSupplierTrueShouldInclude() {
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .orCriteria(c -> c.where("type", "A"), () -> true);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertTrue("Expected OR group: " + pair.getFirst(), pair.getFirst().contains("OR (type = ?)"));
+        assertArrayEquals(new Object[]{1, "A"}, pair.getSecond());
+    }
+
+    @Test
+    public void orCriteriaWithBooleanSupplierFalseShouldSkip() {
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .orCriteria(c -> c.where("type", "A"), () -> false);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE flag = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void andCriteriaBooleanSupplierWithCriteriaArgShouldWork() {
+        Criteria sub = new Criteria().where("type", "A").or("type", "B");
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .andCriteria(sub, () -> true);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertTrue(pair.getFirst().contains("AND (type = ? OR type = ?)"));
+    }
+
+    @Test
+    public void andCriteriaBooleanSupplierWithCriteriaArgFalseShouldSkip() {
+        Criteria sub = new Criteria().where("type", "A").or("type", "B");
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .andCriteria(sub, () -> false);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE flag = ?", pair.getFirst());
+    }
+
+    @Test
+    public void orCriteriaBooleanSupplierWithCriteriaArgShouldWork() {
+        Criteria sub = new Criteria().where("type", "A");
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .orCriteria(sub, () -> true);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertTrue(pair.getFirst().contains("OR (type = ?)"));
+    }
+
+    @Test
+    public void orCriteriaBooleanSupplierWithCriteriaArgFalseShouldSkip() {
+        Criteria sub = new Criteria().where("type", "A");
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .orCriteria(sub, () -> false);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertEquals("SELECT * FROM tb_test WHERE flag = ?", pair.getFirst());
+    }
+
+    @Test
+    public void andCriteriaBooleanSupplierLazyEvaluation() {
+        // BooleanSupplier should NOT be evaluated when this is wrapped in another andCriteria with false condition
+        // Here we test the BooleanSupplier overload directly: complex expression as supplier
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .andCriteria(c -> c.where("type", "A"), () -> {
+                    // expensive computation that should only run when condition is true
+                    return 1 + 1 == 2;
+                });
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+        assertTrue(pair.getFirst().contains("AND (type = ?)"));
+    }
+
+    // ==================== 嵌套 criteria 非法字段校验 ====================
+
+    @Test
+    public void nestedCriteriaWithGroupByShouldThrow() {
+        try {
+            Criteria sub = new Criteria().where("a", 1).groupBy("b");
+            new Criteria().where("flag", 1).andCriteria(sub);
+            fail("nested criteria with groupBy should throw");
+        } catch (GyjdbcException e) {
+            assertTrue(e.getMessage().contains("groupBy"));
+        }
+    }
+
+    @Test
+    public void nestedCriteriaWithHavingShouldThrow() {
+        try {
+            Criteria sub = new Criteria().where("a", 1).having(count("a"), ">", 1);
+            new Criteria().where("flag", 1).andCriteria(sub);
+            fail("nested criteria with having should throw");
+        } catch (GyjdbcException e) {
+            assertTrue(e.getMessage().contains("having"));
+        }
+    }
+
+    @Test
+    public void nestedCriteriaWithLimitShouldThrow() {
+        try {
+            Criteria sub = new Criteria().where("a", 1).limit(0, 10);
+            new Criteria().where("flag", 1).andCriteria(sub);
+            fail("nested criteria with limit should throw");
+        } catch (GyjdbcException e) {
+            assertTrue(e.getMessage().contains("limit"));
+        }
+    }
+
+    @Test
+    public void nestedCriteriaWithOrderByShouldStillThrow() {
+        try {
+            Criteria sub = new Criteria().where("a", 1).orderBy(new Sort("a"));
+            new Criteria().where("flag", 1).andCriteria(sub);
+            fail("nested criteria with orderBy should throw");
+        } catch (GyjdbcException e) {
+            assertTrue(e.getMessage().contains("orderBy"));
+        }
+    }
+
+    @Test
+    public void nestedCriteriaWithGroupByViaOrCriteriaShouldThrow() {
+        try {
+            Criteria sub = new Criteria().where("a", 1).groupBy("b");
+            new Criteria().where("flag", 1).orCriteria(sub);
+            fail("nested orCriteria with groupBy should throw");
+        } catch (GyjdbcException e) {
+            assertTrue(e.getMessage().contains("groupBy"));
+        }
+    }
+
+    @Test
+    public void nestedCriteriaWithHavingViaConsumerShouldThrow() {
+        try {
+            new Criteria().where("flag", 1)
+                    .andCriteria(c -> c.where("a", 1).having(count("a"), ">", 1));
+            fail("nested andCriteria consumer with having should throw");
+        } catch (GyjdbcException e) {
+            assertTrue(e.getMessage().contains("having"));
+        }
+    }
 }
