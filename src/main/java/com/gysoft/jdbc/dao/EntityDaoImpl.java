@@ -387,8 +387,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public <K, V> Map<K, V> queryMapWithSql(SQL sql,
-                                            ResultSetExtractor<Map<K, V>> resultSetExtractor)
-            {
+                                            ResultSetExtractor<Map<K, V>> resultSetExtractor) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), resultSetExtractor);
     }
@@ -556,8 +555,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
-    public EntityDao<T, Id> bindGroup(String group, Class<? extends LoadBalance> loadBalance)
-            {
+    public EntityDao<T, Id> bindGroup(String group, Class<? extends LoadBalance> loadBalance) {
         DataSourceBindHolder.setDataSource(DataSourceBind.bindGroup(group, loadBalance));
         return this;
     }
