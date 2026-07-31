@@ -6,8 +6,8 @@ import com.gysoft.jdbc.multi.DataSourceBind;
 import com.gysoft.jdbc.multi.DataSourceBindHolder;
 import com.gysoft.jdbc.multi.balance.LoadBalance;
 import com.gysoft.jdbc.multi.balance.RoundRobinLoadBalance;
-import com.gysoft.jdbc.tools.CollectionUtil;
 import com.gysoft.jdbc.tools.EntityTools;
+import com.gysoft.jdbc.tools.MixUtils;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -147,7 +147,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         //sql的右侧values
         String sqlRight = sql.substring(index);
         //分批次插入
-        List<Object[]>[] batchArgsArr = CollectionUtil.slice(batchArgs, BATCH_PAGE_SIZE);
+        List<Object[]>[] batchArgsArr = MixUtils.slice(batchArgs, BATCH_PAGE_SIZE);
         //影响记录数量
         int resultSize = 0;
         for (List<Object[]> args : batchArgsArr) {
@@ -269,7 +269,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         Object[] pageParams = baseParams;
         if (page != null) {
             pageSql = pageSql + " LIMIT ?,?";
-            pageParams = appendParams(baseParams, page.getOffset(), page.getPageSize());
+            pageParams = MixUtils.appendParams(baseParams, page.getOffset(), page.getPageSize());
         }
         List<E> paged = jdbcTemplate.query(pageSql, pageParams, tRowMapper);
         //独立统计总数,避免FOUND_ROWS()依赖同一连接在连接池/并发下取到错误计数
@@ -291,7 +291,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         Object[] params = pair.getSecond();
         if (!existsSql.toUpperCase().contains(" LIMIT ")) {
             existsSql = existsSql + " LIMIT ?";
-            params = appendParams(params, 1);
+            params = MixUtils.appendParams(params, 1);
         }
         List<Object> results = jdbcTemplate.query(existsSql, params, (rs, rowNum) -> rs.getObject(1));
         return !results.isEmpty();
@@ -366,7 +366,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         String baseSql = pair.getFirst();
         Object[] baseParams = pair.getSecond();
         String pageSql = "SELECT * FROM (" + baseSql + ") temp LIMIT ?,?";
-        Object[] pageParams = appendParams(baseParams, page.getOffset(), page.getPageSize());
+        Object[] pageParams = MixUtils.appendParams(baseParams, page.getOffset(), page.getPageSize());
         List<E> paged = jdbcTemplate.query(pageSql, pageParams, BeanPropertyRowMapper.newInstance(clss));
         String countSql = "SELECT COUNT(*) FROM (" + baseSql + ") temp";
         Integer count = jdbcTemplate.queryForObject(countSql, baseParams, Integer.class);
@@ -415,18 +415,9 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     public boolean existsWithSql(SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         String existsSql = "SELECT 1 FROM (" + pair.getFirst() + ") gy_exists LIMIT ?";
-        Object[] params = appendParams(pair.getSecond(), 1);
+        Object[] params = MixUtils.appendParams(pair.getSecond(), 1);
         List<Object> results = jdbcTemplate.query(existsSql, params, (rs, rowNum) -> rs.getObject(1));
         return !results.isEmpty();
-    }
-
-    private Object[] appendParams(Object[] params, Object... extraParams) {
-        List<Object> result = new ArrayList<>();
-        if (params != null) {
-            Collections.addAll(result, params);
-        }
-        Collections.addAll(result, extraParams);
-        return result.toArray();
     }
 
     @Override
@@ -443,7 +434,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             if (CollectionUtils.isNotEmpty(params)) {
                 int colCount = params.get(0).length;
                 String rowPlaceholder = "(" + String.join(",", Collections.nCopies(colCount, "?")) + ")";
-                List<Object[]>[] batchs = CollectionUtil.slice(params, BATCH_PAGE_SIZE);
+                List<Object[]>[] batchs = MixUtils.slice(params, BATCH_PAGE_SIZE);
                 for (List<Object[]> batch : batchs) {
                     List<Object> paramList = new ArrayList<>();
                     StringBuilder tempInsertSql = new StringBuilder(baseInsertSql);

@@ -19,10 +19,9 @@ public class CriteriaProxy {
      */
     private Object[] params;
     /**
-     * and或者or、with
+     * 条件片段连接类型
      */
-    private String criteriaType;
-
+    private ConnectorType connectorType;
 
     public StringBuilder getSql() {
         return sql;
@@ -48,11 +47,11 @@ public class CriteriaProxy {
         this.whereParamsIndex = whereParamsIndex;
     }
 
-    public String getCriteriaType() {
-        return criteriaType;
+    public ConnectorType getConnectorType() {
+        return connectorType;
     }
 
-    public void setCriteriaType(String criteriaType) {
-        this.criteriaType = criteriaType;
+    public void setConnectorType(ConnectorType connectorType) {
+        this.connectorType = connectorType;
     }
 }

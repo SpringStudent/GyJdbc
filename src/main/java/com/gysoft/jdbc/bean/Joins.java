@@ -95,7 +95,7 @@ public class Joins {
             }
             criteriaProxy.setSql(new StringBuilder(criteriaSql));
             criteriaProxy.setParams(pair.getSecond());
-            criteriaProxy.setCriteriaType(hasOnCondition ? "AND" : "JOINS");
+            criteriaProxy.setConnectorType(hasOnCondition ? ConnectorType.JOIN_AND : ConnectorType.JOIN_ON);
             criteriaProxy.setWhereParamsIndex(-1);
             criteriaProxys.add(criteriaProxy);
             hasOnCondition = true;
@@ -161,7 +161,7 @@ public class Joins {
         CriteriaProxy criteriaProxy = new CriteriaProxy();
         criteriaProxy.setWhereParamsIndex(-1);
         criteriaProxy.setParams(pair.getSecond());
-        criteriaProxy.setCriteriaType("WITH");
+        // WITH 类型仅携带参数，connectorType 保持 null
         criteriaProxys.add(criteriaProxy);
         return getWith();
     }

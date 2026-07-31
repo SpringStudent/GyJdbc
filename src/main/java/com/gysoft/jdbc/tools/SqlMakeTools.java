@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.sql.JDBCType;
 import java.sql.Types;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+
 import java.util.stream.Collectors;
 
 import static com.gysoft.jdbc.dao.EntityDao.*;
@@ -149,7 +149,7 @@ public class SqlMakeTools {
             int[] argTypes = new int[fields.length];
             try {
                 for (int i = 0; argTypes != null && i < argTypes.length; i++) {
-                    argTypes[i] = getTypes(fields[i]);
+                    argTypes[i] = MixUtils.getSqlType(fields[i].getType());
                 }
             } catch (Exception e) {
                 throw new GyjdbcException(e);
@@ -162,10 +162,10 @@ public class SqlMakeTools {
                 int j = 0;
                 for (int i = 0; i < fields.length; i++) {
                     if (EntityTools.isPk(entity.getClass(), fields[i])) { // id 代表主键
-                        primaryType = getTypes(fields[i]);
+                        primaryType = MixUtils.getSqlType(fields[i].getType());
                         continue;
                     }
-                    argTypes[j] = getTypes(fields[i]);
+                    argTypes[j] = MixUtils.getSqlType(fields[i].getType());
                     j++;
                 }
                 argTypes[argTypes.length - 1] = primaryType;
@@ -179,7 +179,7 @@ public class SqlMakeTools {
             try {
                 for (Field field : fields) {
                     if (EntityTools.isPk(entity.getClass(), field)) { // id 代表主键
-                        argTypes[0] = getTypes(field);
+                        argTypes[0] = MixUtils.getSqlType(field.getType());
                         break;
                     }
                 }
@@ -191,118 +191,112 @@ public class SqlMakeTools {
         return null;
     }
 
-    private static int getTypes(Field arg) {
-        if (String.class.equals(arg.getType())) {
-            return Types.VARCHAR;
-        } else if (int.class.equals(arg.getType()) || Integer.class.equals(arg.getType())) {
-            return Types.INTEGER;
-        } else if (double.class.equals(arg.getType()) || Double.class.equals(arg.getType())) {
-            return Types.DOUBLE;
-        } else if (java.util.Date.class.isAssignableFrom(arg.getType())) {
-            return Types.TIMESTAMP;
-        } else if (long.class.equals(arg.getType()) || Long.class.equals(arg.getType())) {
-            return Types.BIGINT;
-        } else if (float.class.equals(arg.getType()) || Float.class.equals(arg.getType())) {
-            return Types.FLOAT;
-        } else if (boolean.class.equals(arg.getType()) || Boolean.class.equals(arg.getType())) {
-            return Types.BOOLEAN;
-        } else if (short.class.equals(arg.getType()) || Short.class.equals(arg.getType())) {
-            return Types.INTEGER;
-        } else if (byte.class.equals(arg.getType()) || Byte.class.equals(arg.getType())) {
-            return Types.INTEGER;
-        } else if (BigDecimal.class.equals(arg.getType())) {
-            return Types.DECIMAL;
-        } else {
-            return Types.OTHER;
-        }
-    }
-
     /**
-     * 创建条件查询sql和入参
-     *
-     * @param criteria 查询条件
-     * @param sql      sql语句
-     * @return Pair sql与sql入参对
-     * @author 周宁
+     * 创建条件查询sql和入参（v3: 片段收集 + 统一拼接，消除 setLength 回退）
      */
     public static Pair<String, Object[]> doCriteria(AbstractCriteria criteria, StringBuilder sql) {
         List<Object> params = new ArrayList<>();
         if (null != criteria) {
             if (CollectionUtils.isNotEmpty(criteria.getWhereParams())) {
-                //where 条件参数拼接
-                List<WhereParam> whereParams = criteria.getWhereParams();
+                List<ConditionSegment> segments = new ArrayList<>();
                 List<CriteriaProxy> criteriaProxys = criteria.getCriteriaProxys();
-                int whereParamIndex = 0;
-                if (null != criteria && CollectionUtils.isNotEmpty(whereParams)) {
-                    sql.append(" WHERE ");
-                    for (WhereParam whereParam : whereParams) {
-                        params = doCriteriaProxy(criteriaProxys, whereParamIndex, sql, params);
-                        whereParamIndex += 1;
-                        if (StringUtils.isEmpty(whereParam.getKey())) {
-                            continue;
-                        }
-                        String rawKey = whereParam.getKey();
-                        String key = rawKey;
-                        // 处理 OR 前缀：回退前一个条件的 " AND "，替换为 " OR "
-                        if (rawKey.startsWith(" OR ")) {
-                            key = rawKey.substring(4);
-                            int len = sql.length();
-                            if (len >= 5 && " AND ".equals(sql.substring(len - 5))) {
-                                sql.setLength(len - 5);
-                                sql.append(" OR ");
-                            }
-                        }
-                        String opt = whereParam.getOpt();
-                        Object value = whereParam.getValue();
-                        sql.append(key).append(" ");
-                        if ("IN".equals(opt.toUpperCase()) || "NOT IN".equals(opt.toUpperCase())) {
-                            sql.append(opt).append("(");
-                            if (value instanceof Collection) {
-                                if (CollectionUtils.isNotEmpty(((Collection) value))) {
-                                    Iterator iterator = ((Collection) value).iterator();
-                                    while (iterator.hasNext()) {
-                                        params.add(iterator.next());
-                                        sql.append("?,");
-                                    }
-                                    sql.setLength(sql.length() - 1);
-                                } else {
-                                    throw new GyjdbcException("in condition collection cannot be empty");
+                List<WhereParam> whereParams = criteria.getWhereParams();
+                boolean hasProxies = CollectionUtils.isNotEmpty(criteriaProxys);
+                for (int whereIdx = 0; whereIdx <= whereParams.size(); whereIdx++) {
+                    // 在当前位置插入匹配的代理片段（仅一段逻辑覆盖循环内和循环后）
+                    if (hasProxies) {
+                        for (CriteriaProxy proxy : criteriaProxys) {
+                            if (proxy.getWhereParamsIndex() - 1 == whereIdx && proxy.getConnectorType() != null) {
+                                String s = proxy.getSql().toString();
+                                if (proxy.getConnectorType().isWrapInParens()) {
+                                    s = "(" + s + ")";
                                 }
-                            } else if (value instanceof SQL) {
-                                SQL inSql = (SQL) value;
-                                Pair<String, Object[]> inPair = useSql(inSql);
-                                sql.append(inPair.getFirst());
-                                addAll(params, inPair.getSecond());
-                            } else {
-                                sql.append(" ").append("?");
-                                params.add(value);
-                            }
-                            sql.append(')');
-                        } else if ("IS".equals(opt.toUpperCase())) {
-                            sql.append(opt).append(" ").append(value);
-                        } else if ("BETWEEN ? AND ?".equals(opt.toUpperCase())) {
-                            sql.append(opt).append(" ");
-                            Pair<Object, Object> pair = (Pair<Object, Object>) value;
-                            params.add(pair.getFirst());
-                            params.add(pair.getSecond());
-                        } else {
-                            if (value instanceof FieldReference) {
-                                FieldReference fieldReference = (FieldReference) value;
-                                sql.append(opt).append(" ").append(fieldReference.getField());
-                            } else if (value instanceof SQL) {
-                                SQL whereSql = (SQL) value;
-                                Pair<String, Object[]> wherePair = useSql(whereSql);
-                                sql.append(opt).append('(').append(wherePair.getFirst()).append(')');
-                                addAll(params, wherePair.getSecond());
-                            } else {
-                                sql.append(opt).append(" ").append("?");
-                                params.add(value);
+                                segments.add(new ConditionSegment(s, proxy.getParams(), proxy.getConnectorType()));
                             }
                         }
-                        sql.append(" AND ");
                     }
-                    params = doCriteriaProxy(criteriaProxys, whereParamIndex, sql, params);
-                    sql.setLength(sql.length() - 5);
+                    if (whereIdx == whereParams.size()) {
+                        break;
+                    }
+                    WhereParam wp = whereParams.get(whereIdx);
+                    if (StringUtils.isEmpty(wp.getKey())) {
+                        continue;
+                    }
+                    // 将 WhereParam 转为 ConditionSegment
+                    String rawKey = wp.getKey();
+                    ConnectorType connector;
+                    String key;
+                    if (rawKey.startsWith(" OR ")) {
+                        connector = ConnectorType.WHERE_OR;
+                        key = rawKey.substring(4);
+                    } else {
+                        connector = null;
+                        key = rawKey;
+                    }
+                    List<Object> wpParams = new ArrayList<>();
+                    StringBuilder wpSql = new StringBuilder();
+                    wpSql.append(key).append(" ");
+                    String opt = wp.getOpt();
+                    Object value = wp.getValue();
+                    if ("IN".equals(opt.toUpperCase()) || "NOT IN".equals(opt.toUpperCase())) {
+                        wpSql.append(opt).append("(");
+                        if (value instanceof Collection) {
+                            if (CollectionUtils.isNotEmpty(((Collection) value))) {
+                                Iterator iterator = ((Collection) value).iterator();
+                                while (iterator.hasNext()) {
+                                    wpParams.add(iterator.next());
+                                    wpSql.append("?,");
+                                }
+                                wpSql.setLength(wpSql.length() - 1);
+                            } else {
+                                throw new GyjdbcException("in condition collection cannot be empty");
+                            }
+                        } else if (value instanceof SQL) {
+                            SQL inSql = (SQL) value;
+                            Pair<String, Object[]> inPair = useSql(inSql);
+                            wpSql.append(inPair.getFirst());
+                            MixUtils.addAll(wpParams, inPair.getSecond());
+                        } else {
+                            wpSql.append("?");
+                            wpParams.add(value);
+                        }
+                        wpSql.append(')');
+                    } else if ("IS".equals(opt.toUpperCase())) {
+                        wpSql.append(opt).append(" ").append(value);
+                    } else if ("BETWEEN ? AND ?".equals(opt.toUpperCase())) {
+                        wpSql.append(opt).append(" ");
+                        Pair<Object, Object> pair = (Pair<Object, Object>) value;
+                        wpParams.add(pair.getFirst());
+                        wpParams.add(pair.getSecond());
+                    } else {
+                        if (value instanceof FieldReference) {
+                            wpSql.append(opt).append(" ").append(((FieldReference) value).getField());
+                        } else if (value instanceof SQL) {
+                            SQL whereSql = (SQL) value;
+                            Pair<String, Object[]> wherePair = useSql(whereSql);
+                            wpSql.append(opt).append('(').append(wherePair.getFirst()).append(')');
+                            MixUtils.addAll(wpParams, wherePair.getSecond());
+                        } else {
+                            wpSql.append(opt).append(" ?");
+                            wpParams.add(value);
+                        }
+                    }
+                    segments.add(new ConditionSegment(wpSql.toString(), wpParams.toArray(), connector));
+                }
+                //组装where条件
+                if (!segments.isEmpty()) {
+                    sql.append(" WHERE ");
+                    for (int i = 0; i < segments.size(); i++) {
+                        ConditionSegment seg = segments.get(i);
+                        if (i > 0) {
+                            ConnectorType ct = seg.getConnector();
+                            sql.append(" ").append(ct != null ? ct.getKeyword() : "AND").append(" ");
+                        }
+                        sql.append(seg.getSql());
+                        if (seg.getParams() != null) {
+                            Collections.addAll(params, seg.getParams());
+                        }
+                    }
                 }
             }
             //group by条件拼接
@@ -318,7 +312,7 @@ public class SqlMakeTools {
             if (criteria.getHaving() != null) {
                 Pair<String, Object[]> having = criteria.getHaving();
                 sql.append(" ").append("HAVING").append(" ").append(having.getFirst());
-                addAll(params, having.getSecond());
+                MixUtils.addAll(params, having.getSecond());
             }
             //排序条件拼接
             if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
@@ -329,6 +323,7 @@ public class SqlMakeTools {
                 }
                 sql.setLength(sql.length() - 1);
             }
+            //组装limit条件
             if (criteria.getOffset() >= 0) {
                 sql.append(" LIMIT ?");
                 params.add(criteria.getOffset());
@@ -339,53 +334,6 @@ public class SqlMakeTools {
             }
         }
         return new Pair<>(sql.toString(), params.toArray());
-    }
-
-    /**
-     * 更复杂的条件组装
-     *
-     * @author 周宁
-     * @version 1.0
-     */
-    private static List<Object> doCriteriaProxy(List<CriteriaProxy> criteriaProxys, int whereParamIndex, StringBuilder sql, List<Object> params) {
-        if (CollectionUtils.isNotEmpty(criteriaProxys)) {
-            for (CriteriaProxy criteriaProxy : criteriaProxys) {
-                if (criteriaProxy.getWhereParamsIndex() - 1 == whereParamIndex) {
-                    String criteriaType = criteriaProxy.getCriteriaType();
-                    // 去掉前一个条件追加的 " AND " 分隔符，避免 "AND  OR" 双分隔符
-                    if (!"AND".equals(criteriaType) && !"WHEREAND".equals(criteriaType)) {
-                        int len = sql.length();
-                        if (len >= 5 && " AND ".equals(sql.substring(len - 5))) {
-                            sql.setLength(len - 5);
-                        }
-                    }
-                    if (criteriaType.equals("AND")) {
-                        if (criteriaProxy.getWhereParamsIndex() == -1) {
-                            sql.append(" AND ").append(criteriaProxy.getSql());
-                        } else {
-                            sql.append('(').append(criteriaProxy.getSql()).append(')').append(" AND ");
-                        }
-                    } else if (criteriaType.equals("JOINS")) {
-                        sql.append(" ON ").append(criteriaProxy.getSql());
-                    } else if (criteriaType.equals("WITH")) {
-                    } else if (criteriaType.equals("WHEREAND")) {
-                        sql.append(criteriaProxy.getSql()).append(" AND ");
-                    } else if (criteriaType.equals("WHEREOR")) {
-                        sql.append(" OR ").append(criteriaProxy.getSql()).append(" AND ");
-                    } else {
-                        sql.append(" ").append(criteriaType).append(" (").append(criteriaProxy.getSql()).append(')').append(" AND ");
-                    }
-                    addAll(params, criteriaProxy.getParams());
-                }
-            }
-        }
-        return params;
-    }
-
-    private static void addAll(List<Object> params, Object[] values) {
-        if (values != null) {
-            Collections.addAll(params, values);
-        }
     }
 
 
@@ -511,7 +459,7 @@ public class SqlMakeTools {
                     } else {
                         sql.append("(").append(temp.getFirst()).append("), ");
                     }
-                    addAll(params, temp.getSecond());
+                    MixUtils.addAll(params, temp.getSecond());
                 } else {
                     sql.append(obj.toString() + ", ");
                 }
@@ -600,8 +548,8 @@ public class SqlMakeTools {
             }
             createSql.append(tbName);
             createSql.append(" (");
-            AtomicBoolean hasAutoIncrField = new AtomicBoolean(false);
-            columns.forEach(columnMeta -> {
+            boolean hasAutoIncrField = false;
+            for (ColumnMeta columnMeta : columns) {
                 createSql.append(EntityTools.transferColumnName(columnMeta.getName()));
                 createSql.append(" ").append(columnMeta.getDataType());
                 if (columnMeta.isNotNull()) {
@@ -611,8 +559,7 @@ public class SqlMakeTools {
                     createSql.append(" PRIMARY KEY");
                     if (columnMeta.isAutoIncr()) {
                         createSql.append(" AUTO_INCREMENT");
-                        hasAutoIncrField.set(true);
-
+                        hasAutoIncrField = true;
                     }
                 }
                 if (columnMeta.getVal() != null) {
@@ -627,14 +574,14 @@ public class SqlMakeTools {
                     createSql.append(String.format(" COMMENT '%s'", columnMeta.getComment()));
                 }
                 createSql.append(",");
-            });
+            }
             List<IndexMeta> indexMetas = tableMeta.getIndexs();
-            indexMetas.forEach(indexMeta -> {
+            for (IndexMeta indexMeta : indexMetas) {
                 createSql.append((indexMeta.isUnique() ? "UNIQUE" : "") + " KEY " + (indexMeta.getIndexName() == null ? EntityTools.transferColumnName("ix_" + indexMeta.getColumnNames().stream().map(cName -> EntityTools.transferFieldName(cName)).collect(Collectors.joining("_"))) : EntityTools.transferColumnName(indexMeta.getIndexName())) + " (");
-                indexMeta.getColumnNames().forEach(cc -> {
+                for (String cc : indexMeta.getColumnNames()) {
                     createSql.append(EntityTools.transferColumnName(cc));
                     createSql.append(",");
-                });
+                }
                 createSql.setLength(createSql.length() - 1);
                 createSql.append(")");
                 if (StringUtils.isNotEmpty(indexMeta.getIndexType())) {
@@ -644,7 +591,7 @@ public class SqlMakeTools {
                     createSql.append(" COMMENT '").append(indexMeta.getComment()).append("'");
                 }
                 createSql.append(",");
-            });
+            }
             createSql.setLength(createSql.length() - 1);
             createSql.append(")");
             if (tableMeta.getEngine() != null) {
@@ -658,7 +605,7 @@ public class SqlMakeTools {
             if (StringUtils.isNotEmpty(tableMeta.getCollation())) {
                 createSql.append(" COLLATE=").append(tableMeta.getCollation());
             }
-            if (tableMeta.getAutoIncrement() != null && hasAutoIncrField.get()) {
+            if (tableMeta.getAutoIncrement() != null && hasAutoIncrField) {
                 createSql.append(" AUTO_INCREMENT=").append(tableMeta.getAutoIncrement());
             }
             if (tableMeta.getRowFormat() != null) {
@@ -675,7 +622,21 @@ public class SqlMakeTools {
             for (Joins.BaseJoin join : joins) {
                 sql.append(join.getJoinSql());
                 List<CriteriaProxy> criteriaProxies = join.getCriteriaProxys();
-                params = doCriteriaProxy(criteriaProxies, -2, sql, params);
+                if (CollectionUtils.isNotEmpty(criteriaProxies)) {
+                    for (CriteriaProxy proxy : criteriaProxies) {
+                        if (proxy.getWhereParamsIndex() != -1) {
+                            continue;
+                        }
+                        ConnectorType type = proxy.getConnectorType();
+                        if (type == null) {
+                            MixUtils.addAll(params, proxy.getParams());
+                            continue;
+                        }
+                        sql.append(" ").append(type.getKeyword()).append(" ");
+                        sql.append(proxy.getSql());
+                        MixUtils.addAll(params, proxy.getParams());
+                    }
+                }
             }
         }
         //update字段拼接
@@ -693,7 +654,7 @@ public class SqlMakeTools {
                 } else if (p.getSecond() instanceof SQL) {
                     Pair<String, Object[]> updatePair = useSql((SQL) p.getSecond());
                     sql.append(p.getFirst() + " = (" + updatePair.getFirst() + "), ");
-                    addAll(params, updatePair.getSecond());
+                    MixUtils.addAll(params, updatePair.getSecond());
                 } else {
                     sql.append(p.getFirst() + " = ?, ");
                     params.add(p.getSecond());
@@ -703,7 +664,7 @@ public class SqlMakeTools {
         }
         //组装条件
         pair = doCriteria(sqlObj, sql);
-        addAll(params, pair.getSecond());
+        MixUtils.addAll(params, pair.getSecond());
         if (EntityDao.SQL_SELECT.equals(sqlObj.getSqlType()) && StringUtils.isNotEmpty(sqlObj.getLockClause())) {
             pair.setFirst(pair.getFirst() + " " + sqlObj.getLockClause());
         }

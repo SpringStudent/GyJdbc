@@ -2,6 +2,7 @@ package com.gysoft.jdbc.dao;
 
 import com.gysoft.jdbc.bean.GyjdbcException;
 import com.gysoft.jdbc.bean.Page;
+import com.gysoft.jdbc.tools.MixUtils;
 import com.gysoft.jdbc.bean.PageResult;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.*;
@@ -327,21 +328,12 @@ public class SpringJdbc implements ISpringJdbc {
         String baseSql = (String) obj[0];
         Object[] baseParams = (Object[]) obj[1];
         String pageSql = "SELECT * FROM (" + baseSql + ") temp LIMIT ?,?";
-        Object[] pageParams = appendParams(baseParams, page.getOffset(), page.getPageSize());
+        Object[] pageParams = MixUtils.appendParams(baseParams, page.getOffset(), page.getPageSize());
         List<T> paged = jdbcTemplate.query(pageSql, pageParams, BeanPropertyRowMapper.newInstance(requiredType));
         //独立统计总数,避免FOUND_ROWS()依赖同一连接在连接池/并发下取到错误计数
         String countSql = "SELECT COUNT(*) FROM (" + baseSql + ") temp";
         Integer count = jdbcTemplate.queryForObject(countSql, baseParams, Integer.class);
         return new PageResult(paged, count == null ? 0 : count);
-    }
-
-    private Object[] appendParams(Object[] params, Object... extraParams) {
-        List<Object> result = new ArrayList<Object>();
-        if (params != null) {
-            Collections.addAll(result, params);
-        }
-        Collections.addAll(result, extraParams);
-        return result.toArray();
     }
 
     @Override
@@ -365,7 +357,7 @@ public class SpringJdbc implements ISpringJdbc {
                 Integer type = null;
                 for (Object obj : array) {
                     if (type == null) {
-                        type = this.getTypes(obj);
+                        type = MixUtils.getSqlType(obj.getClass());
                     }
                     params.add(obj);
                     types.add(type);
@@ -381,7 +373,7 @@ public class SpringJdbc implements ISpringJdbc {
                 Integer type = null;
                 for (Object obj : list) {
                     if (type == null) {
-                        type = this.getTypes(obj);
+                        type = MixUtils.getSqlType(obj.getClass());
                     }
                     params.add(obj);
                     types.add(type);
@@ -391,7 +383,7 @@ public class SpringJdbc implements ISpringJdbc {
                 }
             } else {
                 params.add(arg);
-                types.add(this.getTypes(arg));
+                types.add(MixUtils.getSqlType(arg.getClass()));
             }
         }
         // 根据序号替换单个?为多个数组?
@@ -425,32 +417,6 @@ public class SpringJdbc implements ISpringJdbc {
             tys[i] = types.get(i);
         }
         return new Object[]{sql, params.toArray(), tys};
-    }
-
-    private int getTypes(Object arg) {
-        if (String.class.equals(arg.getClass())) {
-            return Types.VARCHAR;
-        } else if (int.class.equals(arg.getClass()) || Integer.class.equals(arg.getClass())) {
-            return Types.INTEGER;
-        } else if (double.class.equals(arg.getClass()) || Double.class.equals(arg.getClass())) {
-            return Types.DOUBLE;
-        } else if (Date.class.isAssignableFrom(arg.getClass())) {
-            return Types.TIMESTAMP;
-        } else if (long.class.equals(arg.getClass()) || Long.class.equals(arg.getClass())) {
-            return Types.BIGINT;
-        } else if (float.class.equals(arg.getClass()) || Float.class.equals(arg.getClass())) {
-            return Types.FLOAT;
-        } else if (boolean.class.equals(arg.getClass()) || Boolean.class.equals(arg.getClass())) {
-            return Types.BOOLEAN;
-        } else if (short.class.equals(arg.getClass()) || Short.class.equals(arg.getClass())) {
-            return Types.INTEGER;
-        } else if (byte.class.equals(arg.getClass()) || Byte.class.equals(arg.getClass())) {
-            return Types.INTEGER;
-        } else if (BigDecimal.class.equals(arg.getClass())) {
-            return Types.DECIMAL;
-        } else {
-            return Types.OTHER;
-        }
     }
 
     private void setParamater(PreparedStatement ps, int i, Object arg) throws SQLException {

@@ -374,19 +374,19 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public S andCriteria(Criteria criteria) {
-        return criteria(criteria, "AND");
+        return criteria(criteria, ConnectorType.AND_GROUP);
     }
 
     public S andCriteria(Criteria criteria, boolean condition) {
         if (condition) {
-            return criteria(criteria, "AND");
+            return criteria(criteria, ConnectorType.AND_GROUP);
         }
         return self();
     }
 
     public S andCriteria(Criteria criteria, BooleanSupplier condition) {
         if (condition.getAsBoolean()) {
-            return criteria(criteria, "AND");
+            return criteria(criteria, ConnectorType.AND_GROUP);
         }
         return self();
     }
@@ -395,7 +395,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         if (CollectionUtils.isEmpty(whereParams)) {
             throw new GyjdbcException("sql error,condition \"orCriteria\" must be following after \"where\"!");
         }
-        return criteria(criteria, "OR");
+        return criteria(criteria, ConnectorType.OR_GROUP);
     }
 
     public S orCriteria(Criteria criteria, boolean condition) {
@@ -403,7 +403,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
             if (CollectionUtils.isEmpty(whereParams)) {
                 throw new GyjdbcException("sql error,condition \"orCriteria\" must be following after \"where\"!");
             }
-            return criteria(criteria, "OR");
+            return criteria(criteria, ConnectorType.OR_GROUP);
         }
         return self();
     }
@@ -413,7 +413,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
             if (CollectionUtils.isEmpty(whereParams)) {
                 throw new GyjdbcException("sql error,condition \"orCriteria\" must be following after \"where\"!");
             }
-            return criteria(criteria, "OR");
+            return criteria(criteria, ConnectorType.OR_GROUP);
         }
         return self();
     }
@@ -468,11 +468,11 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
     }
 
     public S and(Where where) {
-        return criteria(where.getCriteria(), "WHEREAND");
+        return criteria(where.getCriteria(), ConnectorType.WHERE_AND);
     }
 
     public S or(Where where) {
-        return criteria(where.getCriteria(), "WHEREOR");
+        return criteria(where.getCriteria(), ConnectorType.WHERE_OR);
     }
 
     public S and(Opt opt, List<WhereParam> whereParams) {
@@ -574,7 +574,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return where;
     }
 
-    private S criteria(Criteria criteria, String criteriaType) {
+    private S criteria(Criteria criteria, ConnectorType criteriaType) {
         if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
             throw new GyjdbcException("unsupport orderBy in nested criteria");
         }
@@ -599,7 +599,7 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         criteriaProxy.setWhereParamsIndex(whereParams.size() + 1);
         criteriaProxy.setSql(new StringBuilder(removeWhereAndTrim(pair.getFirst())));
         criteriaProxy.setParams(pair.getSecond());
-        criteriaProxy.setCriteriaType(criteriaType);
+        criteriaProxy.setConnectorType(criteriaType);
         criteriaProxys.add(criteriaProxy);
         return self();
     }
