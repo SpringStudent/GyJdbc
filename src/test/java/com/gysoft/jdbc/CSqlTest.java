@@ -3330,4 +3330,277 @@ public class CSqlTest {
             assertTrue(e.getMessage().contains("having"));
         }
     }
+
+    // ==================== CriteriaProxy 边界行为测试 ====================
+
+    @Test
+    public void andCriteriaAsFirstCallShouldWork() {
+        // 无前置 where，直接 andCriteria → 使用空占位符，proxy 插入位置正确
+        Criteria criteria = new Criteria()
+                .andCriteria(new Criteria().where("type", "A").or("type", "B"))
+                .where("flag", 1);
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertEquals("SELECT * FROM tb_test WHERE (type = ? OR type = ?) AND flag = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"A", "B", 1}, pair.getSecond());
+    }
+
+    @Test
+    public void multipleAndCriteriaConsecutiveShouldPreserveOrder() {
+        // 连续多个 andCriteria 在同一位置 → 依赖 ArrayList 插入顺序
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .andCriteria(new Criteria().where("a", 1))
+                .andCriteria(new Criteria().where("b", 2))
+                .where("c", 3);
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertEquals("SELECT * FROM tb_test WHERE flag = ? AND (a = ?) AND (b = ?) AND c = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 1, 2, 3}, pair.getSecond());
+    }
+
+    @Test
+    public void andCriteriaAtEndShouldWork() {
+        // andCriteria 在所有 where 之后 → whereParamsIndex 指向末尾
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .where("status", "active")
+                .andCriteria(new Criteria().where("type", "A").or("type", "B"));
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertEquals("SELECT * FROM tb_test WHERE flag = ? AND status = ? AND (type = ? OR type = ?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "active", "A", "B"}, pair.getSecond());
+    }
+
+    @Test
+    public void orCriteriaBetweenWhereShouldWork() {
+        // orCriteria 前后都有 where → 检验 or 连接符位置
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .orCriteria(new Criteria().where("type", "A"))
+                .where("status", "active");
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertEquals("SELECT * FROM tb_test WHERE flag = ? OR (type = ?) AND status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "A", "active"}, pair.getSecond());
+    }
+
+    @Test
+    public void andCriteriaThenOrCriteriaShouldWork() {
+        // 混合 andCriteria 和 orCriteria
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .andCriteria(new Criteria().where("a", 1))
+                .orCriteria(new Criteria().where("b", 2))
+                .where("c", 3);
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertEquals("SELECT * FROM tb_test WHERE flag = ? AND (a = ?) OR (b = ?) AND c = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 1, 2, 3}, pair.getSecond());
+    }
+
+    @Test
+    public void deepNestedAndOrCriteriaShouldWork() {
+        // 三层嵌套：外层 andCriteria → 中层 orCriteria → 内层 andCriteria
+        Criteria criteria = new Criteria()
+                .where("outer", 1)
+                .andCriteria(new Criteria()
+                        .where("mid_a", "A")
+                        .orCriteria(new Criteria()
+                                .where("inner_x", 100)
+                                .or("inner_y", 200)))
+                .where("tail", 999);
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertTrue(pair.getFirst().contains("(mid_a = ? OR (inner_x = ? OR inner_y = ?))"));
+        assertArrayEquals(new Object[]{1, "A", 100, 200, 999}, pair.getSecond());
+    }
+
+    @Test
+    public void andCriteriaWithEmptySubCriteriaShouldBeSkipped() {
+        // 子 Criteria 的 whereParams 为空 → criteria() 方法直接返回 self()，不添加 proxy
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .andCriteria(new Criteria())   // 空子查询
+                .where("status", "active");
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertEquals("SELECT * FROM tb_test WHERE flag = ? AND status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "active"}, pair.getSecond());
+    }
+
+    @Test
+    public void orCriteriaWithConditionFalseShouldSkipAndNotAffectPosition() {
+        // orCriteria 条件为 false 时跳过，不影响后续 where 的位置
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .orCriteria(new Criteria().where("skipped", "x"), false)
+                .where("status", "active");
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertEquals("SELECT * FROM tb_test WHERE flag = ? AND status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "active"}, pair.getSecond());
+    }
+
+    @Test
+    public void onlyAndCriteriaWithoutAnyWhereShouldWork() {
+        // 只有 andCriteria，没有任何 where
+        Criteria criteria = new Criteria()
+                .andCriteria(new Criteria().where("a", 1).or("b", 2));
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertEquals("SELECT * FROM tb_test WHERE (a = ? OR b = ?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 2}, pair.getSecond());
+    }
+
+    @Test
+    public void andCriteriaFollowedByOrConditionShouldWork() {
+        // andCriteria 后跟 or 普通条件 — 检验连接符
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .andCriteria(new Criteria().where("type", "A"))
+                .or("status", "deleted");
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertEquals("SELECT * FROM tb_test WHERE flag = ? AND (type = ?) OR status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "A", "deleted"}, pair.getSecond());
+    }
+
+    @Test
+    public void multipleConsecutiveAndCriteriaAsFirstCallShouldAllInsertCorrectly() {
+        // 连续 andCriteria 作为首批调用（触发占位符）
+        Criteria criteria = new Criteria()
+                .andCriteria(new Criteria().where("a", 1))
+                .andCriteria(new Criteria().where("b", 2))
+                .andCriteria(new Criteria().where("c", 3))
+                .where("d", 4);
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertEquals("SELECT * FROM tb_test WHERE (a = ?) AND (b = ?) AND (c = ?) AND d = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 2, 3, 4}, pair.getSecond());
+    }
+
+    @Test
+    public void andCriteriaAndOrConditionMixedInSubCriteria() {
+        // 子 Criteria 内部混合 and/or
+        Criteria criteria = new Criteria()
+                .where("flag", 1)
+                .andCriteria(new Criteria()
+                        .where("type", "A")
+                        .or("type", "B")
+                        .or("type", "C"))
+                .and("status", 1);
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertEquals("SELECT * FROM tb_test WHERE flag = ? AND (type = ? OR type = ? OR type = ?) AND status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1, "A", "B", "C", 1}, pair.getSecond());
+    }
+
+    @Test
+    public void andCriteriaNested5LevelsShouldWork() {
+        // 5层嵌套：每层一个 andCriteria 包裹下一层 + 一个普通 where
+        // 最内层额外包含一个 or 条件，验证深层递归的参数顺序和括号嵌套
+        Criteria level5 = new Criteria()
+                .where("e", 5)
+                .or("f", 6);
+
+        Criteria level4 = new Criteria()
+                .where("d", 4)
+                .andCriteria(level5);
+
+        Criteria level3 = new Criteria()
+                .where("c", 3)
+                .andCriteria(level4);
+
+        Criteria level2 = new Criteria()
+                .where("b", 2)
+                .andCriteria(level3);
+
+        Criteria criteria = new Criteria()
+                .where("a", 1)
+                .andCriteria(level2)
+                .where("g", 7);
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertEquals(
+                "SELECT * FROM tb_test WHERE a = ? AND (b = ? AND (c = ? AND (d = ? AND (e = ? OR f = ?)))) AND g = ?",
+                pair.getFirst());
+        assertArrayEquals(new Object[]{1, 2, 3, 4, 5, 6, 7}, pair.getSecond());
+    }
+
+    @Test
+    public void andCriteriaNested5LevelsWithOrCriteriaMixedShouldWork() {
+        // 5层嵌套，交替使用 andCriteria / orCriteria，验证混合连接符和参数顺序
+        Criteria level5 = new Criteria()
+                .where("deep", "bottom")
+                .or("alt", "other");
+
+        Criteria level4 = new Criteria()
+                .where("l4_and", 4)
+                .andCriteria(level5);
+
+        Criteria level3 = new Criteria()
+                .where("l3_or_a", "A")
+                .orCriteria(level4)
+                .or("l3_or_b", "B");
+
+        Criteria level2 = new Criteria()
+                .where("l2", "mid")
+                .andCriteria(level3);
+
+        Criteria criteria = new Criteria()
+                .where("top", 1)
+                .andCriteria(level2)
+                .where("tail", 999);
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertEquals(
+                "SELECT * FROM tb_test WHERE top = ? AND (l2 = ? AND (l3_or_a = ? OR (l4_and = ? AND (deep = ? OR alt = ?)) OR l3_or_b = ?)) AND tail = ?",
+                pair.getFirst());
+        assertArrayEquals(new Object[]{1, "mid", "A", 4, "bottom", "other", "B", 999}, pair.getSecond());
+    }
+
+    @Test
+    public void andCriteriaNested5LevelsFirstCallShouldWork() {
+        // 5层嵌套作为第一个调用（触发占位符机制），没有外层 where
+        Criteria level5 = new Criteria()
+                .where("e5", 5);
+
+        Criteria level4 = new Criteria()
+                .where("e4", 4)
+                .andCriteria(level5);
+
+        Criteria level3 = new Criteria()
+                .where("e3", 3)
+                .andCriteria(level4);
+
+        Criteria level2 = new Criteria()
+                .where("e2", 2)
+                .andCriteria(level3);
+
+        Criteria criteria = new Criteria()
+                .andCriteria(level2)
+                .where("e1", 1);
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        assertEquals(
+                "SELECT * FROM tb_test WHERE (e2 = ? AND (e3 = ? AND (e4 = ? AND (e5 = ?)))) AND e1 = ?",
+                pair.getFirst());
+        assertArrayEquals(new Object[]{2, 3, 4, 5, 1}, pair.getSecond());
+    }
 }
