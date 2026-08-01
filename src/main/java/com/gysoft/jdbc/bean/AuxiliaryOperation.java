@@ -342,7 +342,7 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
         return inIfAbsent(key, args, getDefaultPredicate());
     }
 
-    default S inIfAbsent(String key, Collection<?> args, Predicate<Collection> predicate) {
+    default S inIfAbsent(String key, Collection<?> args, Predicate<Collection<?>> predicate) {
         if (predicate.test(args)) {
             return in(key, args);
         }
@@ -353,7 +353,7 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
         return inIfAbsent(function, args, getDefaultPredicate());
     }
 
-    default <T, R> S inIfAbsent(TypeFunction<T, R> function, Collection<?> args, Predicate<Collection> predicate) {
+    default <T, R> S inIfAbsent(TypeFunction<T, R> function, Collection<?> args, Predicate<Collection<?>> predicate) {
         if (predicate.test(args)) {
             return in(function, args);
         }
@@ -364,7 +364,7 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
         return notInIfAbsent(key, args, getDefaultPredicate());
     }
 
-    default S notInIfAbsent(String key, Collection<?> args, Predicate<Collection> predicate) {
+    default S notInIfAbsent(String key, Collection<?> args, Predicate<Collection<?>> predicate) {
         if (predicate.test(args)) {
             return notIn(key, args);
         }
@@ -375,7 +375,7 @@ public interface AuxiliaryOperation<S extends AuxiliaryOperation<S>> {
         return notInIfAbsent(function, args, getDefaultPredicate());
     }
 
-    default <T, R> S notInIfAbsent(TypeFunction<T, R> function, Collection<?> args, Predicate<Collection> predicate) {
+    default <T, R> S notInIfAbsent(TypeFunction<T, R> function, Collection<?> args, Predicate<Collection<?>> predicate) {
         if (predicate.test(args)) {
             return notIn(function, args);
         }

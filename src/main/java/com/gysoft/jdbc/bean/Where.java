@@ -220,7 +220,7 @@ public class Where {
         return inIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
     }
 
-    public Where inIfAbsent(Collection<?> val, Predicate<Collection> predicate) {
+    public Where inIfAbsent(Collection<?> val, Predicate<Collection<?>> predicate) {
         if (predicate.test(val)) criteria.in(key, val);
         return this;
     }
@@ -229,7 +229,7 @@ public class Where {
         return notInIfAbsent(val, AuxiliaryOperation.getDefaultPredicate());
     }
 
-    public Where notInIfAbsent(Collection<?> val, Predicate<Collection> predicate) {
+    public Where notInIfAbsent(Collection<?> val, Predicate<Collection<?>> predicate) {
         if (predicate.test(val)) criteria.notIn(key, val);
         return this;
     }
