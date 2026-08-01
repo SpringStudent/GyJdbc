@@ -270,6 +270,8 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         if (page != null) {
             pageSql = pageSql + " LIMIT ?,?";
             pageParams = MixUtils.appendParams(baseParams, page.getOffset(), page.getPageSize());
+        } else {
+            throw new GyjdbcException("page param cannot be null");
         }
         List<E> paged = jdbcTemplate.query(pageSql, pageParams, tRowMapper);
         //独立统计总数,避免FOUND_ROWS()依赖同一连接在连接池/并发下取到错误计数
