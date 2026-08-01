@@ -12,7 +12,7 @@ public class BindPointAspectRegistar implements ImportBeanDefinitionRegistrar {
     /**
      * 是否已经初始化
      */
-    private static boolean inited;
+    private static volatile boolean inited;
 
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {

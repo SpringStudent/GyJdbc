@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -15,7 +16,7 @@ import java.util.Map;
  */
 public abstract class AbstractLoadBalance implements LoadBalance {
 
-    private static Map<String, String> dataSourceKeysGroup = new HashMap<>();
+    private static Map<String, String> dataSourceKeysGroup = new ConcurrentHashMap<>(16);
 
     @Override
     public String select(DataSourceBind dataSourceBind) {
