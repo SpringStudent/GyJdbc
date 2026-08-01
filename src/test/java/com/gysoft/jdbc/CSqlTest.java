@@ -3144,17 +3144,6 @@ public class CSqlTest {
         }
     }
 
-    private static class FailingCreateDao extends EntityDaoImpl<TestEntity, String> {
-        FailingCreateDao() {
-            this.jdbcTemplate = new JdbcTemplate() {
-                @Override
-                public void execute(String sql) {
-                    throw new IllegalStateException("create failed");
-                }
-            };
-        }
-    }
-
     private static class TestEntity {
         private String id;
 
@@ -3602,5 +3591,70 @@ public class CSqlTest {
                 "SELECT * FROM tb_test WHERE (e2 = ? AND (e3 = ? AND (e4 = ? AND (e5 = ?)))) AND e1 = ?",
                 pair.getFirst());
         assertArrayEquals(new Object[]{2, 3, 4, 5, 1}, pair.getSecond());
+    }
+
+    // ==================== 5层 FROM 子查询嵌套测试 ====================
+
+    @Test
+    public void fromSubqueryNested5LevelsShouldPreserveParameterOrder() {
+        // Level 1 (innermost): SELECT * FROM leaf_table WHERE l1 = ?
+        SQL l1 = new SQL()
+                .select("*").from("leaf_table")
+                .where("l1", "v1")
+                .asTable("a");
+
+        // Level 2: SELECT ?, a.id FROM (l1) a WHERE l2 = ?
+        SQL l2 = new SQL()
+                .select(ValueReference.newValueRef("sv2"), "a.id")
+                .from(l1)
+                .where("l2", "v2")
+                .asTable("b");
+
+        // Level 3: SELECT ?, b.id FROM (l2) b WHERE l3 = ?
+        SQL l3 = new SQL()
+                .select(ValueReference.newValueRef("sv3"), "b.id")
+                .from(l2)
+                .where("l3", "v3")
+                .asTable("c");
+
+        // Level 4: SELECT ?, c.id FROM (l3) c WHERE l4 = ?
+        SQL l4 = new SQL()
+                .select(ValueReference.newValueRef("sv4"), "c.id")
+                .from(l3)
+                .where("l4", "v4")
+                .asTable("d");
+
+        // Level 5 (outermost): SELECT ?, d.id FROM (l4) d WHERE l5 = ?
+        SQL sql = new SQL()
+                .select(ValueReference.newValueRef("sv5"), "d.id")
+                .from(l4)
+                .where("l5", "v5");
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+
+        assertEquals(
+                "SELECT ?, d.id FROM( (SELECT ?, c.id FROM( (SELECT ?, b.id FROM( (SELECT ?, a.id FROM( (SELECT * FROM leaf_table WHERE l1 = ?) a)  WHERE l2 = ?) b)  WHERE l3 = ?) c)  WHERE l4 = ?) d)  WHERE l5 = ?",
+                pair.getFirst());
+        assertArrayEquals(new Object[]{"sv5", "sv4", "sv3", "sv2", "v1", "v2", "v3", "v4", "v5"}, pair.getSecond());
+    }
+
+    @Test
+    public void fromSubqueryNested5LevelsParamShouldOk() {
+        SQL sql = new SQL().select("*").from(
+                new SQL().select("a.*").from(
+                        new SQL().select("b.*").from(
+                                new SQL().select("c.*").from(
+                                        new SQL().select("d.*").from(
+                                                new SQL().select("e.*").from("nestTable")
+                                        ).where("key", "k1")
+                                )
+                        ).like("keyLike","Lie").unionAll().select("f.*").from("f").isNotNull("notNull")
+                ).where("condition", "1")
+        );
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals(
+                "SELECT * FROM(SELECT a.* FROM( (SELECT b.* FROM(SELECT c.* FROM(SELECT d.* FROM(SELECT e.* FROM nestTable)  WHERE key = ?) )  WHERE keyLike LIKE ?) UNION ALL (SELECT f.* FROM f WHERE notNull IS NOT NULL))  WHERE condition = ?)",
+                pair.getFirst());
+        assertArrayEquals(new Object[]{"k1","%Lie%","1"}, pair.getSecond());
     }
 }
