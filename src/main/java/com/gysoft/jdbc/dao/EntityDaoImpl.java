@@ -321,8 +321,14 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public int deleteWithCriteria(Criteria criteria) {
-        if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
-            throw new GyjdbcException("不支持的操作!");
+        if (criteria == null) {
+            throw new GyjdbcException("delete criteria cannot be null");
+        }
+        if (CollectionUtils.isNotEmpty(criteria.getSorts())
+                || CollectionUtils.isNotEmpty(criteria.getGroupFields())
+                || criteria.getHaving() != null) {
+            throw new GyjdbcException(
+                    "deleteWithCriteria does not support orderBy, groupBy or having");
         }
         String sql = "delete FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
