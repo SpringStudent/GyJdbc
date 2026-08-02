@@ -34,7 +34,7 @@ GyJdbc 很适合：
 <dependency>
     <groupId>io.github.springstudent</groupId>
     <artifactId>GyJdbc</artifactId>
-    <version>11.0.0.RELEASE</version>
+    <version>12.0.0.RELEASE</version>
 </dependency>
 ```
 
@@ -662,6 +662,33 @@ tbUserDao
                         .where(TbUser::getName, "Smith")
         );
 ```
+
+`bindKey` 和 `bindGroup` 作用于下一次数据源路由。分页、批处理等会在一个 DAO 方法中多次访问数据库的操作，建议使用作用域 API，确保整个操作固定使用同一个数据源：
+
+```java
+import com.gysoft.jdbc.multi.DataSourceContext;
+
+PageResult<TbUser> result = DataSourceContext.withDataSource(
+        "secondary",
+        () -> tbUserDao.pageQuery(page)
+);
+
+DataSourceContext.withDataSourceGroup(
+        "slave",
+        RoundRobinLoadBalance.class,
+        () -> tbUserDao.batchSave(users)
+);
+```
+
+作用域支持嵌套，内层作用域结束后会自动恢复外层数据源；回调抛出异常时也会清理绑定。
+
+如果操作带有 Spring 事务，作用域必须包裹事务入口，使数据源在事务获取连接之前确定：
+
+```java
+DataSourceContext.withDataSource("secondary", transactionalService::execute);
+```
+
+事务已经获取连接后不能通过切换路由 key 改变该事务使用的物理数据源。`@BindPoint` 切面会优先于事务切面执行，但跨数据源原子事务仍需要独立的分布式事务方案。
 
 数据源选择优先级：
 

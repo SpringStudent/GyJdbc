@@ -5,6 +5,11 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.aop.support.AopUtils;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.core.annotation.Order;
+import org.springframework.util.ClassUtils;
 
 import java.lang.reflect.Method;
 
@@ -12,6 +17,7 @@ import java.lang.reflect.Method;
  * @author 周宁
  */
 @Aspect
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class BindPointAspect {
 
     @Pointcut("@annotation(com.gysoft.jdbc.multi.BindPoint)")
@@ -24,23 +30,26 @@ public class BindPointAspect {
 
     @Around("processMethod()||processClass()")
     public Object around(ProceedingJoinPoint point) throws Throwable {
-        Object object = point.getTarget();
-        BindPoint classBindPoint = object.getClass().getAnnotation(BindPoint.class);
-        if (classBindPoint != null) {
-            DataSourceBindHolder.setDataSource(DataSourceBind.bindPoint(classBindPoint));
+        BindPoint bindPoint = resolveBindPoint(point);
+        if (bindPoint == null) {
+            return point.proceed();
         }
-        String methodName = point.getSignature().getName();
-        MethodSignature methodSignature = ((MethodSignature) point.getSignature());
-        Class<?>[] parameterTypes = methodSignature.getMethod().getParameterTypes();
-        Method method = object.getClass().getMethod(methodName, parameterTypes);
-        BindPoint methodBindPoint = method.getAnnotation(BindPoint.class);
-        if (methodBindPoint != null) {
-            DataSourceBindHolder.setDataSource(DataSourceBind.bindPoint(methodBindPoint));
-        }
+        DataSourceBindHolder.pushDataSource(DataSourceBind.bindPoint(bindPoint));
         try {
             return point.proceed();
         } finally {
-            DataSourceBindHolder.clearDataSource();
+            DataSourceBindHolder.popDataSource();
         }
+    }
+
+    private BindPoint resolveBindPoint(ProceedingJoinPoint point) {
+        Class<?> targetClass = ClassUtils.getUserClass(point.getTarget());
+        Method signatureMethod = ((MethodSignature) point.getSignature()).getMethod();
+        Method targetMethod = AopUtils.getMostSpecificMethod(signatureMethod, targetClass);
+        BindPoint methodBindPoint = AnnotatedElementUtils.findMergedAnnotation(targetMethod, BindPoint.class);
+        if (methodBindPoint != null) {
+            return methodBindPoint;
+        }
+        return AnnotatedElementUtils.findMergedAnnotation(targetClass, BindPoint.class);
     }
 }

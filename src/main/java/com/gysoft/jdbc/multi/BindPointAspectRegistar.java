@@ -9,18 +9,13 @@ import org.springframework.core.type.AnnotationMetadata;
  * @author 周宁
  */
 public class BindPointAspectRegistar implements ImportBeanDefinitionRegistrar {
-    /**
-     * 是否已经初始化
-     */
-    private static volatile boolean inited;
-
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
-        if (!inited) {
+        String beanName = BindPointAspect.class.getName();
+        if (!registry.containsBeanDefinition(beanName)) {
             RootBeanDefinition root = new RootBeanDefinition();
             root.setBeanClass(BindPointAspect.class);
-            registry.registerBeanDefinition(BindPointAspect.class.getName(), root);
-            inited = true;
+            registry.registerBeanDefinition(beanName, root);
         }
     }
 

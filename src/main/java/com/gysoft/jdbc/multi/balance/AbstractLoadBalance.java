@@ -1,44 +1,31 @@
 package com.gysoft.jdbc.multi.balance;
 
 import com.gysoft.jdbc.multi.DataSourceBind;
-import org.apache.commons.lang3.StringUtils;
 
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 
 /**
  * 负载均衡抽象策略实现类
+ *
  * @author 周宁
  */
 public abstract class AbstractLoadBalance implements LoadBalance {
 
-    private static Map<String, String> dataSourceKeysGroup = new ConcurrentHashMap<>(16);
-
     @Override
     public String select(DataSourceBind dataSourceBind) {
-        String group = dataSourceBind.getGroup();
-        if (StringUtils.isEmpty(group)) {
+        List<String> keys = dataSourceBind.getCandidateKeys();
+        if (keys == null || keys.isEmpty()) {
             return null;
         }
-        String keys = dataSourceKeysGroup.get(group);
-        if (StringUtils.isNotEmpty(keys)) {
-            List<String> list = Arrays.asList(keys.split(","));
-            if (list.size() == 1) {
-                return list.get(0);
-            }
-            return doSelect(list,group);
+        if (keys.size() == 1) {
+            return keys.get(0);
         }
-        return null;
+        return doSelect(keys, dataSourceBind.getGroup(), dataSourceBind);
     }
 
-    protected abstract String doSelect(List<String> keys,String group);
-
-    public static void initDataSourceKeysGroup(Map<String, String> group) {
-        dataSourceKeysGroup.putAll(group);
+    protected String doSelect(List<String> keys, String group, DataSourceBind dataSourceBind) {
+        return doSelect(keys, group);
     }
 
+    protected abstract String doSelect(List<String> keys, String group);
 }

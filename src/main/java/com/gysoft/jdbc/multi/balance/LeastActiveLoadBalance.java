@@ -1,6 +1,6 @@
 package com.gysoft.jdbc.multi.balance;
 
-import com.gysoft.jdbc.multi.DataSourceBindHolder;
+import com.gysoft.jdbc.multi.DataSourceBind;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class LeastActiveLoadBalance extends AbstractLoadBalance {
 
     @Override
-    protected String doSelect(List<String> keys, String group) {
+    protected String doSelect(List<String> keys, String group, DataSourceBind dataSourceBind) {
         if (keys == null || keys.isEmpty()) {
             return null;
         }
@@ -20,7 +20,7 @@ public class LeastActiveLoadBalance extends AbstractLoadBalance {
             return keys.get(0);
         }
         // 查找活跃连接数最少的数据源
-        List<String> leastActiveKeys = findLeastActiveKeys(keys);
+        List<String> leastActiveKeys = findLeastActiveKeys(keys, dataSourceBind);
         // 如果只有一个最少活跃的数据源，直接返回
         if (leastActiveKeys.size() == 1) {
             return leastActiveKeys.get(0);
@@ -29,14 +29,16 @@ public class LeastActiveLoadBalance extends AbstractLoadBalance {
         return selectRandomFromCandidates(leastActiveKeys);
     }
 
-    private List<String> findLeastActiveKeys(List<String> keys) {
+    @Override
+    protected String doSelect(List<String> keys, String group) {
+        return selectRandomFromCandidates(keys);
+    }
+
+    private List<String> findLeastActiveKeys(List<String> keys, DataSourceBind dataSourceBind) {
         List<String> leastActiveKeys = new ArrayList<>();
         int minActiveCount = Integer.MAX_VALUE;
         for (String key : keys) {
-            Integer activeCount = DataSourceBindHolder.getActiveCount(key);
-            if (activeCount == null) {
-                activeCount = 0;
-            }
+            int activeCount = dataSourceBind.getActiveCount(key);
             if (activeCount < minActiveCount) {
                 minActiveCount = activeCount;
                 leastActiveKeys.clear();

@@ -1,63 +1,68 @@
 package com.gysoft.jdbc.multi;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import com.gysoft.jdbc.bean.GyjdbcException;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
  * @author 周宁
  */
 public abstract class DataSourceBindHolder {
-    private static ThreadLocal<DataSourceBind> DataSourceBindHolder = new ThreadLocal<>();
-    private static Map<String, Integer> activeCountMap = new ConcurrentHashMap<>();
+
+    private static final ThreadLocal<DataSourceBind> nextDataSource = new ThreadLocal<>();
+    private static final ThreadLocal<Deque<DataSourceBind>> scopedDataSources = new ThreadLocal<>();
 
     public static void setDataSource(DataSourceBind dataSourceBind) {
-        dataSourceBind.setPrev(DataSourceBindHolder.get());
-        DataSourceBindHolder.set(dataSourceBind);
+        if (dataSourceBind == null) {
+            throw new GyjdbcException("Data source binding cannot be null");
+        }
+        nextDataSource.set(dataSourceBind);
+    }
+
+    public static void pushDataSource(DataSourceBind dataSourceBind) {
+        if (dataSourceBind == null) {
+            throw new GyjdbcException("Data source binding cannot be null");
+        }
+        Deque<DataSourceBind> stack = scopedDataSources.get();
+        if (stack == null) {
+            stack = new ArrayDeque<>();
+            scopedDataSources.set(stack);
+        }
+        stack.push(dataSourceBind);
+    }
+
+    public static void popDataSource() {
+        Deque<DataSourceBind> stack = scopedDataSources.get();
+        if (stack == null || stack.isEmpty()) {
+            return;
+        }
+        stack.pop().release();
+        nextDataSource.remove();
+        if (stack.isEmpty()) {
+            scopedDataSources.remove();
+        }
+    }
+
+    static DataSourceBind currentDataSource() {
+        DataSourceBind oneShot = nextDataSource.get();
+        if (oneShot != null) {
+            nextDataSource.remove();
+            return oneShot;
+        }
+        Deque<DataSourceBind> stack = scopedDataSources.get();
+        return stack == null || stack.isEmpty() ? null : stack.peek();
     }
 
     public static void clearDataSource() {
-        DataSourceBind dataSourceBind = DataSourceBindHolder.get();
-        if (dataSourceBind != null) {
-            decreaseActiveCount(dataSourceBind);
-        }
-        DataSourceBindHolder.remove();
-    }
-
-    public static String getDataSource() {
-        DataSourceBind dataSourceBind = DataSourceBindHolder.get();
-        if (dataSourceBind == null) {
-            return null;
-        }
-        try {
-            String result = dataSourceBind.select(true);
-            increaseActiveCount(result);
-            return result;
-        } finally {
-            //清理或者恢复上次的DataSourceBind
-            //这么写通过entityDao.bindXxx()方法调用时就不会存在内存泄漏问题了
-            if (dataSourceBind.getBindType().equals(DataSourceBind.BindType.byMethod)) {
-                clearDataSource();
-                if (dataSourceBind.getPrev() != null) {
-                    DataSourceBindHolder.set(dataSourceBind.getPrev());
-                }
+        nextDataSource.remove();
+        Deque<DataSourceBind> stack = scopedDataSources.get();
+        if (stack != null) {
+            while (!stack.isEmpty()) {
+                stack.pop().release();
             }
+            scopedDataSources.remove();
         }
     }
 
-    private static void increaseActiveCount(String key) {
-        if (key != null) {
-            activeCountMap.compute(key, (k, v) -> v == null ? 1 : v + 1);
-        }
-    }
-
-    private static void decreaseActiveCount(DataSourceBind dataSourceBind) {
-        String key = dataSourceBind.select(false);
-        if (key != null) {
-            activeCountMap.computeIfPresent(key, (k, v) -> v - dataSourceBind.getActive());
-        }
-    }
-
-    public static Integer getActiveCount(String dataSourceKey) {
-        return activeCountMap.get(dataSourceKey);
-    }
 }

@@ -2,13 +2,23 @@ package com.gysoft.jdbc;
 
 import com.gysoft.jdbc.bean.*;
 import com.gysoft.jdbc.dao.EntityDaoImpl;
+import com.gysoft.jdbc.multi.*;
+import com.gysoft.jdbc.multi.balance.LeastActiveLoadBalance;
+import com.gysoft.jdbc.multi.balance.LoadBalance;
+import com.gysoft.jdbc.multi.balance.RoundRobinLoadBalance;
 import com.gysoft.jdbc.tools.SqlMakeTools;
+import org.junit.After;
 import org.junit.Test;
+import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import javax.sql.DataSource;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.logging.Logger;
 
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
 import static org.junit.Assert.*;
@@ -3656,5 +3666,321 @@ public class CSqlTest {
                 "SELECT * FROM(SELECT a.* FROM( (SELECT b.* FROM(SELECT c.* FROM(SELECT d.* FROM(SELECT e.* FROM nestTable)  WHERE key = ?) )  WHERE keyLike LIKE ?) UNION ALL (SELECT f.* FROM f WHERE notNull IS NOT NULL))  WHERE condition = ?)",
                 pair.getFirst());
         assertArrayEquals(new Object[]{"k1","%Lie%","1"}, pair.getSecond());
+    }
+
+    private final TestRoutingDataSource routingDataSource = routingDataSource("primary");
+
+    @After
+    public void clearRoutingContext() {
+        DataSourceBindHolder.clearDataSource();
+    }
+
+    @Test
+    public void scopedKeyShouldRemainForAllLookups() {
+        String selected = DataSourceContext.withDataSource("secondary", () -> {
+            assertEquals("secondary", routingDataSource.currentKey());
+            assertEquals("secondary", routingDataSource.currentKey());
+            return routingDataSource.currentKey();
+        });
+
+        assertEquals("secondary", selected);
+        assertEquals("primary", routingDataSource.currentKey());
+    }
+
+    @Test
+    public void nestedScopeShouldRestoreOuterKey() {
+        DataSourceContext.withDataSource("outer", () -> {
+            assertEquals("outer", routingDataSource.currentKey());
+            DataSourceContext.withDataSource("inner", () -> {
+                assertEquals("inner", routingDataSource.currentKey());
+                return null;
+            });
+            assertEquals("outer", routingDataSource.currentKey());
+            return null;
+        });
+
+        assertEquals("primary", routingDataSource.currentKey());
+    }
+
+    @Test
+    public void callbackExceptionShouldClearScope() {
+        try {
+            DataSourceContext.withDataSource("secondary", () -> {
+                assertEquals("secondary", routingDataSource.currentKey());
+                throw new IllegalStateException("expected");
+            });
+            fail("exception expected");
+        } catch (IllegalStateException expected) {
+            assertEquals("expected", expected.getMessage());
+        }
+
+        assertEquals("primary", routingDataSource.currentKey());
+    }
+
+    @Test
+    public void oneShotBindingShouldOverrideScopeOnce() {
+        DataSourceContext.withDataSource("outer", () -> {
+            DataSourceBindHolder.setDataSource(DataSourceBind.bindKey("secondary"));
+            assertEquals("secondary", routingDataSource.currentKey());
+            assertEquals("outer", routingDataSource.currentKey());
+            return null;
+        });
+    }
+
+    @Test
+    public void groupScopeShouldSelectOnceAndRemainStable() {
+        routingDataSource.setDataSourceKeysGroup(Collections.singletonMap("slave", "secondary,third"));
+
+        DataSourceContext.withDataSourceGroup("slave", RoundRobinLoadBalance.class, () -> {
+            String selected = routingDataSource.currentKey();
+            assertEquals(selected, routingDataSource.currentKey());
+            assertEquals(selected, routingDataSource.currentKey());
+            return null;
+        });
+    }
+
+    @Test
+    public void roundRobinAndCustomStrategiesShouldBeSupported() {
+        routingDataSource.setDataSourceKeysGroup(Collections.singletonMap("slave", "secondary,third"));
+
+        String first = DataSourceContext.withDataSourceGroup("slave", RoundRobinLoadBalance.class,
+                () -> routingDataSource.currentKey());
+        String second = DataSourceContext.withDataSourceGroup("slave", RoundRobinLoadBalance.class,
+                () -> routingDataSource.currentKey());
+        String custom = DataSourceContext.withDataSourceGroup("slave", SelectLastStrategy.class,
+                () -> routingDataSource.currentKey());
+
+        assertEquals("secondary", first);
+        assertEquals("third", second);
+        assertEquals("third", custom);
+    }
+
+    @Test
+    public void leastActiveShouldAvoidAnActiveScopedKey() {
+        routingDataSource.setDataSourceKeysGroup(Collections.singletonMap("slave", "secondary,third"));
+
+        DataSourceContext.withDataSource("secondary", () -> {
+            assertEquals("secondary", routingDataSource.currentKey());
+            String selected = DataSourceContext.withDataSourceGroup("slave", LeastActiveLoadBalance.class,
+                    () -> routingDataSource.currentKey());
+            assertEquals("third", selected);
+            return null;
+        });
+    }
+
+    @Test
+    public void routingInstancesShouldNotShareGroupsOrSequences() {
+        TestRoutingDataSource first = routingDataSource("first-default");
+        TestRoutingDataSource second = routingDataSource("second-default");
+        first.setDataSourceKeysGroup(Collections.singletonMap("slave", "a,b"));
+        second.setDataSourceKeysGroup(Collections.singletonMap("slave", "x,y"));
+
+        assertEquals("a", DataSourceContext.withDataSourceGroup("slave", RoundRobinLoadBalance.class,
+                () -> first.currentKey()));
+        assertEquals("x", DataSourceContext.withDataSourceGroup("slave", RoundRobinLoadBalance.class,
+                () -> second.currentKey()));
+        assertEquals("b", DataSourceContext.withDataSourceGroup("slave", RoundRobinLoadBalance.class,
+                () -> first.currentKey()));
+    }
+
+    @Test
+    public void unknownGroupShouldFailWithoutFallingBack() {
+        try {
+            DataSourceContext.withDataSourceGroup("missing", LeastActiveLoadBalance.class,
+                    () -> routingDataSource.currentKey());
+            fail("exception expected");
+        } catch (GyjdbcException expected) {
+            assertTrue(expected.getMessage().contains("missing"));
+        }
+
+        assertEquals("primary", routingDataSource.currentKey());
+    }
+
+    @Test
+    public void unknownExplicitKeyShouldFailWhenTargetsAreConfigured() {
+        Map<Object, Object> targets = new HashMap<>();
+        targets.put("primary", new StubDataSource());
+        targets.put("secondary", new StubDataSource());
+        routingDataSource.setTargetDataSources(targets);
+
+        try {
+            DataSourceContext.withDataSource("missing", () -> routingDataSource.currentKey());
+            fail("exception expected");
+        } catch (GyjdbcException expected) {
+            assertTrue(expected.getMessage().contains("missing"));
+        }
+    }
+
+    @Test
+    public void nestedAnnotationsShouldRestoreOuterBinding() {
+        AnnotatedService proxy = annotatedServiceProxy();
+
+        assertEquals("outer,inner,outer", proxy.outer());
+        assertEquals("primary", routingDataSource.currentKey());
+    }
+
+    @Test
+    public void annotationExceptionShouldRestoreOuterBinding() {
+        AnnotatedService proxy = annotatedServiceProxy();
+
+        assertEquals("inner,outer", proxy.outerAfterInnerFailure());
+        assertEquals("primary", routingDataSource.currentKey());
+    }
+
+    @Test
+    public void methodAnnotationShouldOverrideClassAnnotation() {
+        AnnotatedService proxy = annotatedServiceProxy();
+
+        assertEquals("inner", proxy.inner());
+    }
+
+    @Test
+    public void invalidAnnotationShouldFailBeforeUserCode() {
+        InvalidAnnotatedService target = new InvalidAnnotatedService();
+        AspectJProxyFactory factory = new AspectJProxyFactory(target);
+        factory.addAspect(new BindPointAspect());
+        InvalidAnnotatedService proxy = factory.getProxy();
+
+        try {
+            proxy.invalid();
+            fail("exception expected");
+        } catch (GyjdbcException expected) {
+            assertFalse(target.invoked);
+        }
+    }
+
+    @Test
+    public void registrarShouldRegisterInEveryBeanRegistry() {
+        BindPointAspectRegistar registrar = new BindPointAspectRegistar();
+        DefaultListableBeanFactory first = new DefaultListableBeanFactory();
+        DefaultListableBeanFactory second = new DefaultListableBeanFactory();
+
+        registrar.registerBeanDefinitions(null, first);
+        registrar.registerBeanDefinitions(null, second);
+
+        String beanName = BindPointAspect.class.getName();
+        assertTrue(first.containsBeanDefinition(beanName));
+        assertTrue(second.containsBeanDefinition(beanName));
+    }
+
+    private AnnotatedService annotatedServiceProxy() {
+        AnnotatedService target = new AnnotatedService(routingDataSource);
+        AspectJProxyFactory factory = new AspectJProxyFactory(target);
+        factory.addAspect(new BindPointAspect());
+        AnnotatedService proxy = factory.getProxy();
+        target.self = proxy;
+        return proxy;
+    }
+
+    private static TestRoutingDataSource routingDataSource(String defaultKey) {
+        TestRoutingDataSource routingDataSource = new TestRoutingDataSource();
+        routingDataSource.setDefaultLookUpKey(defaultKey);
+        return routingDataSource;
+    }
+
+    private static class TestRoutingDataSource extends JdbcRoutingDataSource {
+        private String currentKey() {
+            return (String) determineCurrentLookupKey();
+        }
+    }
+
+    public static class SelectLastStrategy implements LoadBalance {
+        @Override
+        public String select(DataSourceBind dataSourceBind) {
+            List<String> candidates = dataSourceBind.getCandidateKeys();
+            return candidates.get(candidates.size() - 1);
+        }
+    }
+
+    @BindPoint(key = "outer")
+    public static class AnnotatedService {
+        private final TestRoutingDataSource routingDataSource;
+        private AnnotatedService self;
+
+        private AnnotatedService(TestRoutingDataSource routingDataSource) {
+            this.routingDataSource = routingDataSource;
+        }
+
+        public String outer() {
+            String before = routingDataSource.currentKey();
+            String inner = self.inner();
+            String after = routingDataSource.currentKey();
+            return before + "," + inner + "," + after;
+        }
+
+        public String outerAfterInnerFailure() {
+            String inner;
+            try {
+                self.innerFailure();
+                throw new AssertionError("exception expected");
+            } catch (IllegalStateException expected) {
+                inner = expected.getMessage();
+            }
+            return inner + "," + routingDataSource.currentKey();
+        }
+
+        @BindPoint(key = "inner")
+        public String inner() {
+            return routingDataSource.currentKey();
+        }
+
+        @BindPoint(key = "inner")
+        public void innerFailure() {
+            throw new IllegalStateException(routingDataSource.currentKey());
+        }
+    }
+
+    public static class InvalidAnnotatedService {
+        private boolean invoked;
+
+        @BindPoint(key = "primary", group = "slave")
+        public void invalid() {
+            invoked = true;
+        }
+    }
+
+    private static class StubDataSource implements DataSource {
+        @Override
+        public Connection getConnection() throws SQLException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Connection getConnection(String username, String password) throws SQLException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public PrintWriter getLogWriter() throws SQLException {
+            return null;
+        }
+
+        @Override
+        public void setLogWriter(PrintWriter out) throws SQLException {
+        }
+
+        @Override
+        public void setLoginTimeout(int seconds) throws SQLException {
+        }
+
+        @Override
+        public int getLoginTimeout() throws SQLException {
+            return 0;
+        }
+
+        @Override
+        public Logger getParentLogger() {
+            return Logger.getGlobal();
+        }
+
+        @Override
+        public <T> T unwrap(Class<T> iface) throws SQLException {
+            throw new SQLException("Not a wrapper");
+        }
+
+        @Override
+        public boolean isWrapperFor(Class<?> iface) throws SQLException {
+            return false;
+        }
     }
 }

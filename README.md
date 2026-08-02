@@ -34,7 +34,7 @@
  <dependency>
      <groupId>io.github.springstudent</groupId>
      <artifactId>GyJdbc</artifactId>
-     <version>11.0.0.RELEASE</version>
+     <version>12.0.0.RELEASE</version>
  </dependency>
  ```
  
@@ -662,7 +662,34 @@
                          .where(TbUser::getName, "Smith")
          );
  ```
- 
+
+ `bindKey` and `bindGroup` apply to the next data-source lookup. For paging, batching, and other DAO methods that access the database more than once, use the scoped API so the complete operation stays on one data source:
+
+ ```java
+ import com.gysoft.jdbc.multi.DataSourceContext;
+
+ PageResult<TbUser> result = DataSourceContext.withDataSource(
+         "secondary",
+         () -> tbUserDao.pageQuery(page)
+ );
+
+ DataSourceContext.withDataSourceGroup(
+         "slave",
+         RoundRobinLoadBalance.class,
+         () -> tbUserDao.batchSave(users)
+ );
+ ```
+
+ Scopes may be nested. Leaving an inner scope restores the outer data source, and an exception still clears the binding.
+
+ When Spring transactions are used, the scope must wrap the transactional entry point so routing is established before the transaction obtains a connection:
+
+ ```java
+ DataSourceContext.withDataSource("secondary", transactionalService::execute);
+ ```
+
+ A transaction cannot change its physical data source after it has obtained a connection. `@BindPoint` runs before transaction advice, while atomic work across multiple data sources still requires a dedicated distributed transaction solution.
+
  Data source resolution priority:
  
  ```text
