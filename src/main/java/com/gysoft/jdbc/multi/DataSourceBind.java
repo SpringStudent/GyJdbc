@@ -27,7 +27,6 @@ public class DataSourceBind {
     private ToIntFunction<String> activeCountProvider = ignored -> 0;
     private Runnable releaseAction;
     private boolean activeRegistered;
-    private DataSourceBind prev;
 
     public DataSourceBind(String key, BindType bindType, String group,
                           Class<? extends LoadBalance> loadBalance) {
@@ -77,7 +76,7 @@ public class DataSourceBind {
     }
 
     public String resolve(LoadBalance strategy, List<String> candidates,
-                   ToIntFunction<String> activeCountProvider) {
+                          ToIntFunction<String> activeCountProvider) {
         if (StringUtils.isNotEmpty(selectedKey)) {
             return selectedKey;
         }
@@ -116,18 +115,6 @@ public class DataSourceBind {
             releaseAction = null;
             action.run();
         }
-    }
-
-    public String select(boolean updateActive) {
-        return StringUtils.isNotEmpty(selectedKey) ? selectedKey : key;
-    }
-
-    public void setPrev(DataSourceBind prev) {
-        this.prev = prev;
-    }
-
-    public DataSourceBind getPrev() {
-        return prev;
     }
 
     public String getKey() {
