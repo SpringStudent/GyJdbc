@@ -644,29 +644,9 @@ public int updateSecondary(TbUser user) throws Exception {
 
 ### 在 DAO 调用级别绑定
 
-```java
-import com.gysoft.jdbc.multi.balance.RoundRobinLoadBalance;
-
-// 指定 slave 数据源执行查询
-List<TbUser> users = tbUserDao
-        .bindKey("secondary")
-        .queryWithCriteria(new Criteria().in(TbUser::getName, Arrays.asList("zhouning", "yinhw")));
-
-// 在 master 组中使用轮询策略选择数据源执行更新
-tbUserDao
-        .bindGroup("master", RoundRobinLoadBalance.class)
-        .updateWithSql(
-                new SQL()
-                        .update(TbUser.class)
-                        .set(TbUser::getRealName, "元林")
-                        .where(TbUser::getName, "Smith")
-        );
-```
-
-`bindKey` 和 `bindGroup` 作用于下一次数据源路由。分页、批处理等会在一个 DAO 方法中多次访问数据库的操作，建议使用作用域 API，确保整个操作固定使用同一个数据源：
+使用 `DataSourceContext.withDataSource()` 将数据源绑定作用到整个 DAO 调用：
 
 ```java
-import com.gysoft.jdbc.multi.DataSourceContext;
 
 PageResult<TbUser> result = DataSourceContext.withDataSource(
         "secondary",

@@ -95,12 +95,14 @@ public class SqlMakeTools {
             return args;
         } else if (sqlFlag.equals(SQL_UPDATE)) {
             Object[] args = new Object[fields.length];
-            Object primaryValue = new Object();
+            Object primaryValue = null;
+            boolean pkFound = false;
             int j = 0;
             for (int i = 0; fields != null && i < fields.length; i++) {
                 try {
                     if (EntityTools.isPk(clzz, fields[i])) { // id 代表主键
                         primaryValue = fields[i].get(entity);
+                        pkFound = true;
                         continue;
                     }
                     args[j] = fields[i].get(entity);
@@ -109,26 +111,30 @@ public class SqlMakeTools {
                     throw new GyjdbcException(e);
                 }
             }
+            if (!pkFound) {
+                throw new GyjdbcException("Primary key field not found in entity " + clzz.getName());
+            }
             args[args.length - 1] = primaryValue;
             return args;
         } else if (sqlFlag.equals(SQL_DELETE)) {
-            Object primaryValue = new Object();
+            Object primaryValue = null;
+            boolean pkFound = false;
             for (int i = 0; fields != null && i < fields.length; i++) {
                 try {
                     if (EntityTools.isPk(clzz, fields[i])) { // id 代表主键
                         primaryValue = fields[i].get(entity);
+                        pkFound = true;
                         break;
                     }
                 } catch (Exception e) {
                     throw new GyjdbcException(e);
                 }
             }
-            Object[] args = new Object[1]; // 长度是1
-            try {
-                args[0] = primaryValue;
-            } catch (Exception e) {
-                throw new GyjdbcException(e);
+            if (!pkFound) {
+                throw new GyjdbcException("Primary key field not found in entity " + clzz.getName());
             }
+            Object[] args = new Object[1]; // 长度是1
+            args[0] = primaryValue;
             return args;
         }
         return null;
@@ -157,18 +163,25 @@ public class SqlMakeTools {
             return argTypes;
         } else if (sqlFlag.equals(SQL_UPDATE)) {
             int[] argTypes = new int[fields.length];
-            int primaryType = Types.OTHER;
+            int primaryType = 0;
+            boolean pkFound = false;
             try {
                 int j = 0;
                 for (int i = 0; i < fields.length; i++) {
                     if (EntityTools.isPk(entity.getClass(), fields[i])) { // id 代表主键
                         primaryType = MixUtils.getSqlType(fields[i].getType());
+                        pkFound = true;
                         continue;
                     }
                     argTypes[j] = MixUtils.getSqlType(fields[i].getType());
                     j++;
                 }
+                if (!pkFound) {
+                    throw new GyjdbcException("Primary key field not found in entity " + entity.getClass().getName());
+                }
                 argTypes[argTypes.length - 1] = primaryType;
+            } catch (GyjdbcException e) {
+                throw e;
             } catch (Exception e) {
                 throw new GyjdbcException(e);
             }
@@ -176,13 +189,20 @@ public class SqlMakeTools {
 
         } else if (sqlFlag.equals(SQL_DELETE)) {
             int[] argTypes = new int[1]; // 长度是1
+            boolean pkFound = false;
             try {
                 for (Field field : fields) {
                     if (EntityTools.isPk(entity.getClass(), field)) { // id 代表主键
                         argTypes[0] = MixUtils.getSqlType(field.getType());
+                        pkFound = true;
                         break;
                     }
                 }
+                if (!pkFound) {
+                    throw new GyjdbcException("Primary key field not found in entity " + entity.getClass().getName());
+                }
+            } catch (GyjdbcException e) {
+                throw e;
             } catch (Exception e) {
                 throw new GyjdbcException(e);
             }

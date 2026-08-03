@@ -15,7 +15,7 @@ import java.util.function.ToIntFunction;
 public class DataSourceBind {
 
     enum BindType {
-        byMethod, byAnno, byScope
+        byAnno, byScope
     }
 
     private final BindType bindType;
@@ -34,16 +34,6 @@ public class DataSourceBind {
         this.bindType = bindType;
         this.group = group;
         this.loadBalance = loadBalance;
-    }
-
-    public static DataSourceBind bindKey(String key) {
-        validateKey(key);
-        return new DataSourceBind(key, BindType.byMethod, null, null);
-    }
-
-    public static DataSourceBind bindGroup(String group, Class<? extends LoadBalance> loadBalance) {
-        validateGroup(group, loadBalance);
-        return new DataSourceBind(null, BindType.byMethod, group, loadBalance);
     }
 
     static DataSourceBind bindScopedKey(String key) {
@@ -100,7 +90,7 @@ public class DataSourceBind {
     }
 
     synchronized boolean registerActive(Runnable releaseAction) {
-        if (bindType != BindType.byMethod && !activeRegistered) {
+        if (!activeRegistered) {
             this.releaseAction = releaseAction;
             this.activeRegistered = true;
             return true;
@@ -113,7 +103,9 @@ public class DataSourceBind {
             activeRegistered = false;
             Runnable action = releaseAction;
             releaseAction = null;
-            action.run();
+            if (action != null) {
+                action.run();
+            }
         }
     }
 

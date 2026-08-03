@@ -125,7 +125,7 @@ public class EntityTools {
     }
 
     public static String transferColumnName(String columnName) {
-        if (!columnName.startsWith("`") || !columnName.endsWith("`")) {
+        if (!columnName.startsWith("`") && !columnName.endsWith("`")) {
             return "`" + columnName + "`";
         }
         return columnName;

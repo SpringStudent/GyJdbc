@@ -4053,16 +4053,6 @@ public class CSqlTest {
     }
 
     @Test
-    public void oneShotBindingShouldOverrideScopeOnce() {
-        DataSourceContext.withDataSource("outer", () -> {
-            DataSourceBindHolder.pushDataSource(DataSourceBind.bindKey("secondary"));
-            assertEquals("secondary", routingDataSource.currentKey());
-            assertEquals("outer", routingDataSource.currentKey());
-            return null;
-        });
-    }
-
-    @Test
     public void groupScopeShouldSelectOnceAndRemainStable() {
         routingDataSource.setDataSourceKeysGroup(Collections.singletonMap("slave", "secondary,third"));
 

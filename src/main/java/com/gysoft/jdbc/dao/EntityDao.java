@@ -1,7 +1,6 @@
 package com.gysoft.jdbc.dao;
 
 import com.gysoft.jdbc.bean.*;
-import com.gysoft.jdbc.multi.balance.LoadBalance;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -351,31 +350,6 @@ public interface EntityDao<T, Id extends Serializable> {
      * @param sql sql拼接器
      */
     void drunk(SQL sql);
-
-    /**
-     * 绑定指定key的数据源
-     *
-     * @param bindKey 数据源dataSource
-     * @return EntityDao 当前的dao对象
-     */
-    EntityDao<T, Id> bindKey(String bindKey);
-
-    /**
-     * 绑定指定组的数据源
-     *
-     * @param group       指定的数据源组
-     * @param loadBalance 负载均衡策略
-     * @return EntityDao 当前的dao对象
-     */
-    EntityDao<T, Id> bindGroup(String group, Class<? extends LoadBalance> loadBalance);
-
-    /**
-     * 绑定指定组的数据源
-     *
-     * @param group 指定的数据源组
-     * @return EntityDao 当前的dao对象
-     */
-    EntityDao<T, Id> bindGroup(String group);
 
     default Optional<T> queryOneOpt(Id id) {
         try {

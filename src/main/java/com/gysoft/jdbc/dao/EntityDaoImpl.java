@@ -2,10 +2,6 @@ package com.gysoft.jdbc.dao;
 
 
 import com.gysoft.jdbc.bean.*;
-import com.gysoft.jdbc.multi.DataSourceBind;
-import com.gysoft.jdbc.multi.DataSourceBindHolder;
-import com.gysoft.jdbc.multi.balance.LoadBalance;
-import com.gysoft.jdbc.multi.balance.RoundRobinLoadBalance;
 import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.MixUtils;
 import com.gysoft.jdbc.tools.SqlMakeTools;
@@ -545,23 +541,6 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         } else {
             throw new GyjdbcException("method drunk only support `DROP` AND `TRUNCATE`");
         }
-    }
-
-    @Override
-    public EntityDaoImpl<T, Id> bindKey(String bindKey) {
-        DataSourceBindHolder.pushDataSource(DataSourceBind.bindKey(bindKey));
-        return this;
-    }
-
-    @Override
-    public EntityDao<T, Id> bindGroup(String group, Class<? extends LoadBalance> loadBalance) {
-        DataSourceBindHolder.pushDataSource(DataSourceBind.bindGroup(group, loadBalance));
-        return this;
-    }
-
-    @Override
-    public EntityDao<T, Id> bindGroup(String group) {
-        return bindGroup(group, RoundRobinLoadBalance.class);
     }
 
 }

@@ -645,25 +645,8 @@
  ### Binding at the DAO Call Level
  
  ```java
- import com.gysoft.jdbc.multi.balance.RoundRobinLoadBalance;
- 
- // Execute query against a data source in the slave group
- List<TbUser> users = tbUserDao
-         .bindKey("secondary")
-         .queryWithCriteria(new Criteria().in(TbUser::getName, Arrays.asList("zhouning", "yinhw")));
- 
- // Use round-robin strategy from the master group for an update
- tbUserDao
-         .bindGroup("master", RoundRobinLoadBalance.class)
-         .updateWithSql(
-                 new SQL()
-                         .update(TbUser.class)
-                         .set(TbUser::getRealName, "Yuanlin")
-                         .where(TbUser::getName, "Smith")
-         );
- ```
 
- `bindKey` and `bindGroup` apply to the next data-source lookup. For paging, batching, and other DAO methods that access the database more than once, use the scoped API so the complete operation stays on one data source:
+use the scoped API so the complete operation stays on one data source:
 
  ```java
  import com.gysoft.jdbc.multi.DataSourceContext;
