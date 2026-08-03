@@ -549,13 +549,13 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public EntityDaoImpl<T, Id> bindKey(String bindKey) {
-        DataSourceBindHolder.setDataSource(DataSourceBind.bindKey(bindKey));
+        DataSourceBindHolder.pushDataSource(DataSourceBind.bindKey(bindKey));
         return this;
     }
 
     @Override
     public EntityDao<T, Id> bindGroup(String group, Class<? extends LoadBalance> loadBalance) {
-        DataSourceBindHolder.setDataSource(DataSourceBind.bindGroup(group, loadBalance));
+        DataSourceBindHolder.pushDataSource(DataSourceBind.bindGroup(group, loadBalance));
         return this;
     }
 

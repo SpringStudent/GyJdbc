@@ -3720,7 +3720,7 @@ public class CSqlTest {
     @Test
     public void oneShotBindingShouldOverrideScopeOnce() {
         DataSourceContext.withDataSource("outer", () -> {
-            DataSourceBindHolder.setDataSource(DataSourceBind.bindKey("secondary"));
+            DataSourceBindHolder.pushDataSource(DataSourceBind.bindKey("secondary"));
             assertEquals("secondary", routingDataSource.currentKey());
             assertEquals("outer", routingDataSource.currentKey());
             return null;

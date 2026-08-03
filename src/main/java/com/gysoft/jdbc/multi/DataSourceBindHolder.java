@@ -13,23 +13,20 @@ public abstract class DataSourceBindHolder {
     private static final ThreadLocal<DataSourceBind> nextDataSource = new ThreadLocal<>();
     private static final ThreadLocal<Deque<DataSourceBind>> scopedDataSources = new ThreadLocal<>();
 
-    public static void setDataSource(DataSourceBind dataSourceBind) {
-        if (dataSourceBind == null) {
-            throw new GyjdbcException("Data source binding cannot be null");
-        }
-        nextDataSource.set(dataSourceBind);
-    }
-
     public static void pushDataSource(DataSourceBind dataSourceBind) {
         if (dataSourceBind == null) {
             throw new GyjdbcException("Data source binding cannot be null");
         }
-        Deque<DataSourceBind> stack = scopedDataSources.get();
-        if (stack == null) {
-            stack = new ArrayDeque<>();
-            scopedDataSources.set(stack);
+        if (DataSourceBind.BindType.byMethod.equals(dataSourceBind.getBindType())) {
+            nextDataSource.set(dataSourceBind);
+        } else {
+            Deque<DataSourceBind> stack = scopedDataSources.get();
+            if (stack == null) {
+                stack = new ArrayDeque<>();
+                scopedDataSources.set(stack);
+            }
+            stack.push(dataSourceBind);
         }
-        stack.push(dataSourceBind);
     }
 
     public static void popDataSource() {
