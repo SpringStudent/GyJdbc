@@ -34,7 +34,7 @@ GyJdbc 很适合：
 <dependency>
     <groupId>io.github.springstudent</groupId>
     <artifactId>GyJdbc</artifactId>
-    <version>12.0.0.RELEASE</version>
+    <version>13.0.0.RELEASE</version>
 </dependency>
 ```
 
