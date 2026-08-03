@@ -504,6 +504,212 @@ public class CSqlTest {
         assertArrayEquals(new Object[]{"A", 1, 2, "root", true}, pair.getSecond());
     }
 
+    /**
+     * 综合性测试：覆盖 AbstractCriteria / AuxiliaryOperation 所有条件拼接路径
+     * <p>
+     * 涵盖 where / and / or / 各类运算符 / like家族 / in/notIn / exists/notExists /
+     * 嵌套条件组 / Where/WhereParam 构建器 / 条件式条件 / IfAbsent 全变体 /
+     * groupBy / having / orderBy / limit 等完整链式组合。
+     */
+    @Test
+    public void testAllConditionTypes() {
+        // ── 第一部分：基本运算符 ──
+        Criteria criteria = new Criteria()
+                // where 基本
+                .where("status", 1)
+                // and 等值 + 自定义操作符
+                .and("type", "active")
+                .and("score", ">", 60)
+                // or
+                .or("priority", "high")
+                .or("level", ">", 5)
+                // 元组比较 (多列)
+                .where(new String[]{"col_a", "col_b"}, 100)
+                // 比较运算
+                .gt("age", 18)
+                .gte("rank", 3)
+                .lt("max_retry", 10)
+                .let("capacity", 200)
+                .notEqual("flag", "deleted")
+                // 区间
+                .betweenAnd("create_time", "2020-01-01", "2020-12-31")
+                // NULL 判断
+                .isNull("optional_field")
+                .isNotNull("required_field")
+
+                // ── 第二部分：LIKE 家族 ──
+                .like("name", "test")
+                .likeR("code", "GY")
+                .likeL("email", "@example.com")
+                .notLike("remark", "spam")
+                .startsWith("prefix_col", "pre")
+                .endsWith("suffix_col", "suf")
+                // OR LIKE
+                .orLike("or_like_key", "or_pat")
+                .orNotLike("or_not_like_key", "bad")
+                .orStartsWith("or_sw_key", "ORS")
+                .orEndsWith("or_ew_key", "ORE")
+
+                // ── 第三部分：IN / NOT IN（集合 & 子查询）──
+                .in("category", Arrays.asList("A", "B", "C"))
+                .notIn("excluded_type", Arrays.asList("X", "Y"))
+                .in("sub_id", new SQL().select("id").from("ref_table").where("enabled", 1))
+                .notIn("bad_id", new SQL().select("id").from("blacklist"))
+
+                // ── 第四部分：EXISTS / NOT EXISTS ──
+                .exists(new SQL().select("1").from("sub_a").where("parent_id", "main.id"))
+                .notExists(new SQL().select("1").from("sub_b").where("ref_id", "main.id"))
+
+                // ── 第五部分：嵌套条件组 (andCriteria / orCriteria) ──
+                .andCriteria(new Criteria()
+                        .where("nested_type", "special")
+                        .or("nested_type", "vip"))
+                .orCriteria(c -> c.where("admin", true).and("verified", true))
+                // 条件式 andCriteria — boolean
+                .andCriteria(c -> c.where("cond_true_col", 1), true)
+                .andCriteria(c -> c.where("cond_false_col", 2), false)
+                // 条件式 orCriteria — BooleanSupplier
+                .orCriteria(c -> c.where("or_cond_true", "yes"), () -> true)
+                .orCriteria(c -> c.where("or_cond_false", "no"), () -> false)
+
+                // ── 第六部分：Where / WhereParam 构建器 ──
+                .and(Where.where("chain_a").equal("va").and("chain_b").gt(50))
+                .or(Where.where("or_chain").like("or_val"))
+                .and(Opt.AND,
+                        WhereParam.where("wp_a").equal("eva"),
+                        WhereParam.where("wp_b").gt(200))
+                .or(Opt.OR,
+                        WhereParam.where("wp_c").like("lval"),
+                        WhereParam.where("wp_d").notEqual("skip"))
+                .andWhere(Where.where("andr").equal(1).and("andr2").lt(100))
+                .orWhere(Where.where("orr").equal(2))
+
+                // ── 第七部分：IfAbsent 系列 — 有值应保留 ──
+                .whereIfAbsent("if_name", "zhou")
+                .whereIfAbsent("if_skip", null)
+                .andIfAbsent("if_and_val", "keep")
+                .andIfAbsent("if_and_skip", null)
+                .orIfAbsent("if_or_val", "keep_or")
+                .orIfAbsent("if_or_skip", null)
+                .likeIfAbsent("if_like", "pat")
+                .likeIfAbsent("if_like_skip", null)
+                .inIfAbsent("if_in", Arrays.asList(10, 20))
+                .inIfAbsent("if_in_skip", (Collection<?>) null)
+                .notInIfAbsent("if_ni", Arrays.asList(999))
+                .notInIfAbsent("if_ni_skip", Arrays.asList())
+                .notEqualIfAbsent("if_ne", "non-null")
+                .notEqualIfAbsent("if_ne_skip", null)
+                .betweenAndIfAbsent("if_bw", "lo", "hi")
+                .betweenAndIfAbsent("if_bw_skip", null, "hi")
+                .betweenAndIfAbsent("if_bw_skip2", "lo", null)
+                .gtIfAbsent("if_gt", 100)
+                .gtIfAbsent("if_gt_skip", (Object) null)
+                .gteIfAbsent("if_gte", 30)
+                .ltIfAbsent("if_lt", 500)
+                .letIfAbsent("if_let", 60)
+                .likeLIfAbsent("if_ll", "prefix_")
+                .likeRIfAbsent("if_lr", "_suffix")
+                .notLikeIfAbsent("if_nl", "badword")
+                .startsWithIfAbsent("if_sw", "SW_")
+                .endsWithIfAbsent("if_ew", "_EW")
+                .andOptIfAbsent("if_and_opt", ">=", 80)
+                .andOptIfAbsent("if_and_opt_skip", ">=", null)
+                .orOptIfAbsent("if_or_opt", "<>", "banned")
+                .orOptIfAbsent("if_or_opt_skip", "LIKE", null)
+                .orLikeIfAbsent("if_or_like", "or_pat_val")
+                .orLikeIfAbsent("if_or_like_skip", null)
+                .orNotLikeIfAbsent("if_or_nl", "or_spam")
+                .orStartsWithIfAbsent("if_or_sw", "ORS_")
+                .orEndsWithIfAbsent("if_or_ew", "_ORE")
+                .orBetweenAndIfAbsent("if_or_bw", "or_lo", "or_hi")
+
+                // ── 第八部分：Lambda IfAbsent ──
+                .whereIfAbsent(Role::getName, "roleName")
+                .likeIfAbsent(Role::getAuths, "role_pat")
+                .inIfAbsent(Role::getAuths, Arrays.asList("admin", "user"))
+                .gtIfAbsent(Token::getSize, 50)
+                .ltIfAbsent(Token::getSize, 300)
+                .notEqualIfAbsent(Role::getName, "forbiddenName")
+                .notLikeIfAbsent(Role::getAuths, "spamRole")
+                .startsWithIfAbsent(Role::getName, "ROLE_")
+                .endsWithIfAbsent(Role::getName, "_END")
+                .andIfAbsent(Role::getAuths, "authVal")
+                .orIfAbsent(Role::getName, "orRole")
+
+                // ── 第九部分：分组 / 排序 / 分页 ──
+                .groupBy("dept_id", "category")
+                .having(count("id"), ">", 2)
+                .orderBy(new Sort("create_time", "DESC"), new Sort("id", "ASC"))
+                .limit(5, 10);
+
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM main_table"));
+        String sql = pair.getFirst();
+        Object[] args = pair.getSecond();
+
+        // ── 断言：精确校验最终 SQL 字符串与参数数组顺序 ──
+        assertEquals(
+            "SELECT * FROM main_table WHERE status = ? AND type = ? AND score > ?"
+                + " OR priority = ? OR level > ? AND (col_a,col_b) = ? AND age > ?"
+                + " AND rank >= ? AND max_retry < ? AND capacity <= ? AND flag <> ?"
+                + " AND create_time BETWEEN ? AND ?  AND optional_field IS NULL"
+                + " AND required_field IS NOT NULL AND name LIKE ? AND code LIKE ?"
+                + " AND email LIKE ? AND remark NOT LIKE ? AND prefix_col LIKE ?"
+                + " AND suffix_col LIKE ? OR or_like_key LIKE ? OR or_not_like_key NOT LIKE ?"
+                + " OR or_sw_key LIKE ? OR or_ew_key LIKE ? AND category IN(?,?,?)"
+                + " AND excluded_type NOT IN(?,?) AND sub_id IN(SELECT id FROM ref_table"
+                + " WHERE enabled = ?) AND bad_id NOT IN(SELECT id FROM blacklist)"
+                + " AND EXISTS (SELECT 1 FROM sub_a WHERE parent_id = ?)"
+                + " AND NOT EXISTS (SELECT 1 FROM sub_b WHERE ref_id = ?)"
+                + " AND (nested_type = ? OR nested_type = ?) OR (admin = ? AND verified = ?)"
+                + " AND (cond_true_col = ?) OR (or_cond_true = ?)"
+                + " AND chain_a = ? AND chain_b > ? OR or_chain LIKE ?"
+                + " AND wp_a = ? AND wp_b > ? OR wp_c LIKE ? OR wp_d <> ?"
+                + " AND (andr = ? AND andr2 < ?) OR (orr = ?)"
+                + " AND if_name = ? AND if_and_val = ? OR if_or_val = ?"
+                + " AND if_like LIKE ? AND if_in IN(?,?) AND if_ni NOT IN(?)"
+                + " AND if_ne <> ? AND if_bw BETWEEN ? AND ?  AND if_gt > ?"
+                + " AND if_gte >= ? AND if_lt < ? AND if_let <= ? AND if_ll LIKE ?"
+                + " AND if_lr LIKE ? AND if_nl NOT LIKE ? AND if_sw LIKE ?"
+                + " AND if_ew LIKE ? AND if_and_opt >= ? OR if_or_opt <> ?"
+                + " OR if_or_like LIKE ? OR if_or_nl NOT LIKE ? OR if_or_sw LIKE ?"
+                + " OR if_or_ew LIKE ? OR if_or_bw BETWEEN ? AND ?  AND `name` = ?"
+                + " AND `auths` LIKE ? AND `auths` IN(?,?) AND `size` > ?"
+                + " AND `size` < ? AND `name` <> ? AND `auths` NOT LIKE ?"
+                + " AND `name` LIKE ? AND `name` LIKE ? AND `auths` = ? OR `name` = ?"
+                + " GROUP BY dept_id,category HAVING COUNT(id) > ?"
+                + " ORDER BY create_time DESC,id ASC LIMIT ?, ?",
+            sql);
+
+        assertArrayEquals(new Object[]{
+            // Part 1: basic operators (0-12)
+            1, "active", 60, "high", 5, 100, 18, 3, 10, 200, "deleted", "2020-01-01", "2020-12-31",
+            // Part 2: LIKE family (13-22) — like/likeR/likeL/notLike/startsWith/endsWith + OR variants
+            "%test%", "GY%", "%@example.com", "%spam%", "pre%", "%suf",
+            "%or_pat%", "%bad%", "ORS%", "%ORE",
+            // Part 3: IN/NOT IN collections (23-29)
+            "A", "B", "C", "X", "Y",
+            // Part 3b: IN subquery param (28) — enabled=1
+            1,
+            // Part 4: EXISTS/NOT EXISTS subquery params (29-30)
+            "main.id", "main.id",
+            // Part 5: nested AND group (31-34)
+            "special", "vip", true, true,
+            // Part 5b: conditional criteria params (35-36)
+            1, "yes",
+            // Part 6: Where builder params (37-46)
+            "va", 50, "%or_val%", "eva", 200, "%lval%", "skip", 1, 100, 2,
+            // Part 7: IfAbsent — kept params (47-73)
+            "zhou", "keep", "keep_or", "%pat%", 10, 20, 999, "non-null", "lo", "hi",
+            100, 30, 500, 60, "%prefix_", "_suffix%", "%badword%", "SW_%", "%_EW",
+            80, "banned", "%or_pat_val%", "%or_spam%", "ORS_%", "%_ORE", "or_lo", "or_hi",
+            // Part 8: Lambda IfAbsent — kept params (74-85)
+            "roleName", "%role_pat%", "admin", "user", 50, 300,
+            "forbiddenName", "%spamRole%", "ROLE_%", "%_END", "authVal", "orRole",
+            // Part 9: HAVING + LIMIT (86-88)
+            2, 5, 10
+        }, args);
+    }
+
     @Test
     public void sqlShouldBuildJoinSqlAndParams() {
         SQL sql = new SQL()
@@ -3666,6 +3872,135 @@ public class CSqlTest {
                 "SELECT * FROM(SELECT a.* FROM( (SELECT b.* FROM(SELECT c.* FROM(SELECT d.* FROM(SELECT e.* FROM nestTable)  WHERE key = ?) )  WHERE keyLike LIKE ?) UNION ALL (SELECT f.* FROM f WHERE notNull IS NOT NULL))  WHERE condition = ?)",
                 pair.getFirst());
         assertArrayEquals(new Object[]{"k1","%Lie%","1"}, pair.getSecond());
+    }
+
+    /**
+     * 综合性测试：覆盖 UNION 子查询、全部 JOIN 类型、
+     * FieldReference（列引用）、ValueReference（值引用）的组合查询。
+     */
+    @Test
+    public void sqlShouldBuildComplexQueryWithUnionJoinsAndReferences() {
+        // ── 构建 UNION 子查询（供 FROM 包装） ──
+        SQL unionSub = new SQL()
+                .select("id", "name", "score")
+                .from("active_member")
+                .where("status", "active")
+                .union()
+                .select("id", "name", "score")
+                .from("vip_member")
+                .where("level", ">=", 3);
+
+        // ── 构建主查询：联合所有 JOIN / FieldReference / ValueReference ──
+        SQL sql = new SQL()
+                // SELECT 含 ValueReference 字面值
+                .select(
+                        "u.id",
+                        ValueReference.newValueRef("head_title"),
+                        "o.order_no",
+                        "p.last_paid",
+                        FuncBuilder.countAs("o.id").as("order_count")
+                )
+                // FROM 包装 UNION 子查询
+                .from(unionSub, "u")
+                // INNER JOIN + Consumer 模式
+                .innerJoin("order", "o", c -> c
+                        .on("u.id", "o.member_id")
+                        .and("o.deleted", 0))
+                // LEFT JOIN + Joins.joinWith 工厂
+                .leftJoin(Joins.joinWith("address").as("a")
+                        .on("u.id", "a.member_id"))
+                // RIGHT JOIN + SQL 子查询作连接表
+                .rightJoin(Joins.joinWith(new SQL()
+                        .select("member_id", FuncBuilder.max("paid_at").toString() + " AS last_paid")
+                        .from("payment")
+                        .where("amount", ">", 0)
+                        .groupBy("member_id"))
+                        .as("p").on("p.member_id", "u.id"))
+                // NATURE JOIN（逗号连接）
+                .natureJoin("member_extra", "me")
+                // WHERE 含 FieldReference（列对列比较）
+                .where("u.type", "<>", "banned")
+                .and("o.amount", ">", new SQL()
+                        .select(FuncBuilder.avg("amount"))
+                        .from("order"))
+                // FieldReference: 列 = 列
+                .gt("u.score", FieldReference.newFieldRef("u.baseline"))
+                // 嵌套条件组
+                .andCriteria(new Criteria()
+                        .where("a.city", "Shanghai")
+                        .or("a.city", "Beijing"))
+                // EXISTS 子查询
+                .exists(new SQL().select("1").from("member_log")
+                        .where("member_id", "u.id"))
+                .groupBy("u.id")
+                .having(FuncBuilder.count("o.id"), ">", 1)
+                .orderBy(Sort.asc("u.id"))
+                .limit(5, 10);
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        String sqlStr = pair.getFirst();
+        Object[] params = pair.getSecond();
+
+        // ── 断言：精确 SQL 字符串 ──
+        assertEquals(
+            "SELECT u.id, ?, o.order_no, p.last_paid, COUNT(o.id) AS order_count"
+                + " FROM( ( (SELECT id, name, score FROM active_member WHERE status = ?)"
+                + " UNION (SELECT id, name, score FROM vip_member WHERE level >= ?)) u )"
+                + "  INNER JOIN order o ON u.id = o.member_id AND o.deleted = ?"
+                + " LEFT JOIN address a ON u.id = a.member_id"
+                + " RIGHT JOIN (SELECT member_id, MAX(paid_at) AS last_paid FROM payment"
+                + " WHERE amount > ? GROUP BY member_id) p ON p.member_id = u.id"
+                + ", member_extra me"
+                + " WHERE u.type <> ?"
+                + " AND o.amount >(SELECT AVG(amount) FROM order)"
+                + " AND u.score > u.baseline"
+                + " AND (a.city = ? OR a.city = ?)"
+                + " AND EXISTS (SELECT 1 FROM member_log WHERE member_id = ?)"
+                + " GROUP BY u.id HAVING COUNT(o.id) > ?"
+                + " ORDER BY u.id ASC LIMIT ?, ?",
+            sqlStr);
+
+        // ── 断言：参数数组精确顺序 ──
+        // [0]  ValueReference 字面值
+        // [1]  UNION 第一部分 WHERE status = ?
+        // [2]  UNION 第二部分 WHERE level >= ?
+        // [3]  INNER JOIN ON o.deleted = ?
+        // [4]  RIGHT JOIN 子查询 WHERE amount > ?
+        // [5]  WHERE u.type <> ?
+        // [6]  andCriteria a.city = ?
+        // [7]  andCriteria a.city = ? (OR)
+        // [8]  EXISTS 子查询 member_id = ?
+        // [9]  HAVING COUNT(o.id) > ?
+        // [10] LIMIT offset
+        // [11] LIMIT size
+        assertArrayEquals(new Object[]{
+            "head_title", "active", 3, 0, 0, "banned", "Shanghai", "Beijing", "u.id", 1, 5, 10
+        }, params);
+
+        // ── 语义断言：确认关键 SQL 片段的拼接正确性 ──
+        // UNION
+        assertTrue("UNION keyword missing",           sqlStr.contains(" UNION "));
+        // JOIN 类型
+        assertTrue("INNER JOIN missing",              sqlStr.contains("INNER JOIN"));
+        assertTrue("LEFT JOIN missing",               sqlStr.contains("LEFT JOIN"));
+        assertTrue("RIGHT JOIN missing",              sqlStr.contains("RIGHT JOIN"));
+        // NATURE JOIN → 逗号连接表
+        assertTrue("comma-join missing",              sqlStr.contains(", member_extra me"));
+        // FieldReference: 列名直接拼接（非 ? 占位符）
+        assertTrue("baseline FieldRef missing",       sqlStr.contains("u.score > u.baseline"));
+        // ValueReference: ? 占位符注入
+        assertTrue("ValueRef ? missing",              sqlStr.contains("?, o.order_no"));
+        // FROM 子查询括号包裹
+        assertTrue("FROM-subquery wrapping wrong",    sqlStr.contains("FROM( ( (SELECT"));
+        // EXISTS 子查询
+        assertTrue("EXISTS missing",                  sqlStr.contains("EXISTS ("));
+        // GROUP BY / HAVING / ORDER BY / LIMIT
+        assertTrue("GROUP BY missing",                sqlStr.contains("GROUP BY u.id"));
+        assertTrue("HAVING missing",                  sqlStr.contains("HAVING COUNT(o.id) > ?"));
+        assertTrue("ORDER BY missing",                sqlStr.contains("ORDER BY u.id ASC"));
+        assertTrue("LIMIT missing",                   sqlStr.contains("LIMIT ?, ?"));
+        // WHERE 子查询（无参数）
+        assertTrue("amount > subquery missing",       sqlStr.contains("o.amount >(SELECT AVG(amount) FROM order)"));
     }
 
     private final TestRoutingDataSource routingDataSource = routingDataSource("primary");
