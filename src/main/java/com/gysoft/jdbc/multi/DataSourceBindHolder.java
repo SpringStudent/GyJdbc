@@ -41,7 +41,7 @@ public abstract class DataSourceBindHolder {
         }
     }
 
-    static DataSourceBind currentDataSource() {
+    public static DataSourceBind currentDataSource() {
         DataSourceBind oneShot = nextDataSource.get();
         if (oneShot != null) {
             nextDataSource.remove();
