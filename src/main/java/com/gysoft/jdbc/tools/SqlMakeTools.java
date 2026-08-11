@@ -505,12 +505,15 @@ public class SqlMakeTools {
                 }
             }
             sql.setLength(sql.length() - 2);
-            sql.append(" FROM ");
-            if (StringUtils.isNotEmpty(sqlObj.getTbName())) {
-                sql.append(sqlObj.getTbName());
-            }
-            if (StringUtils.isNotEmpty(sqlObj.getAliasName())) {
-                sql.append(" " + sqlObj.getAliasName());
+            // 存在 FROM 来源(表名或 from 子查询)才拼接 FROM,支持 SELECT 1 这类无表查询(MySQL 合法语法)
+            if (StringUtils.isNotEmpty(sqlObj.getTbName()) || CollectionUtils.isNotEmpty(sqlObj.getSubSqls())) {
+                sql.append(" FROM ");
+                if (StringUtils.isNotEmpty(sqlObj.getTbName())) {
+                    sql.append(sqlObj.getTbName());
+                }
+                if (StringUtils.isNotEmpty(sqlObj.getAliasName())) {
+                    sql.append(" " + sqlObj.getAliasName());
+                }
             }
         } else if (sqlObj.getSqlType().equals(EntityDao.SQL_DELETE)) {
             sql.append("DELETE ");

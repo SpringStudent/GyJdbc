@@ -257,6 +257,24 @@ public class CSqlTest {
     }
 
     @Test
+    public void sqlSelectShouldSupportNoFrom() {
+        // 无 FROM 的 SELECT 应生成合法 SQL(MySQL 支持 SELECT 1)
+        SQL sql = new SQL().select("1");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT 1", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void unionShouldSupportNoFrom() {
+        // 无 FROM 的 UNION 应生成合法 SQL,而非 (SELECT 1 FROM ) UNION (SELECT 2 FROM )
+        SQL sql = new SQL().select("1").union().select("2");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("(SELECT 1) UNION (SELECT 2)", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
     public void testSqlSelectAll() {
         SQL sql = new SQL().select("*").from("table_1123")
                 .and(Where.where("a").equal(1).and("b").equal(2));
