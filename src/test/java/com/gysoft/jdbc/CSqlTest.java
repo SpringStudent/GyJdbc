@@ -1,11 +1,13 @@
 package com.gysoft.jdbc;
 
+import com.gysoft.jdbc.annotation.Column;
 import com.gysoft.jdbc.bean.*;
 import com.gysoft.jdbc.dao.EntityDaoImpl;
 import com.gysoft.jdbc.multi.*;
 import com.gysoft.jdbc.multi.balance.LeastActiveLoadBalance;
 import com.gysoft.jdbc.multi.balance.LoadBalance;
 import com.gysoft.jdbc.multi.balance.RoundRobinLoadBalance;
+import com.gysoft.jdbc.tools.EntityTools;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.junit.After;
 import org.junit.Test;
@@ -15,6 +17,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
@@ -523,8 +526,8 @@ public class CSqlTest {
                 // or
                 .or("priority", "high")
                 .or("level", ">", 5)
-                // 元组比较 (多列)
-                .where(new String[]{"col_a", "col_b"}, 100)
+                // 元组比较 (多列) —— 值必须为数组，生成 (a,b) = (?,?)
+                .where(new String[]{"col_a", "col_b"}, new Object[]{100, 200})
                 // 比较运算
                 .gt("age", 18)
                 .gte("rank", 3)
@@ -649,7 +652,7 @@ public class CSqlTest {
         // ── 断言：精确校验最终 SQL 字符串与参数数组顺序 ──
         assertEquals(
             "SELECT * FROM main_table WHERE status = ? AND type = ? AND score > ?"
-                + " OR priority = ? OR level > ? AND (col_a,col_b) = ? AND age > ?"
+                + " OR priority = ? OR level > ? AND (col_a,col_b) = (?,?) AND age > ?"
                 + " AND rank >= ? AND max_retry < ? AND capacity <= ? AND flag <> ?"
                 + " AND create_time BETWEEN ? AND ?  AND optional_field IS NULL"
                 + " AND required_field IS NOT NULL AND name LIKE ? AND code LIKE ?"
@@ -682,7 +685,7 @@ public class CSqlTest {
 
         assertArrayEquals(new Object[]{
             // Part 1: basic operators (0-12)
-            1, "active", 60, "high", 5, 100, 18, 3, 10, 200, "deleted", "2020-01-01", "2020-12-31",
+            1, "active", 60, "high", 5, 100, 200, 18, 3, 10, 200, "deleted", "2020-01-01", "2020-12-31",
             // Part 2: LIKE family (13-22) — like/likeR/likeL/notLike/startsWith/endsWith + OR variants
             "%test%", "GY%", "%@example.com", "%spam%", "pre%", "%suf",
             "%or_pat%", "%bad%", "ORS%", "%ORE",
@@ -2476,21 +2479,36 @@ public class CSqlTest {
     }
 
     @Test
-    public void whereWithStringArrayShouldBuildInCondition() {
-        Criteria criteria = new Criteria()
-                .where(new String[]{"a", "b"}, 1);
+    public void limitZeroShouldBuildNoLimitClause() {
+        // 单参 limit(0) 表示不限制，不应生成 LIMIT 0（否则返回空集）
+        Criteria criteria = new Criteria().limit(0);
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
-        assertEquals("SELECT * FROM tb_user WHERE (a,b) = ?", pair.getFirst());
-        assertArrayEquals(new Object[]{1}, pair.getSecond());
+        assertEquals("SELECT * FROM tb_user", pair.getFirst());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
+    }
+
+    @Test
+    public void whereWithStringArrayShouldBuildTupleComparison() {
+        Criteria criteria = new Criteria()
+                .where(new String[]{"a", "b"}, new Object[]{1, 2});
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
+        assertEquals("SELECT * FROM tb_user WHERE (a,b) = (?,?)", pair.getFirst());
+        assertArrayEquals(new Object[]{1, 2}, pair.getSecond());
     }
 
     @Test
     public void whereWithStringArrayAndOptShouldBuildCorrectSql() {
         Criteria criteria = new Criteria()
-                .where(new String[]{"a", "b"}, ">", 0);
+                .where(new String[]{"a", "b"}, ">", new Object[]{0, 1});
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
-        assertEquals("SELECT * FROM tb_user WHERE (a,b) > ?", pair.getFirst());
-        assertArrayEquals(new Object[]{0}, pair.getSecond());
+        assertEquals("SELECT * FROM tb_user WHERE (a,b) > (?,?)", pair.getFirst());
+        assertArrayEquals(new Object[]{0, 1}, pair.getSecond());
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void whereWithStringArrayAndScalarValueShouldReject() {
+        // 多列元组比较要求数组/集合或 SQL 子查询，单值会产生非法 SQL，应直接拒绝
+        new Criteria().where(new String[]{"a", "b"}, 1);
     }
 
     @Test
@@ -2500,6 +2518,25 @@ public class CSqlTest {
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user"));
         assertEquals("SELECT * FROM tb_user WHERE id = ?", pair.getFirst());
         assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void columnAnnotationWithoutNameShouldFallbackToFieldName() throws Exception {
+        // @Column 未指定 name 时应回退使用字段名，避免生成空列名
+        Field nickField = ColumnNameEntity.class.getDeclaredField("nickName");
+        assertEquals("nickName", EntityTools.getColumnName(nickField));
+        // 指定 name 时使用注解值
+        Field realField = ColumnNameEntity.class.getDeclaredField("realName");
+        assertEquals("real_name", EntityTools.getColumnName(realField));
+    }
+
+    /** 测试用实体：@Column 带/不带 name 的两种情形 */
+    private static class ColumnNameEntity {
+        @Column
+        private String nickName;
+
+        @Column(name = "real_name")
+        private String realName;
     }
 
     // ==================== countWithCriteria / countWithSql ====================

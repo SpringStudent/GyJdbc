@@ -118,7 +118,8 @@ public class EntityTools {
     private static String doGetColumnName(Field field) {
         String columnName = field.getName();
         Column anno = field.getAnnotation(Column.class);
-        if (anno != null) {
+        // @Column 存在但未指定 name 时，回退使用字段名，避免生成空列名
+        if (anno != null && StringUtils.isNotBlank(anno.name())) {
             columnName = anno.name();
         }
         return columnName;

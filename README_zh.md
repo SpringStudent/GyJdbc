@@ -1,10 +1,30 @@
-[English](README.md) | [中文](README_zh.md)
+[English](README.md) | [**中文**](README_zh.md)
 
 # GyJdbc
+
+<p align="center">
+  <img src="https://img.shields.io/badge/License-Apache%202.0-blue" alt="Apache 2.0" />
+  <img src="https://img.shields.io/badge/Java-8%2B-orange" alt="Java 8+" />
+  <img src="https://img.shields.io/badge/Spring%20JDBC-5.3.x-brightgreen" alt="Spring JDBC 5.3.x" />
+</p>
 
 > 基于 Spring JdbcTemplate 的轻量级持久层框架：保留 SQL 的表达力，减少 DAO 层样板代码，让 Java 项目更快写出清晰、可维护的数据访问逻辑。
 
 GyJdbc 适合那些不想引入重型 ORM、又不想反复手写 DAO 和 SQL 拼接代码的项目。它在 JdbcTemplate 之上提供了类 JPA 的实体 DAO、链式 SQL 构建器、Lambda 字段引用、Criteria 条件拼装，以及多数据源绑定和负载均衡能力。
+
+## 目录
+
+- [为什么选择 GyJdbc](#为什么选择-gyjdbc)
+- [适用场景](#适用场景)
+- [安装](#安装)
+- [快速开始](#快速开始)
+- [EntityDao 常用能力](#entitydao-常用能力)
+- [Criteria：更舒服地拼动态条件](#criteria更舒服地拼动态条件)
+- [SQL：像写 SQL 一样组合复杂语句](#sql像写-sql-一样组合复杂语句)
+- [多数据源支持](#多数据源支持)
+- [更多示例](#更多示例)
+- [项目定位](#项目定位)
+- [License](#license)
 
 ## 为什么选择 GyJdbc
 
@@ -38,7 +58,7 @@ GyJdbc 很适合：
 </dependency>
 ```
 
-当前版本基于 Java 8 和 Spring JDBC 4.3.x。
+当前版本基于 Java 8+ 和 Spring JDBC 5.3.x。
 
 ## 快速开始
 
@@ -670,6 +690,8 @@ DataSourceContext.withDataSource("secondary", transactionalService::execute);
 
 事务已经获取连接后不能通过切换路由 key 改变该事务使用的物理数据源。`@BindPoint` 切面会优先于事务切面执行，但跨数据源原子事务仍需要独立的分布式事务方案。
 
+> **注意：路由绑定只对当前线程生效**。`@BindPoint` / `DataSourceContext.withDataSource` 的绑定存放在线程局部变量中，**不会传播到子线程**。在 `@Async`、`CompletableFuture`、线程池任务等异步场景里，子线程无法感知外层绑定，其中的数据库操作会回退到默认数据源（`defaultLookUpKey`）。如需在异步任务中指定数据源，请在子线程内部显式绑定——把 key/group 作为参数传入后，在子线程内调用 `DataSourceContext.withDataSource(...)`。
+
 数据源选择优先级：
 
 ```text
@@ -678,7 +700,7 @@ EntityDao.bindXxx > 方法上的 @BindPoint > 类上的 @BindPoint > JdbcRouting
 
 ## 更多示例
 
-- SQL 语法测试：[CSqlTest.java](https://github.com/hope-for/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/CSqlTest.java)
+- SQL 语法测试：[CSqlTest.java](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/CSqlTest.java)
 - 使用示例项目：
   - [remote-desktop-control](https://github.com/SpringStudent/remote-desktop-control)
   - [webrtc-meetings](https://github.com/SpringStudent/webrtc-meetings)

@@ -47,19 +47,22 @@ public class SpringJdbc implements ISpringJdbc {
     @Override
     public String insertForId(final String sql, final Object[] args) {
         String id = jdbcTemplate.execute((ConnectionCallback<String>) con -> {
-            PreparedStatement ps = (PreparedStatement) con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);// 传入参数：Statement.RETURN_GENERATED_KEYS
-            if (args != null) {
-                for (int i = 1; i <= args.length; i++) {
-                    Object arg = args[i - 1];
-                    setParamater(ps, i, arg);
+            // try-with-resources 确保 PreparedStatement / ResultSet 被关闭，避免连接池下资源泄漏
+            try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                if (args != null) {
+                    for (int i = 1; i <= args.length; i++) {
+                        Object arg = args[i - 1];
+                        setParamater(ps, i, arg);
+                    }
                 }
-            }
-            ps.executeUpdate();// 执行sql
-            ResultSet rs = ps.getGeneratedKeys();// 获取结果
-            if (rs.next()) {
-                return rs.getString(1);// 取得ID
-            } else {
-                return null;
+                ps.executeUpdate();// 执行sql
+                try (ResultSet rs = ps.getGeneratedKeys()) {// 获取结果
+                    if (rs.next()) {
+                        return rs.getString(1);// 取得ID
+                    } else {
+                        return null;
+                    }
+                }
             }
         });
         return id;

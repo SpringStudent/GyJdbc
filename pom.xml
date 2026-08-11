@@ -52,7 +52,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring.version>4.3.14.RELEASE</spring.version>
+        <spring.version>5.3.39</spring.version>
     </properties>
 
     <dependencies>
@@ -87,9 +87,10 @@
             <artifactId>commons-beanutils</artifactId>
             <version>1.9.4</version>
         </dependency>
+        <!-- 提供 @Aspect/@Around 等注解（spring-aop 对 aspectjweaver 是 optional 依赖，不会传递） -->
         <dependency>
             <groupId>org.aspectj</groupId>
-            <artifactId>aspectjtools</artifactId>
+            <artifactId>aspectjweaver</artifactId>
             <version>1.9.22</version>
         </dependency>
     </dependencies>

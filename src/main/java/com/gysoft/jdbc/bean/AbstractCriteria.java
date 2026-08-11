@@ -65,13 +65,14 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         }
         if (keys.length == 1) {
             return this.where(keys[0], opt, value);
-        } else {
-            StringBuilder columnsAppender = new StringBuilder();
-            columnsAppender.append("(");
-            columnsAppender.append(StringUtils.join(keys, ","));
-            columnsAppender.append(")");
-            return this.where(columnsAppender.toString(), opt, value);
         }
+        // 多列（元组）比较：值必须为数组/集合（生成 (a,b) = (?,?)）或 SQL 子查询（生成 (a,b) = (SELECT ...)）
+        if (value == null
+                || !(value instanceof Collection || value instanceof SQL || value.getClass().isArray())) {
+            throw new GyjdbcException("multi-column condition requires an array/Collection value or SQL subquery");
+        }
+        String columns = "(" + StringUtils.join(keys, ",") + ")";
+        return this.where(columns, opt, value);
     }
 
     @Override
@@ -648,8 +649,15 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return self();
     }
 
-    public S limit(int offset) {
-        this.offset = offset;
+    /**
+     * 限制最大返回行数（MySQL 语义：LIMIT n，即从第 0 行起取前 n 行）。
+     * 注意：单参版本是"行数限制"而非偏移量，与两参 limit(offset, size) 语义不同。
+     * 未调用 limit 时不生成 LIMIT 子句；limit(0) 表示不限制（不生成 LIMIT）。
+     *
+     * @param limit 最大返回行数，<=0 时不限制
+     */
+    public S limit(int limit) {
+        this.size = limit;
         return self();
     }
 

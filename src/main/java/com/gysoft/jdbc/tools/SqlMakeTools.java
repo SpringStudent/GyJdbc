@@ -5,6 +5,7 @@ import com.gysoft.jdbc.dao.EntityDao;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.JDBCType;
@@ -296,6 +297,21 @@ public class SqlMakeTools {
                             Pair<String, Object[]> wherePair = useSql(whereSql);
                             wpSql.append(opt).append('(').append(wherePair.getFirst()).append(')');
                             MixUtils.addAll(wpParams, wherePair.getSecond());
+                        } else if (key.startsWith("(") && value != null && (value instanceof Collection || value.getClass().isArray())) {
+                            // 元组比较值列表：(a,b) = (?,?)
+                            Object[] vals = value instanceof Collection
+                                    ? ((Collection<?>) value).toArray()
+                                    : toObjectArray(value);
+                            if (vals.length == 0) {
+                                throw new GyjdbcException("tuple comparison value cannot be empty");
+                            }
+                            wpSql.append(opt).append(" (");
+                            for (Object v : vals) {
+                                wpParams.add(v);
+                                wpSql.append("?,");
+                            }
+                            wpSql.setLength(wpSql.length() - 1);
+                            wpSql.append(")");
                         } else {
                             wpSql.append(opt).append(" ?");
                             wpParams.add(value);
@@ -351,6 +367,10 @@ public class SqlMakeTools {
                     sql.append(", ?");
                     params.add(criteria.getSize());
                 }
+            } else if (criteria.getSize() > 0) {
+                // 仅指定行数（单参 limit(n)）：LIMIT n
+                sql.append(" LIMIT ?");
+                params.add(criteria.getSize());
             }
         }
         return new Pair<>(sql.toString(), params.toArray());
@@ -789,6 +809,21 @@ public class SqlMakeTools {
         }
         // 转换为数组返回
         return new Pair<>(sqlBuilder.toString(), paramsList.toArray());
+    }
+
+    /**
+     * 将任意数组（含原始类型数组，如 int[]、long[]）转换为 Object[]，用于展开元组比较值
+     *
+     * @param value 数组对象
+     * @return Object[] 数组
+     */
+    private static Object[] toObjectArray(Object value) {
+        int length = Array.getLength(value);
+        Object[] result = new Object[length];
+        for (int i = 0; i < length; i++) {
+            result[i] = Array.get(value, i);
+        }
+        return result;
     }
 
 }
