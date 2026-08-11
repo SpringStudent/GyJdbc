@@ -8,13 +8,19 @@ package com.gysoft.jdbc.bean;
  */
 public class ConditionSegment {
 
-    /** 条件 SQL 片段，如 "name = ?" 或 "(type = ? OR status = ?)" */
+    /**
+     * 条件 SQL 片段，如 "name = ?" 或 "(type = ? OR status = ?)"
+     */
     private final String sql;
 
-    /** 该片段对应的参数 */
+    /**
+     * 该片段对应的参数
+     */
     private final Object[] params;
 
-    /** 该片段与前一个片段之间的连接符（第一个片段可为 null，表示无需连接符） */
+    /**
+     * 该片段与前一个片段之间的连接符（第一个片段可为 null，表示无需连接符）
+     */
     private final ConnectorType connector;
 
     public ConditionSegment(String sql, Object[] params, ConnectorType connector) {
