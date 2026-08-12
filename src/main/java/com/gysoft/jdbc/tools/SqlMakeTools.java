@@ -298,7 +298,7 @@ public class SqlMakeTools {
                             // 元组比较值列表：(a,b) = (?,?)
                             Object[] vals = value instanceof Collection
                                     ? ((Collection<?>) value).toArray()
-                                    : toObjectArray(value);
+                                    : MixUtils.toObjectArray(value);
                             if (vals.length == 0) {
                                 throw new GyjdbcException("tuple comparison value cannot be empty");
                             }
@@ -809,21 +809,6 @@ public class SqlMakeTools {
         }
         // 转换为数组返回
         return new Pair<>(sqlBuilder.toString(), paramsList.toArray());
-    }
-
-    /**
-     * 将任意数组（含原始类型数组，如 int[]、long[]）转换为 Object[]，用于展开元组比较值
-     *
-     * @param value 数组对象
-     * @return Object[] 数组
-     */
-    private static Object[] toObjectArray(Object value) {
-        int length = Array.getLength(value);
-        Object[] result = new Object[length];
-        for (int i = 0; i < length; i++) {
-            result[i] = Array.get(value, i);
-        }
-        return result;
     }
 
 }

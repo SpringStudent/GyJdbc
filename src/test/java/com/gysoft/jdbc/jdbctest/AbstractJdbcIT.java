@@ -58,6 +58,7 @@ public abstract class AbstractJdbcIT {
     @Before
     public void setUp() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource(H2_URL, "sa", "");
+        dataSource.setDriverClassName("org.h2.Driver");
         jdbcTemplate = new JdbcTemplate(dataSource);
         jdbcTemplate.execute(CREATE_MEMBER_TABLE);
         jdbcTemplate.execute(CREATE_ORDER_TABLE);

@@ -45,7 +45,9 @@ public class JdbcRoutingDataSourceIT extends AbstractJdbcIT {
     @Before
     public void setUpRouting() {
         DriverManagerDataSource masterDataSource = new DriverManagerDataSource(MASTER_URL, "sa", "");
+        masterDataSource.setDriverClassName("org.h2.Driver");
         DriverManagerDataSource slaveDataSource = new DriverManagerDataSource(SLAVE_URL, "sa", "");
+        slaveDataSource.setDriverClassName("org.h2.Driver");
         masterTemplate = new JdbcTemplate(masterDataSource);
         slaveTemplate = new JdbcTemplate(slaveDataSource);
         masterTemplate.execute(CREATE_MEMBER_TABLE);

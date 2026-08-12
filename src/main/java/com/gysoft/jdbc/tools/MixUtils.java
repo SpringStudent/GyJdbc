@@ -3,6 +3,7 @@ package com.gysoft.jdbc.tools;
 import com.gysoft.jdbc.bean.GyjdbcException;
 import org.apache.commons.collections4.CollectionUtils;
 
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Types;
@@ -103,4 +104,20 @@ public class MixUtils {
             return Types.OTHER;
         }
     }
+
+    /**
+     * 将任意数组（含原始类型数组，如 int[]、long[]）转换为 Object[]，用于展开元组比较值
+     *
+     * @param value 数组对象
+     * @return Object[] 数组
+     */
+    public static Object[] toObjectArray(Object value) {
+        int length = Array.getLength(value);
+        Object[] result = new Object[length];
+        for (int i = 0; i < length; i++) {
+            result[i] = Array.get(value, i);
+        }
+        return result;
+    }
+
 }
