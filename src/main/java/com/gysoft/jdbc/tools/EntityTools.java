@@ -37,32 +37,23 @@ public class EntityTools {
         if (null != table && !StringUtils.isEmpty(table.name())) {
             return table.name();
         } else {
-            StringBuffer tableName = new StringBuffer();
+            // 标准驼峰转大写下划线（单遍扫描）：
+            // 1. 连续大写视为一段缩写（如 HTTP/XML），不被拆开；
+            // 2. 大写字母前一位是小写/数字，或前一位是大写而后一位是小写（缩写后接新词）时插入下划线；
+            // 3. 类名整体转大写。
             String entityName = entity.getSimpleName();
-            StringBuilder str = new StringBuilder();
+            StringBuilder tableName = new StringBuilder();
             char[] subStr = entityName.toCharArray();
-            int i = 0;
-            char z = 'Z';
-            while (i < entityName.length()) {
-                while (i < entityName.length() && subStr[i] > z) {
-                    if (Character.isLowerCase(subStr[i])) {
-                        str.append(String.valueOf(subStr[i]).toUpperCase());
-                    } else {
-                        str.append(subStr[i]);
-                    }
-                    i++;
+            for (int i = 0; i < subStr.length; i++) {
+                char c = subStr[i];
+                if (i > 0 && Character.isUpperCase(c)
+                        && (Character.isLowerCase(subStr[i - 1])
+                        || Character.isDigit(subStr[i - 1])
+                        || (Character.isUpperCase(subStr[i - 1])
+                        && i + 1 < subStr.length && Character.isLowerCase(subStr[i + 1])))) {
+                    tableName.append('_');
                 }
-                if (str.toString().length() > 0) {
-                    if ((i - entityName.length() == 0)) {
-                        tableName.append(str.toString());
-                    } else {
-                        tableName.append(str.toString() + "_");
-                    }
-                }
-                if (i < entityName.length()) {
-                    str = new StringBuilder();
-                    str.append(subStr[i++]);
-                }
+                tableName.append(Character.toUpperCase(c));
             }
             return tableName.toString();
         }

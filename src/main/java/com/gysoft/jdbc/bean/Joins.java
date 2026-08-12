@@ -23,7 +23,11 @@ public class Joins {
 
         public void setJoinType(JoinType joinType) {
             String joinTypeSql = joinType == JoinType.NatureJoin ? joinType.getType() : " " + joinType.getType();
-            joinSql = new StringBuilder(String.format(joinSql.toString(), joinTypeSql));
+            if (joinSql.indexOf("%s") == 0) {
+                joinSql.replace(0, "%s".length(), joinTypeSql);
+            } else {
+                joinSql.insert(0, joinTypeSql);
+            }
         }
 
         public StringBuilder getJoinSql() {
@@ -37,7 +41,7 @@ public class Joins {
 
     public class With extends BaseJoin {
         public As as(String aliasName) {
-            if(!StringUtils.isEmpty(aliasName)){
+            if (!StringUtils.isEmpty(aliasName)) {
                 joinSql.append(" ").append(aliasName);
             }
             return getAs();

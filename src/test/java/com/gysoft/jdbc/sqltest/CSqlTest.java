@@ -357,6 +357,20 @@ public class CSqlTest {
     }
 
     @Test
+    public void testJoinSubQueryWithPercentLiteralShouldNotCrash() {
+        // 回归：JOIN 的子查询 SQL 含 % 字面量（DATE_FORMAT 格式串）时，
+        // 修复前 setJoinType 用 String.format 会把 %Y 当格式符抛 UnknownFormatConversionException，
+        // 修复后改为 indexOf 定位替换，子查询内的 % 原样保留。
+        SQL sub = new SQL().select("DATE_FORMAT(createTime, '%Y-%m-%d') AS dt").from("t_order");
+        SQL sql = new SQL().select("*").from("a")
+                .leftJoin(Joins.joinWith(sub).as("o").on("a.id", "o.memberId"));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        String sqlStr = pair.getFirst();
+        assertTrue("LEFT JOIN missing", sqlStr.contains("LEFT JOIN"));
+        assertTrue("子查询 % 字面量被吞", sqlStr.contains("'%Y-%m-%d'"));
+    }
+
+    @Test
     public void testRightJoin() {
         SQL sql = new SQL().select("*").from("a")
                 .rightJoin("b", "aliasB").on("a.id", "aliasB.id");
@@ -4483,6 +4497,37 @@ public class CSqlTest {
         Assert.assertTrue(pair.getFirst().endsWith("LIMIT ?"));
         Assert.assertEquals(1, pair.getSecond()[pair.getSecond().length - 1]);
     }
+
+    @Test
+    public void testGetTableNameCamelToUnderscore() {
+        // 回归：无 @Table 注解时类名驼峰→大写下划线转换。
+        // 旧算法缺陷：连续大写被拆开（HTTPClient→H_T_T_P_CLIENT）、段尾大写丢失（UserDAO→USER_D_A_）
+        assertEquals("USER_DAO", EntityTools.getTableName(UserDAO.class));
+        assertEquals("HTTP_CLIENT", EntityTools.getTableName(HTTPClient.class));
+        assertEquals("XML_PARSER", EntityTools.getTableName(XMLParser.class));
+        assertEquals("ABC", EntityTools.getTableName(ABC.class));
+        assertEquals("MEMBER_ENTITY", EntityTools.getTableName(MemberEntity.class));
+        assertEquals("USER_INFO", EntityTools.getTableName(userInfo.class));
+        assertEquals("tb_role", EntityTools.getTableName(Role.class));
+    }
+
+    /** 无注解测试实体：连续大写缩写 + 尾大写 */
+    static class UserDAO {}
+
+    /** 无注解测试实体：缩写开头 */
+    static class HTTPClient {}
+
+    /** 无注解测试实体：缩写 + 驼峰 */
+    static class XMLParser {}
+
+    /** 无注解测试实体：全大写 */
+    static class ABC {}
+
+    /** 无注解测试实体：常规驼峰 */
+    static class MemberEntity {}
+
+    /** 无注解测试实体：首字母小写 */
+    static class userInfo {}
 
     private int countPlaceholders(String sql) {
         int count = 0;
