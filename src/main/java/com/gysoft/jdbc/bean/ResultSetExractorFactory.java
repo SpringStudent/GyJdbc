@@ -6,6 +6,12 @@ import org.springframework.jdbc.core.ResultSetExtractor;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -39,6 +45,18 @@ public abstract class ResultSetExractorFactory {
             return rs.getInt(i);
         } else if (double.class.equals(cls) || Double.class.equals(cls)) {
             return rs.getDouble(i);
+        } else if (LocalDateTime.class.equals(cls)) {
+            Timestamp timestamp = rs.getTimestamp(i);
+            return timestamp == null ? null : timestamp.toLocalDateTime();
+        } else if (LocalDate.class.equals(cls)) {
+            java.sql.Date date = rs.getDate(i);
+            return date == null ? null : date.toLocalDate();
+        } else if (LocalTime.class.equals(cls)) {
+            Time time = rs.getTime(i);
+            return time == null ? null : time.toLocalTime();
+        } else if (Instant.class.equals(cls)) {
+            Timestamp timestamp = rs.getTimestamp(i);
+            return timestamp == null ? null : timestamp.toInstant();
         } else if (Date.class.isAssignableFrom(cls)) {
             return rs.getDate(i);
         } else if (long.class.equals(cls) || Long.class.equals(cls)) {

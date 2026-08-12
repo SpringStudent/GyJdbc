@@ -5,6 +5,8 @@ import com.gysoft.jdbc.annotation.Table;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -84,13 +86,31 @@ public class EntityTools {
         return "id";
     }
 
+    /**
+     * 获取实体所有需要持久化的字段：
+     * 1. 递归收集父类字段，支持实体继承；
+     * 2. 排除 static / transient 字段，避免 serialVersionUID 等被误当作数据库列；
+     * 3. 子类字段优先，父类同名字段视为被隐藏。
+     */
     public static Field[] getDeclaredFields(Class<?> entity) {
         return FIELDS_CACHE.computeIfAbsent(entity, clss -> {
-            Field[] fields = clss.getDeclaredFields();
-            for (Field field : fields) {
-                field.setAccessible(true);
+            LinkedHashMap<String, Field> fieldMap = new LinkedHashMap<>();
+            Class<?> current = clss;
+            while (current != null && current != Object.class) {
+                for (Field field : current.getDeclaredFields()) {
+                    if (Modifier.isStatic(field.getModifiers())
+                            || Modifier.isTransient(field.getModifiers())) {
+                        continue;
+                    }
+                    // 子类字段优先，父类同名字段被隐藏
+                    if (!fieldMap.containsKey(field.getName())) {
+                        field.setAccessible(true);
+                        fieldMap.put(field.getName(), field);
+                    }
+                }
+                current = current.getSuperclass();
             }
-            return fields;
+            return fieldMap.values().toArray(new Field[0]);
         });
     }
 

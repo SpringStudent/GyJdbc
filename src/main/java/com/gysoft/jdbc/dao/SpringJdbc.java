@@ -11,6 +11,10 @@ import org.springframework.jdbc.core.namedparam.NamedParameterUtils;
 
 import java.math.BigDecimal;
 import java.sql.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Date;
 import java.util.*;
 
@@ -423,12 +427,21 @@ public class SpringJdbc implements ISpringJdbc {
     }
 
     private void setParamater(PreparedStatement ps, int i, Object arg) throws SQLException {
+        if (arg == null) {
+            // null 参数直接 setObject，交由驱动处理
+            ps.setObject(i, null);
+            return;
+        }
         if (String.class.equals(arg.getClass())) {
             ps.setString(i, (String) arg);
         } else if (int.class.equals(arg.getClass()) || Integer.class.equals(arg.getClass())) {
             ps.setInt(i, (Integer) arg);
         } else if (double.class.equals(arg.getClass()) || Double.class.equals(arg.getClass())) {
             ps.setDouble(i, (Double) arg);
+        } else if (java.sql.Date.class.equals(arg.getClass())) {
+            ps.setDate(i, (java.sql.Date) arg);
+        } else if (Time.class.equals(arg.getClass())) {
+            ps.setTime(i, (Time) arg);
         } else if (Date.class.isAssignableFrom(arg.getClass())) {
             ps.setTimestamp(i, new Timestamp(((Date) arg).getTime()));
         } else if (long.class.equals(arg.getClass()) || Long.class.equals(arg.getClass())) {
@@ -441,10 +454,16 @@ public class SpringJdbc implements ISpringJdbc {
             ps.setShort(i, (Short) arg);
         } else if (byte.class.equals(arg.getClass()) || Byte.class.equals(arg.getClass())) {
             ps.setByte(i, (Byte) arg);
+        } else if (char.class.equals(arg.getClass()) || Character.class.equals(arg.getClass())) {
+            ps.setString(i, String.valueOf(arg));
         } else if (BigDecimal.class.equals(arg.getClass())) {
             ps.setBigDecimal(i, (BigDecimal) arg);
+        } else if (byte[].class.equals(arg.getClass())) {
+            ps.setBytes(i, (byte[]) arg);
         } else {
-            throw new GyjdbcException("参数" + i + "属于未知的参数类型！");
+            // LocalDate/LocalDateTime/LocalTime/Instant/枚举/自定义类型等，
+            // 交由驱动通过 setObject 做类型推断，避免抛"未知类型"运行时异常
+            ps.setObject(i, arg);
         }
     }
 

@@ -8,8 +8,10 @@ import com.gysoft.jdbc.multi.balance.LeastActiveLoadBalance;
 import com.gysoft.jdbc.multi.balance.LoadBalance;
 import com.gysoft.jdbc.multi.balance.RoundRobinLoadBalance;
 import com.gysoft.jdbc.tools.EntityTools;
+import com.gysoft.jdbc.tools.MixUtils;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -20,10 +22,20 @@ import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Types;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
+import static com.gysoft.jdbc.dao.EntityDao.*;
+import static com.gysoft.jdbc.dao.EntityDao.SQL_INSERT;
+import static com.gysoft.jdbc.dao.EntityDao.SQL_UPDATE;
 import static org.junit.Assert.*;
 
 public class CSqlTest {
@@ -4362,5 +4374,122 @@ public class CSqlTest {
         public boolean isWrapperFor(Class<?> iface) throws SQLException {
             return false;
         }
+    }
+
+    @Test
+    public void testGetDeclaredFieldsExcludeStaticAndTransient() {
+        Field[] fields = EntityTools.getDeclaredFields(UserEntity.class);
+        List<String> names = Arrays.stream(fields).map(Field::getName).collect(Collectors.toList());
+        // serialVersionUID 与 temp 不应出现
+        Assert.assertFalse(names.contains("serialVersionUID"));
+        Assert.assertFalse(names.contains("temp"));
+        // 子类字段在前，父类字段在后（继承字段被收集）
+        Assert.assertEquals(Arrays.asList("name", "createTime", "email", "id", "updateTime"), names);
+    }
+
+    @Test
+    public void testMakeSqlInsertExcludesStaticAndTransient() {
+        String sql = SqlMakeTools.makeSql(UserEntity.class, "tb_user_ext", SQL_INSERT);
+        Assert.assertFalse(sql.contains("serialVersionUID"));
+        Assert.assertFalse(sql.contains("temp"));
+        // 父类字段 id/updateTime 应参与插入，@Column 列名生效
+        Assert.assertTrue(sql.contains("name"));
+        Assert.assertTrue(sql.contains("createTime"));
+        Assert.assertTrue(sql.contains("email_addr"));
+        Assert.assertTrue(sql.contains("id"));
+        Assert.assertTrue(sql.contains("updateTime"));
+        Assert.assertEquals(5, countPlaceholders(sql));
+    }
+
+    @Test
+    public void testMakeSqlUpdatePutsPkInWhere() {
+        String sql = SqlMakeTools.makeSql(UserEntity.class, "tb_user_ext", SQL_UPDATE);
+        Assert.assertFalse(sql.contains("serialVersionUID"));
+        // id 是主键，应出现在 WHERE 而不在 SET
+        Assert.assertTrue(sql.indexOf("WHERE id = ?") > 0);
+        Assert.assertTrue(sql.contains("updateTime=?"));
+        Assert.assertEquals(5, countPlaceholders(sql));
+    }
+
+    @Test
+    public void testMakeSqlDeleteUsesPk() {
+        String sql = SqlMakeTools.makeSql(UserEntity.class, "tb_user_ext", SQL_DELETE);
+        Assert.assertEquals(" DELETE FROM tb_user_ext WHERE id = ?", sql);
+        Assert.assertEquals(1, countPlaceholders(sql));
+    }
+
+    @Test
+    public void testSetArgsInsertMatchesSqlPlaceholders() {
+        UserEntity entity = new UserEntity();
+        entity.setName("zhangsan");
+        entity.setCreateTime(LocalDateTime.of(2026, 8, 12, 10, 30));
+        entity.setEmail("a@b.com");
+        entity.setId(1);
+        entity.setUpdateTime(new Date());
+
+        Object[] args = SqlMakeTools.setArgs(entity, SQL_INSERT);
+        // 字段顺序：name, createTime, email, id, updateTime
+        Assert.assertEquals(5, args.length);
+        Assert.assertEquals("zhangsan", args[0]);
+        Assert.assertEquals(LocalDateTime.of(2026, 8, 12, 10, 30), args[1]);
+        Assert.assertEquals("a@b.com", args[2]);
+        Assert.assertEquals(1, args[3]);
+        Assert.assertEquals(entity.getUpdateTime(), args[4]);
+    }
+
+    @Test
+    public void testSetArgsUpdatePutsPkLast() {
+        UserEntity entity = new UserEntity();
+        entity.setName("zhangsan");
+        entity.setEmail("a@b.com");
+        entity.setId(99);
+
+        Object[] args = SqlMakeTools.setArgs(entity, SQL_UPDATE);
+        Assert.assertEquals(5, args.length);
+        // SET 字段在前，主键在最后
+        Assert.assertEquals("zhangsan", args[0]);
+        Assert.assertEquals("a@b.com", args[2]);
+        Assert.assertEquals(99, args[4]);
+    }
+
+    @Test
+    public void testSetArgTypesLengthMatchesPlaceholders() {
+        int[] types = SqlMakeTools.setArgTypes(new UserEntity(), SQL_INSERT);
+        Assert.assertEquals(5, types.length);
+        int[] updateTypes = SqlMakeTools.setArgTypes(new UserEntity(), SQL_UPDATE);
+        Assert.assertEquals(5, updateTypes.length);
+    }
+
+    @Test
+    public void testGetSqlTypeForJavaTime() {
+        Assert.assertEquals(Types.TIMESTAMP, MixUtils.getSqlType(LocalDateTime.class));
+        Assert.assertEquals(Types.TIMESTAMP, MixUtils.getSqlType(Instant.class));
+        Assert.assertEquals(Types.DATE, MixUtils.getSqlType(LocalDate.class));
+        Assert.assertEquals(Types.TIME, MixUtils.getSqlType(LocalTime.class));
+        Assert.assertEquals(Types.TIME, MixUtils.getSqlType(Time.class));
+        Assert.assertEquals(Types.DATE, MixUtils.getSqlType(java.sql.Date.class));
+        Assert.assertEquals(Types.CHAR, MixUtils.getSqlType(char.class));
+        Assert.assertEquals(Types.CHAR, MixUtils.getSqlType(Character.class));
+        Assert.assertEquals(Types.TIMESTAMP, MixUtils.getSqlType(java.util.Date.class));
+    }
+
+    @Test
+    public void testDoCriteriaLimitSingleArg() {
+        // 回归验证 limit(n) 生成 LIMIT n（单参语义），不因 offset 默认值污染
+        com.gysoft.jdbc.bean.Criteria criteria = new com.gysoft.jdbc.bean.Criteria();
+        criteria.where("name", "zhangsan").limit(1);
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_user_ext"));
+        Assert.assertTrue(pair.getFirst().endsWith("LIMIT ?"));
+        Assert.assertEquals(1, pair.getSecond()[pair.getSecond().length - 1]);
+    }
+
+    private int countPlaceholders(String sql) {
+        int count = 0;
+        for (int i = 0; i < sql.length(); i++) {
+            if (sql.charAt(i) == '?') {
+                count++;
+            }
+        }
+        return count;
     }
 }

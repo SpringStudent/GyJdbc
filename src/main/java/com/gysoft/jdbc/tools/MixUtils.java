@@ -4,7 +4,12 @@ import com.gysoft.jdbc.bean.GyjdbcException;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.math.BigDecimal;
+import java.sql.Time;
 import java.sql.Types;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -72,6 +77,12 @@ public class MixUtils {
             return Types.INTEGER;
         } else if (double.class.equals(clazz) || Double.class.equals(clazz)) {
             return Types.DOUBLE;
+        } else if (LocalDateTime.class.equals(clazz) || Instant.class.equals(clazz)) {
+            return Types.TIMESTAMP;
+        } else if (LocalDate.class.equals(clazz) || java.sql.Date.class.equals(clazz)) {
+            return Types.DATE;
+        } else if (LocalTime.class.equals(clazz) || Time.class.equals(clazz)) {
+            return Types.TIME;
         } else if (java.util.Date.class.isAssignableFrom(clazz)) {
             return Types.TIMESTAMP;
         } else if (long.class.equals(clazz) || Long.class.equals(clazz)) {
@@ -84,6 +95,8 @@ public class MixUtils {
             return Types.INTEGER;
         } else if (byte.class.equals(clazz) || Byte.class.equals(clazz)) {
             return Types.INTEGER;
+        } else if (char.class.equals(clazz) || Character.class.equals(clazz)) {
+            return Types.CHAR;
         } else if (BigDecimal.class.equals(clazz)) {
             return Types.DECIMAL;
         } else {
