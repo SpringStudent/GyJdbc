@@ -1,8 +1,7 @@
-package com.gysoft.jdbc;
+package com.gysoft.jdbc.sqltest;
 
 import com.gysoft.jdbc.annotation.Column;
 import com.gysoft.jdbc.annotation.Table;
-import com.gysoft.jdbc.tools.SqlMakeTools;
 
 /**
  * @author 周宁

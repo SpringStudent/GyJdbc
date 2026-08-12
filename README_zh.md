@@ -22,6 +22,8 @@ GyJdbc 适合那些不想引入重型 ORM、又不想反复手写 DAO 和 SQL �
 - [Criteria：更舒服地拼动态条件](#criteria更舒服地拼动态条件)
 - [SQL：像写 SQL 一样组合复杂语句](#sql像写-sql-一样组合复杂语句)
 - [多数据源支持](#多数据源支持)
+- [测试](#测试)
+- [重要提示](#重要提示)
 - [更多示例](#更多示例)
 - [项目定位](#项目定位)
 - [License](#license)
@@ -49,6 +51,8 @@ GyJdbc 很适合：
 如果你的项目需要完整的对象关系管理、复杂实体状态跟踪、一级缓存或自动脏检查，Hibernate / JPA 可能更适合。GyJdbc 的定位更直接：让你用更少代码写出更清晰的 SQL 数据访问层。
 
 ## 安装
+
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.springstudent/GyJdbc?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.springstudent/GyJdbc)
 
 ```xml
 <dependency>
@@ -156,32 +160,52 @@ public class UserService {
 `EntityDao<T, Id>` 覆盖了多数常见数据访问操作：
 
 ```java
-int save(T entity) throws Exception;
-void batchSave(List<T> list) throws Exception;
-void saveOrUpdate(T entity) throws Exception;
-int saveAll(List<T> list) throws Exception;
+// 新增 / 更新 / 删除
+int save(T entity);
+void batchSave(List<T> list);
+void saveOrUpdate(T entity);
+int saveAll(List<T> list);
+int update(T entity);
+void batchUpdate(List<T> list);
+int updateWithSql(SQL sql);
+int delete(Id id);
+int batchDelete(List<Id> ids);
+int deleteWithCriteria(Criteria criteria);
+int deleteWithSql(SQL sql);
 
-int update(T entity) throws Exception;
-void batchUpdate(List<T> list) throws Exception;
-int updateWithSql(SQL sql) throws Exception;
+// 主键查询
+T queryOne(Id id);
+Optional<T> queryOneOpt(Id id);
 
-int delete(Id id) throws Exception;
-int batchDelete(List<Id> ids) throws Exception;
-int deleteWithCriteria(Criteria criteria) throws Exception;
-int deleteWithSql(SQL sql) throws Exception;
+// 条件查询
+List<T> queryAll();
+List<T> queryWithCriteria(Criteria criteria);
+T queryOne(Criteria criteria);
+Optional<T> queryOneOpt(Criteria criteria);
+PageResult<T> pageQuery(Page page);
+PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria);
+long countWithCriteria(Criteria criteria);
+boolean existsWithCriteria(Criteria criteria);
+List<Id> queryIds(Criteria criteria);
 
-T queryOne(Id id) throws Exception;
-T queryOne(Criteria criteria) throws Exception;
-List<T> queryAll() throws Exception;
-List<T> queryWithCriteria(Criteria criteria) throws Exception;
-PageResult<T> pageQuery(Page page) throws Exception;
-PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria) throws Exception;
+// SQL 入参查询
+<E> Result<E> queryWithSql(Class<E> type, SQL sql);
+<E> List<E> queryListWithSql(Class<E> type, SQL sql);
+<E> E queryOneWithSql(Class<E> type, SQL sql);
+<E> Optional<E> queryOneWithSqlOpt(Class<E> type, SQL sql);
+<E> PageResult<E> pageQueryWithSql(Page page, Class<E> type, SQL sql);
+List<Map<String, Object>> queryMapsWithSql(SQL sql);
+<K, V> Map<K, V> queryMapWithSql(SQL sql, ResultSetExtractor<Map<K, V>> extractor);
+Integer queryIntegerWithSql(SQL sql);
+long countWithSql(SQL sql);
+boolean existsWithSql(SQL sql);
 
-<E> Result<E> queryWithSql(Class<E> type, SQL sql) throws Exception;
-List<Map<String, Object>> queryMapsWithSql(SQL sql) throws Exception;
-Integer queryIntegerWithSql(SQL sql) throws Exception;
-boolean existsWithCriteria(Criteria criteria) throws Exception;
-boolean existsWithSql(SQL sql) throws Exception;
+// DDL 与特殊操作
+int insertWithSql(SQL sql);
+String createWithSql(SQL sql);
+void drop();
+void truncate();
+void drunk(SQL sql);
 ```
 
 ## Criteria：更舒服地拼动态条件
@@ -698,9 +722,51 @@ DataSourceContext.withDataSource("secondary", transactionalService::execute);
 EntityDao.bindXxx > 方法上的 @BindPoint > 类上的 @BindPoint > JdbcRoutingDataSource.defaultLookUpKey
 ```
 
+## 测试
+
+GyJdbc 自带两层测试，用普通的 `mvn test` 即可运行，无需 Docker 或外部数据库。
+
+### SQL 生成单测（无数据库依赖）
+
+验证 SQL 构建器生成的 SQL 语句和参数是否正确。
+
+- [`CSqlTest.java`](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/sqltest/CSqlTest.java) — SQL 构建器语法测试：select/insert/update/delete、join、union、子查询、聚合函数、create/truncate/drop 等。
+- [`CriteriaTest.java`](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/sqltest/CriteriaTest.java) — `Criteria` 动态条件拼装测试。
+
+### H2 集成测试（内存库，MySQL 模式）
+
+用 H2 的 MySQL 兼容模式在真实内存库上运行 DAO，覆盖只有真实数据库才能暴露的行为。
+
+- [`AbstractJdbcIT.java`](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/jdbctest/AbstractJdbcIT.java) — 测试基类：H2 连接（`MODE=MySQL`）、建表 DDL、反射注入 `jdbcTemplate`。
+- [`EntityDaoImplIT.java`](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/jdbctest/EntityDaoImplIT.java) — DAO 全量行为：实体映射、增删改查、批量操作、分页、条件查询、join/union/子查询、`xxxIfAbsent`、DDL 操作。
+- [`JdbcRoutingDataSourceIT.java`](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/jdbctest/JdbcRoutingDataSourceIT.java) — 编程式多数据源路由与主从库数据隔离验证。
+
+### 运行测试
+
+```bash
+mvn test                        # 运行全部测试（含 *IT 集成测试）
+mvn -Dtest=CSqlTest test        # 只跑 SQL 生成单测
+mvn -Dtest=EntityDaoImplIT test # 只跑 H2 集成测试
+```
+
+## 重要提示
+
+### `@Column` 在查询侧的行为
+
+`@Column(name)` 只在 `save` / `update` 侧生效（生成 SQL 时使用 `name` 作为列名）。查询侧的实体映射由 Spring 的 `BeanPropertyRowMapper` 处理，它不识别 `@Column` 注解。
+
+当 `@Column(name)` 与 Java 属性名经驼峰/下划线互转后不一致时（如属性 `email` + `@Column(name = "email_addr")`），`save` 能写入但查询读回该字段恒为 `null`，造成 save/query 数据不一致。若两者经互转能对上（如 `emailAddr` ↔ `email_addr`）则保持一致。
+
+建议让 `@Column(name)` 与属性名保持驼峰/下划线互转一致，或在使用非常规列名时提供自定义 `RowMapper`。
+
+### 多数据源绑定是线程隔离的
+
+`@BindPoint` / `DataSourceContext.withDataSource` 的绑定存放在 `ThreadLocal` 中，**不会传播到子线程**。在 `@Async`、线程池等异步场景中，子线程无法感知外层绑定，其数据库操作会回退到默认数据源。如需在异步任务内指定数据源，请在子线程内部显式绑定。
+
 ## 更多示例
 
-- SQL 语法测试：[CSqlTest.java](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/CSqlTest.java)
+- SQL 生成测试：[CSqlTest.java](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/sqltest/CSqlTest.java)、[CriteriaTest.java](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/sqltest/CriteriaTest.java)
+- H2 集成测试：[EntityDaoImplIT.java](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/jdbctest/EntityDaoImplIT.java)、[JdbcRoutingDataSourceIT.java](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/jdbctest/JdbcRoutingDataSourceIT.java)
 - 使用示例项目：
   - [remote-desktop-control](https://github.com/SpringStudent/remote-desktop-control)
   - [webrtc-meetings](https://github.com/SpringStudent/webrtc-meetings)

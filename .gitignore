@@ -39,3 +39,6 @@ bin/
 *.log.gz
 out/
 MANIFEST.MF
+
+.claude
+CLAUDE.md

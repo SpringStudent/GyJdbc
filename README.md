@@ -22,6 +22,8 @@ GyJdbc is for projects that don't want a heavy ORM but are tired of writing DAO 
 - [Criteria: Build Dynamic Conditions More Comfortably](#criteria-build-dynamic-conditions-more-comfortably)
 - [SQL: Compose Complex Statements Like Writing SQL](#sql-compose-complex-statements-like-writing-sql)
 - [Multi-DataSource Support](#multi-datasource-support)
+- [Testing](#testing)
+- [Important Notes](#important-notes)
 - [More Examples](#more-examples)
 - [Project Philosophy](#project-philosophy)
 - [License](#license)
@@ -49,6 +51,8 @@ GyJdbc is a great fit for:
 If your project needs full object-relational management, complex entity state tracking, first-level caching, or automatic dirty checking, Hibernate / JPA may be a better choice. GyJdbc's philosophy is more direct: write less code, produce clearer SQL, and build a maintainable data access layer.
 
 ## Installation
+
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.springstudent/GyJdbc?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.springstudent/GyJdbc)
 
 ```xml
 <dependency>
@@ -156,32 +160,52 @@ public class UserService {
 `EntityDao<T, Id>` covers most common data-access operations:
 
 ```java
-int save(T entity) throws Exception;
-void batchSave(List<T> list) throws Exception;
-void saveOrUpdate(T entity) throws Exception;
-int saveAll(List<T> list) throws Exception;
+// Insert / Update / Delete
+int save(T entity);
+void batchSave(List<T> list);
+void saveOrUpdate(T entity);
+int saveAll(List<T> list);
+int update(T entity);
+void batchUpdate(List<T> list);
+int updateWithSql(SQL sql);
+int delete(Id id);
+int batchDelete(List<Id> ids);
+int deleteWithCriteria(Criteria criteria);
+int deleteWithSql(SQL sql);
 
-int update(T entity) throws Exception;
-void batchUpdate(List<T> list) throws Exception;
-int updateWithSql(SQL sql) throws Exception;
+// Query by primary key
+T queryOne(Id id);
+Optional<T> queryOneOpt(Id id);
 
-int delete(Id id) throws Exception;
-int batchDelete(List<Id> ids) throws Exception;
-int deleteWithCriteria(Criteria criteria) throws Exception;
-int deleteWithSql(SQL sql) throws Exception;
+// Query with Criteria
+List<T> queryAll();
+List<T> queryWithCriteria(Criteria criteria);
+T queryOne(Criteria criteria);
+Optional<T> queryOneOpt(Criteria criteria);
+PageResult<T> pageQuery(Page page);
+PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria);
+long countWithCriteria(Criteria criteria);
+boolean existsWithCriteria(Criteria criteria);
+List<Id> queryIds(Criteria criteria);
 
-T queryOne(Id id) throws Exception;
-T queryOne(Criteria criteria) throws Exception;
-List<T> queryAll() throws Exception;
-List<T> queryWithCriteria(Criteria criteria) throws Exception;
-PageResult<T> pageQuery(Page page) throws Exception;
-PageResult<T> pageQueryWithCriteria(Page page, Criteria criteria) throws Exception;
+// Query with SQL
+<E> Result<E> queryWithSql(Class<E> type, SQL sql);
+<E> List<E> queryListWithSql(Class<E> type, SQL sql);
+<E> E queryOneWithSql(Class<E> type, SQL sql);
+<E> Optional<E> queryOneWithSqlOpt(Class<E> type, SQL sql);
+<E> PageResult<E> pageQueryWithSql(Page page, Class<E> type, SQL sql);
+List<Map<String, Object>> queryMapsWithSql(SQL sql);
+<K, V> Map<K, V> queryMapWithSql(SQL sql, ResultSetExtractor<Map<K, V>> extractor);
+Integer queryIntegerWithSql(SQL sql);
+long countWithSql(SQL sql);
+boolean existsWithSql(SQL sql);
 
-<E> Result<E> queryWithSql(Class<E> type, SQL sql) throws Exception;
-List<Map<String, Object>> queryMapsWithSql(SQL sql) throws Exception;
-Integer queryIntegerWithSql(SQL sql) throws Exception;
-boolean existsWithCriteria(Criteria criteria) throws Exception;
-boolean existsWithSql(SQL sql) throws Exception;
+// DDL & special operations
+int insertWithSql(SQL sql);
+String createWithSql(SQL sql);
+void drop();
+void truncate();
+void drunk(SQL sql);
 ```
 
 ## Criteria: Build Dynamic Conditions More Comfortably
@@ -701,9 +725,51 @@ Data source resolution priority:
 EntityDao.bindXxx > @BindPoint on method > @BindPoint on class > JdbcRoutingDataSource.defaultLookUpKey
 ```
 
+## Testing
+
+GyJdbc ships with two layers of tests. Both run with plain `mvn test` — no Docker or external database is required.
+
+### SQL-Generation Unit Tests (no database)
+
+Verify that the builders produce the expected SQL string and parameters.
+
+- [`CSqlTest.java`](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/sqltest/CSqlTest.java) — SQL builder syntax: select/insert/update/delete, join, union, subqueries, aggregate functions, create/truncate/drop, and more.
+- [`CriteriaTest.java`](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/sqltest/CriteriaTest.java) — dynamic `Criteria` condition assembly.
+
+### H2 Integration Tests (in-memory, MySQL mode)
+
+Run the DAO against a real in-memory H2 database in MySQL compatibility mode, covering behaviors that only surface against a real database.
+
+- [`AbstractJdbcIT.java`](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/jdbctest/AbstractJdbcIT.java) — base class: H2 connection (`MODE=MySQL`), table DDL, reflective `jdbcTemplate` injection.
+- [`EntityDaoImplIT.java`](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/jdbctest/EntityDaoImplIT.java) — full DAO behavior: entity mapping, CRUD, batch operations, pagination, criteria queries, join/union/subquery, `xxxIfAbsent`, and DDL operations.
+- [`JdbcRoutingDataSourceIT.java`](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/jdbctest/JdbcRoutingDataSourceIT.java) — programmatic multi-data-source routing and master/slave data isolation.
+
+### Running the Tests
+
+```bash
+mvn test                        # run everything, including the *IT integration tests
+mvn -Dtest=CSqlTest test        # SQL-generation unit tests only
+mvn -Dtest=EntityDaoImplIT test # H2 integration tests only
+```
+
+## Important Notes
+
+### `@Column` on the Query Side
+
+`@Column(name)` takes effect on the `save` / `update` side (the SQL uses `name` as the column). On the query side, entity mapping is handled by Spring's `BeanPropertyRowMapper`, which does not read the `@Column` annotation.
+
+If `@Column(name)` and the Java property name do not convert to the same column name via the camelCase/underscore rule (e.g. property `email` with `@Column(name = "email_addr")`), the field is persisted on `save` but read back as `null` on query — causing save/query inconsistency. Names that convert cleanly (e.g. `emailAddr` ↔ `email_addr`) are consistent.
+
+Keep `@Column(name)` convertible to/from the property name, or provide a custom `RowMapper` when you need a non-convertible column name.
+
+### Data-Source Binding Is Thread-Local
+
+Bindings from `@BindPoint` / `DataSourceContext.withDataSource` are stored in a `ThreadLocal` and are **not propagated to child threads**. In async scenarios (`@Async`, thread pools), a child thread cannot see the outer binding and its DB operations fall back to the default data source. To target a data source inside an async task, bind explicitly within the child thread.
+
 ## More Examples
 
-- SQL syntax tests: [CSqlTest.java](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/CSqlTest.java)
+- SQL-generation tests: [CSqlTest.java](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/sqltest/CSqlTest.java), [CriteriaTest.java](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/sqltest/CriteriaTest.java)
+- H2 integration tests: [EntityDaoImplIT.java](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/jdbctest/EntityDaoImplIT.java), [JdbcRoutingDataSourceIT.java](https://github.com/SpringStudent/GyJdbc/blob/master/src/test/java/com/gysoft/jdbc/jdbctest/JdbcRoutingDataSourceIT.java)
 - Sample projects:
   - [remote-desktop-control](https://github.com/SpringStudent/remote-desktop-control)
   - [webrtc-meetings](https://github.com/SpringStudent/webrtc-meetings)

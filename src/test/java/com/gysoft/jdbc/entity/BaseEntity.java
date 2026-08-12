@@ -1,4 +1,4 @@
-package com.gysoft.jdbc;
+package com.gysoft.jdbc.entity;
 
 import java.util.Date;
 

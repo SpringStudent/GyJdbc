@@ -1,4 +1,4 @@
-package com.gysoft.jdbc;
+package com.gysoft.jdbc.sqltest;
 
 import com.gysoft.jdbc.annotation.Table;
 

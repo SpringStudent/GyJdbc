@@ -1,8 +1,9 @@
-package com.gysoft.jdbc;
+package com.gysoft.jdbc.sqltest;
 
 import com.gysoft.jdbc.annotation.Column;
 import com.gysoft.jdbc.bean.*;
 import com.gysoft.jdbc.dao.EntityDaoImpl;
+import com.gysoft.jdbc.entity.UserEntity;
 import com.gysoft.jdbc.multi.*;
 import com.gysoft.jdbc.multi.balance.LeastActiveLoadBalance;
 import com.gysoft.jdbc.multi.balance.LoadBalance;
