@@ -46,9 +46,10 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
      */
     private String tableName;
     /**
-     * 主键
+     * 主键列名（经 EntityTools.getPkColumnName 推导：主键字段的 @Column 列名，
+     * 兼容 @Table.pk 声明字段名而列名被 @Column 改名的场景）
      */
-    private String primaryKey;
+    private String pkColumnName;
 
     @SuppressWarnings("rawtypes")
     private RowMapper<T> rowMapper;
@@ -59,7 +60,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         entityClass = (Class<T>) type.getActualTypeArguments()[0];
         idClass = (Class<Id>) type.getActualTypeArguments()[1];
         tableName = EntityTools.getTableName(entityClass);
-        primaryKey = EntityTools.getPk(entityClass);
+        pkColumnName = EntityTools.getPkColumnName(entityClass);
         rowMapper = BeanPropertyRowMapper.newInstance(entityClass);
 
     }
@@ -106,11 +107,11 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public void saveOrUpdate(T t) {
-        Field field = ReflectionUtils.findField(entityClass, primaryKey);
+        // 用 isPk 双重比对定位主键字段，兼容主键字段带 @Column 改名
+        Field field = EntityTools.getPkField(entityClass);
         if (field == null) {
-            throw new GyjdbcException("Primary key field '" + primaryKey + "' not found");
+            throw new GyjdbcException("Primary key field not found in entity " + entityClass.getName());
         }
-        field.setAccessible(true);
         Id id = (Id) ReflectionUtils.getField(field, t);
         if (id == null) {
             throw new GyjdbcException("entity primary key must not be null");
@@ -205,7 +206,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public <E> E queryOne(Id id, RowMapper<E> tRowMapper) {
-        String sql = "SELECT * FROM " + tableName + " WHERE " + primaryKey + " = ? LIMIT 1";
+        String sql = "SELECT * FROM " + tableName + " WHERE " + pkColumnName + " = ? LIMIT 1";
         List<E> result = jdbcTemplate.query(sql, tRowMapper, id);
         return DataAccessUtils.singleResult(result);
     }
@@ -220,7 +221,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         if (CollectionUtils.isNotEmpty(ids)) {
             StringBuilder sql = new StringBuilder();
             List<String> marks = ids.stream().map(s -> "?").collect(Collectors.toList());
-            sql.append(" DELETE FROM " + tableName + " WHERE " + primaryKey + " in (");
+            sql.append(" DELETE FROM " + tableName + " WHERE " + pkColumnName + " in (");
             sql.append(String.join(",", marks));
             sql.append(")");
             return jdbcTemplate.update(sql.toString(), ids.toArray());
@@ -257,6 +258,9 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public <E> PageResult<E> pageQueryWithCriteria(Page page, Criteria criteria, RowMapper<E> tRowMapper) {
+        if (criteria != null && (criteria.getOffset() >= 0 || criteria.getSize() > 0)) {
+            throw new GyjdbcException("pageQueryWithCriteria does not support limit in criteria, use Page to control paging");
+        }
         String sql = "SELECT * FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
         sql = pair.getFirst();
@@ -287,7 +291,8 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
         String existsSql = pair.getFirst();
         Object[] params = pair.getSecond();
-        if (!existsSql.toUpperCase().contains(" LIMIT ")) {
+        boolean hasLimit = criteria != null && (criteria.getOffset() >= 0 || criteria.getSize() > 0);
+        if (!hasLimit) {
             existsSql = existsSql + " LIMIT ?";
             params = MixUtils.appendParams(params, 1);
         }
@@ -305,7 +310,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public List<Id> queryIds(Criteria criteria) {
-        String sql = "SELECT " + primaryKey + " FROM " + tableName;
+        String sql = "SELECT " + pkColumnName + " FROM " + tableName;
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
         return jdbcTemplate.queryForList(pair.getFirst(), pair.getSecond(), idClass);
     }
@@ -347,8 +352,9 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public <E> Result<E> queryWithSql(Class<E> clss, SQL sql) {
+        boolean hasLimit = sql.getOffset() >= 0 || sql.getSize() > 0;
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        return new Result<>(clss, pair.getFirst(), pair.getSecond(), jdbcTemplate);
+        return new Result<>(clss, pair.getFirst(), pair.getSecond(), jdbcTemplate, hasLimit);
     }
 
     @Override
@@ -366,6 +372,12 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public <E> PageResult<E> pageQueryWithSql(Page page, Class<E> clss, SQL sql) {
+        if (sql.getOffset() >= 0 || sql.getSize() > 0) {
+            throw new GyjdbcException("pageQueryWithSql does not support limit in SQL, use Page to control paging");
+        }
+        if (page == null) {
+            throw new GyjdbcException("page param cannot be null");
+        }
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         String baseSql = pair.getFirst();
         Object[] baseParams = pair.getSecond();
@@ -455,8 +467,8 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
                         }
                         Collections.addAll(paramList, param);
                     }
-                    // ON DUPLICATE KEY UPDATE
-                    if (CollectionUtils.isNotEmpty(kvs)) {
+                    // ON DUPLICATE KEY UPDATE（仅普通 INSERT 支持：REPLACE 追加该子句会语法错误，INSERT IGNORE 追加则被静默忽略）
+                    if (CollectionUtils.isNotEmpty(kvs) && EntityDao.SQL_INSERT.equals(sql.getSqlType())) {
                         tempInsertSql.append(" ON DUPLICATE KEY UPDATE ");
                         for (int i = 0; i < kvs.size(); i++) {
                             Pair p = kvs.get(i);

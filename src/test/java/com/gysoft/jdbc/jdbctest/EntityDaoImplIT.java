@@ -1,9 +1,10 @@
 package com.gysoft.jdbc.jdbctest;
 
 import com.gysoft.jdbc.bean.*;
+import com.gysoft.jdbc.dao.EntityDaoImpl;
 import com.gysoft.jdbc.entity.MemberEntity;
-import com.gysoft.jdbc.entity.MemberNameAgeDto;
 import com.gysoft.jdbc.entity.OrderEntity;
+import com.gysoft.jdbc.entity.PkMappedEntity;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.jdbc.core.RowMapper;
@@ -438,6 +439,27 @@ public class EntityDaoImplIT extends AbstractJdbcIT {
         assertEquals(Integer.valueOf(14), page.getList().get(1).getAge());
     }
 
+    @Test(expected = GyjdbcException.class)
+    public void pageQueryWithCriteriaRejectsCriteriaLimit() {
+        // criteria 内部设置 limit 会与外层 Page 组成双层 LIMIT，导致分页语义错乱、总数统计失真，必须拒绝
+        memberDao.pageQueryWithCriteria(new Page(1, 2),
+                Criteria.newCriteria().gt("age", 12).limit(0, 2));
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void pageQueryWithSqlRejectsSqlLimit() {
+        // SQL 内部设置 limit 会与外层 Page 组成双层 LIMIT，导致分页语义错乱、总数统计失真，必须拒绝
+        memberDao.pageQueryWithSql(new Page(1, 2), MemberEntity.class,
+                new SQL().select("*").from(MemberEntity.class).limit(0, 2));
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void pageQueryWithSqlNullPageThrows() {
+        // page 为 null 时应抛出明确异常，而非 NPE
+        memberDao.pageQueryWithSql(null, MemberEntity.class,
+                new SQL().select("*").from(MemberEntity.class));
+    }
+
     // ==================== SQL 入参方法 — 聚合/计数/存在性 ====================
 
     @Test
@@ -548,6 +570,76 @@ public class EntityDaoImplIT extends AbstractJdbcIT {
                         .select("name", "age").from(MemberEntity.class).where("age", ">", 10));
         assertEquals(1, inserted);
         assertEquals(3, memberDao.queryAll().size());
+    }
+
+    @Test
+    public void insertWithSqlReplaceIgnoresOnDuplicateKeyUpdate() {
+        // REPLACE 不支持 ON DUPLICATE KEY UPDATE 子句，追加会直接语法错误；
+        // 修复后 ODKU 被忽略，仅生成 REPLACE INTO ... VALUES ...，可正常执行
+        int first = memberDao.insertWithSql(
+                new SQL().replaceInto("tb_member", "id", "name")
+                        .values(100, "r1")
+                        .onDuplicateKeyUpdate("name", "ignored"));
+        assertTrue(first >= 1);
+        MemberEntity found = memberDao.queryOne(100);
+        assertNotNull(found);
+        assertEquals("r1", found.getName());
+
+        // 相同主键再次 REPLACE：删旧插新，不抛语法错误
+        memberDao.insertWithSql(
+                new SQL().replaceInto("tb_member", "id", "name")
+                        .values(100, "r2")
+                        .onDuplicateKeyUpdate("name", "ignored"));
+        assertEquals(1, memberDao.queryAll().size());
+        assertEquals("r2", memberDao.queryOne(100).getName());
+    }
+
+    @Test
+    public void insertWithSqlInsertIgnoreIgnoresOnDuplicateKeyUpdate() {
+        // INSERT IGNORE 的 ODKU 子句会被静默忽略，只保留 IGNORE 语义（重复键不报错、不更新）
+        memberDao.insertWithSql(
+                new SQL().insertIgnoreInto("tb_member", "id", "name")
+                        .values(200, "i1")
+                        .onDuplicateKeyUpdate("name", "ignored"));
+        assertEquals(1, memberDao.queryAll().size());
+        assertEquals("i1", memberDao.queryOne(200).getName());
+
+        // 相同主键再次 INSERT IGNORE：静默忽略，不更新、不新增
+        memberDao.insertWithSql(
+                new SQL().insertIgnoreInto("tb_member", "id", "name")
+                        .values(200, "i2")
+                        .onDuplicateKeyUpdate("name", "ignored"));
+        assertEquals(1, memberDao.queryAll().size());
+        assertEquals("i1", memberDao.queryOne(200).getName());
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void resultPageQueryNullPageThrows() {
+        // page 为 null 时应抛出明确异常，而非 NPE
+        memberDao.queryWithSql(MemberEntity.class,
+                new SQL().select("*").from(MemberEntity.class)).pageQuery(null);
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void resultPageQueryRejectsSqlLimit() {
+        // SQL 内部设置 limit 会与外层分页组成双层 LIMIT，导致分页语义错乱、总数统计失真，必须拒绝
+        memberDao.queryWithSql(MemberEntity.class,
+                new SQL().select("*").from(MemberEntity.class).limit(1)).pageQuery(new Page(1, 2));
+    }
+
+    @Test
+    public void lambdaColumnNameResolvesInheritedField() {
+        // lambda 引用父类继承字段（updateTime 在 BaseEntity），应正常解析而非抛 NoSuchFieldException
+        TypeFunction<MemberEntity, Object> fn = MemberEntity::getUpdateTime;
+        assertEquals("`updateTime`", TypeFunction.getLambdaColumnName(fn));
+    }
+
+    @Test
+    public void existsWithCriteriaWithLimitWorks() {
+        memberDao.save(newMember(1, "a", 10));
+        assertTrue(memberDao.existsWithCriteria(Criteria.newCriteria().gt("age", 9).limit(1)));
+        assertTrue(memberDao.existsWithCriteria(Criteria.newCriteria().gt("age", 9)));
+        assertFalse(memberDao.existsWithCriteria(Criteria.newCriteria().gt("age", 100)));
     }
 
     // ==================== SQL 入参方法 — Create / Drunk ====================
@@ -1011,16 +1103,18 @@ public class EntityDaoImplIT extends AbstractJdbcIT {
     // ==================== 自定义 RowMapper ====================
     // 三个带 RowMapper 参数的重载方法：queryOne(id, mapper) / queryWithCriteria(criteria, mapper)
     // / pageQueryWithCriteria(page, criteria, mapper)，允许将行映射为任意类型（而非默认实体）。
-    // 这里用自定义 RowMapper 把行映射为投影实体 MemberNameAgeDto，验证映射结果与泛型返回类型。
+    // 这里用 RowMapper<String> 返回拼接字符串，直接证明自定义映射生效、泛型方法返回类型正确。
 
     @Test
     public void queryOneWithCustomRowMapperMapsColumns() {
         memberDao.save(newMember(1, "zhangsan", 18));
 
-        MemberNameAgeDto mapped = memberDao.queryOne(1, memberNameAgeMapper());
+        RowMapper<String> nameAgeMapper = (rs, rowNum) ->
+                rs.getString("name") + ":" + rs.getInt("age");
 
-        assertEquals("zhangsan", mapped.getName());
-        assertEquals(Integer.valueOf(18), mapped.getAge());
+        String mapped = memberDao.queryOne(1, nameAgeMapper);
+
+        assertEquals("zhangsan:18", mapped);
     }
 
     @Test
@@ -1029,16 +1123,13 @@ public class EntityDaoImplIT extends AbstractJdbcIT {
         memberDao.save(newMember(2, "b", 20));
         memberDao.save(newMember(3, "c", 30));
 
-        // 过滤 + 排序后映射为投影实体列表，验证行级映射与 orderBy 同时生效
-        List<MemberNameAgeDto> mapped = memberDao.queryWithCriteria(
-                Criteria.newCriteria().gt("age", 15).orderBy(Sort.asc("age")),
-                memberNameAgeMapper());
+        // 自定义 RowMapper 返回 "name-age" 拼接列表，验证行级映射与排序生效
+        RowMapper<String> nameAgeMapper = (rs, rowNum) ->
+                rs.getString("name") + "-" + rs.getInt("age");
+        List<String> mapped = memberDao.queryWithCriteria(
+                Criteria.newCriteria().gt("age", 15).orderBy(Sort.asc("age")), nameAgeMapper);
 
-        assertEquals(2, mapped.size());
-        assertEquals("b", mapped.get(0).getName());
-        assertEquals(Integer.valueOf(20), mapped.get(0).getAge());
-        assertEquals("c", mapped.get(1).getName());
-        assertEquals(Integer.valueOf(30), mapped.get(1).getAge());
+        assertEquals(Arrays.asList("b-20", "c-30"), mapped);
     }
 
     @Test
@@ -1048,27 +1139,80 @@ public class EntityDaoImplIT extends AbstractJdbcIT {
             memberDao.save(newMember(i, "name" + i, 10 + i));
         }
 
-        // 映射为投影实体分页结果，验证 LIMIT 分页与独立 COUNT 总数统计仍正确
-        PageResult<MemberNameAgeDto> page = memberDao.pageQueryWithCriteria(
+        // 自定义 RowMapper 返回姓名字符串列表，验证分页与总数统计仍正确
+        RowMapper<String> nameMapper = (rs, rowNum) -> rs.getString("name");
+        PageResult<String> page = memberDao.pageQueryWithCriteria(
                 new Page(1, 2),
                 Criteria.newCriteria().gt("age", 12).orderBy(Sort.asc("age")),
-                memberNameAgeMapper());
+                nameMapper);
 
         assertEquals(3, page.getTotal().intValue());
         assertEquals(2, page.getList().size());
-        assertEquals("name3", page.getList().get(0).getName());
-        assertEquals(Integer.valueOf(13), page.getList().get(0).getAge());
-        assertEquals("name4", page.getList().get(1).getName());
-        assertEquals(Integer.valueOf(14), page.getList().get(1).getAge());
+        assertEquals("name3", page.getList().get(0)); // age 13
+        assertEquals("name4", page.getList().get(1)); // age 14
     }
 
-    /** 把 tb_member 行映射为 name/age 投影实体 */
-    private static RowMapper<MemberNameAgeDto> memberNameAgeMapper() {
-        return (rs, rowNum) -> {
-            MemberNameAgeDto dto = new MemberNameAgeDto();
-            dto.setName(rs.getString("name"));
-            dto.setAge(rs.getInt("age"));
-            return dto;
+    // ==================== 主键 @Column 改名（isPk 双重比对 + 主键列名推导）====================
+    // PkMappedEntity：@Table(pk="id") 声明主键为字段名 id，但 id 字段被 @Column 改名列 user_id。
+    // 修复前：isPk 只比对列名→识别断裂、saveOrUpdate 用 pk 字符串 findField 找不到字段、
+    // queryOne/delete/queryIds 用 @Table.pk("id") 拼 SQL→列名错误。修复后三者同时解决。
+
+    @Test
+    public void pkMappedSaveUpdateQueryDeleteUsesColumnName() {
+        jdbcTemplate.execute("DROP TABLE IF EXISTS tb_pk_mapped");
+        jdbcTemplate.execute("CREATE TABLE tb_pk_mapped (user_id INTEGER PRIMARY KEY, name VARCHAR(64))");
+        EntityDaoImpl<PkMappedEntity, Integer> pkDao = new EntityDaoImpl<PkMappedEntity, Integer>() {
         };
+        injectJdbcTemplate(pkDao);
+
+        // save 侧：主键列落库到 user_id
+        PkMappedEntity e = new PkMappedEntity();
+        e.setId(1);
+        e.setName("pk");
+        assertEquals(1, pkDao.save(e));
+        assertEquals(Integer.valueOf(1), jdbcTemplate.queryForObject(
+                "SELECT user_id FROM tb_pk_mapped", Integer.class));
+
+        // 查询侧：WHERE user_id = ? 命中（主键 id 经 BeanPropertyRowMapper 无法从 user_id 回读，
+        // 属既有"@Column 查询侧"缺陷，本用例不断言 id）
+        PkMappedEntity found = pkDao.queryOne(1);
+        assertNotNull(found);
+        assertEquals("pk", found.getName());
+
+        // update 侧：WHERE user_id = ? 更新（显式携带主键，验证 UPDATE 列名推导正确）
+        PkMappedEntity toUpdate = new PkMappedEntity();
+        toUpdate.setId(1);
+        toUpdate.setName("pk-updated");
+        assertEquals(1, pkDao.update(toUpdate));
+        assertEquals("pk-updated", pkDao.queryOne(1).getName());
+
+        // queryIds：SELECT user_id
+        assertEquals(Collections.singletonList(1), pkDao.queryIds(Criteria.newCriteria()));
+
+        // delete 侧：DELETE ... WHERE user_id in (?)
+        assertEquals(1, pkDao.delete(1));
+        assertNull(pkDao.queryOne(1));
+    }
+
+    @Test
+    public void pkMappedSaveOrUpdateLocatesPkFieldByName() {
+        jdbcTemplate.execute("DROP TABLE IF EXISTS tb_pk_mapped");
+        jdbcTemplate.execute("CREATE TABLE tb_pk_mapped (user_id INTEGER PRIMARY KEY, name VARCHAR(64))");
+        EntityDaoImpl<PkMappedEntity, Integer> pkDao = new EntityDaoImpl<PkMappedEntity, Integer>() {
+        };
+        injectJdbcTemplate(pkDao);
+
+        // saveOrUpdate 经 isPk 定位主键字段，不因 @Column 改名抛"字段找不到"
+        PkMappedEntity e = new PkMappedEntity();
+        e.setId(2);
+        e.setName("su-1");
+        pkDao.saveOrUpdate(e);
+        assertEquals("su-1", pkDao.queryOne(2).getName());
+
+        // 已存在则走 update，不重复插入
+        e.setName("su-2");
+        pkDao.saveOrUpdate(e);
+        assertEquals("su-2", pkDao.queryOne(2).getName());
+        assertEquals(1, pkDao.queryAll().size());
     }
 }

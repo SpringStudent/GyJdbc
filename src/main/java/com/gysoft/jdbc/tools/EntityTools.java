@@ -123,12 +123,37 @@ public class EntityTools {
      */
     public static boolean isPk(Class<?> entity, Field field) {
         String pk = getPk(entity);
+        // 兼容 @Table.pk 声明为字段名或列名两种写法：字段原名与 @Column 列名任一匹配即为主键
+        String fieldName = field.getName();
         String columnName = getColumnName(field);
-        //该字段是主键
-        if (pk.equals(columnName)) {
-            return true;
+        return pk.equals(fieldName) || pk.equals(columnName);
+    }
+
+    /**
+     * 定位主键字段（通过 isPk 识别，兼容主键字段带 @Column 改名的场景）
+     *
+     * @param entity 实体类型
+     * @return 主键字段；未识别到主键时返回 null
+     */
+    public static Field getPkField(Class<?> entity) {
+        for (Field field : getDeclaredFields(entity)) {
+            if (isPk(entity, field)) {
+                return field;
+            }
         }
-        return false;
+        return null;
+    }
+
+    /**
+     * 获取主键列名：优先取主键字段的 @Column 列名（无注解则用字段名），
+     * 避免直接用 @Table.pk 字符串拼 SQL 时主键列被 @Column 改名导致列名错误
+     *
+     * @param entity 实体类型
+     * @return 主键列名；未识别到主键时回退为 @Table.pk（或默认 "id"）
+     */
+    public static String getPkColumnName(Class<?> entity) {
+        Field pkField = getPkField(entity);
+        return pkField == null ? getPk(entity) : getColumnName(pkField);
     }
 
     public static String getColumnName(Field field) {

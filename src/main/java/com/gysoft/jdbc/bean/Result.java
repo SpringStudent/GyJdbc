@@ -19,12 +19,18 @@ public class Result<E> {
     private final String sql;
     private final Object[] params;
     private final JdbcTemplate jdbcTemplate;
+    private final boolean hasLimit;
 
     public Result(Class<E> type, String sql, Object[] params, JdbcTemplate jdbcTemplate) {
+        this(type, sql, params, jdbcTemplate, false);
+    }
+
+    public Result(Class<E> type, String sql, Object[] params, JdbcTemplate jdbcTemplate, boolean hasLimit) {
         this.type = type;
         this.sql = sql;
         this.params = params;
         this.jdbcTemplate = jdbcTemplate;
+        this.hasLimit = hasLimit;
     }
 
     public E queryOne() {
@@ -48,6 +54,12 @@ public class Result<E> {
     }
 
     public PageResult<E> pageQuery(Page page) {
+        if (page == null) {
+            throw new GyjdbcException("page param cannot be null");
+        }
+        if (hasLimit) {
+            throw new GyjdbcException("pageQuery does not support limit in SQL, use Page to control paging");
+        }
         String pageSql = "SELECT * FROM (" + sql + ") temp LIMIT ?,?";
         Object[] pageParams = MixUtils.appendParams(params, page.getOffset(), page.getPageSize());
         List<E> paged = jdbcTemplate.query(pageSql, pageParams, BeanPropertyRowMapper.newInstance(type));

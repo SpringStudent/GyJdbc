@@ -39,11 +39,18 @@ public interface TypeFunction<T, R> extends Serializable, Function<T, R> {
                 propertyName = implMethodName;
             }
             String fieldName = Introspector.decapitalize(propertyName);
-            // 通过字段名获取字段
-            Field field =
-                    Class.forName(serializedLambda.getImplClass().replace("/", "."))
-                            .getDeclaredField(fieldName);
-
+            Class<?> implClass = Class.forName(serializedLambda.getImplClass().replace("/", "."));
+            Field field = null;
+            for (Field f : EntityTools.getDeclaredFields(implClass)) {
+                if (f.getName().equals(fieldName)) {
+                    field = f;
+                    break;
+                }
+            }
+            if (field == null) {
+                throw new GyjdbcException(
+                        "cannot resolve field '" + fieldName + "' in " + implClass.getName() + " or its superclasses");
+            }
             Column anno = field.getAnnotation(Column.class);
             if (anno != null) {
                 return EntityTools.getColumnName(field);

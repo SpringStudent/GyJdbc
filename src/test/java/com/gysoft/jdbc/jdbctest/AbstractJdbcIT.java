@@ -75,7 +75,7 @@ public abstract class AbstractJdbcIT {
         orderDao = orderDaoImpl;
     }
 
-    private void injectJdbcTemplate(EntityDaoImpl<?, ?> dao) {
+    protected void injectJdbcTemplate(EntityDaoImpl<?, ?> dao) {
         try {
             Field field = EntityDaoImpl.class.getDeclaredField("jdbcTemplate");
             field.setAccessible(true);
