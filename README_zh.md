@@ -3,9 +3,10 @@
 # GyJdbc
 
 <p align="center">
-  <img src="https://img.shields.io/badge/License-Apache%202.0-blue" alt="Apache 2.0" />
+  <a href="https://central.sonatype.com/artifact/io.github.springstudent/GyJdbc"><img src="https://img.shields.io/badge/Maven%20Central-13.0.0.RELEASE-blue" alt="Maven Central" /></a>
   <img src="https://img.shields.io/badge/Java-8%2B-orange" alt="Java 8+" />
   <img src="https://img.shields.io/badge/Spring%20JDBC-5.3.x-brightgreen" alt="Spring JDBC 5.3.x" />
+  <img src="https://img.shields.io/badge/License-Apache%202.0-blue" alt="Apache 2.0" />
 </p>
 
 > 基于 Spring JdbcTemplate 的轻量级持久层框架：保留 SQL 的表达力，减少 DAO 层样板代码，让 Java 项目更快写出清晰、可维护的数据访问逻辑。
@@ -51,8 +52,6 @@ GyJdbc 很适合：
 如果你的项目需要完整的对象关系管理、复杂实体状态跟踪、一级缓存或自动脏检查，Hibernate / JPA 可能更适合。GyJdbc 的定位更直接：让你用更少代码写出更清晰的 SQL 数据访问层。
 
 ## 安装
-
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.springstudent/GyJdbc?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.springstudent/GyJdbc)
 
 ```xml
 <dependency>

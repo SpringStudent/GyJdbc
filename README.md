@@ -3,9 +3,10 @@
 # GyJdbc
 
 <p align="center">
-  <img src="https://img.shields.io/badge/License-Apache%202.0-blue" alt="Apache 2.0" />
+  <a href="https://central.sonatype.com/artifact/io.github.springstudent/GyJdbc"><img src="https://img.shields.io/badge/Maven%20Central-13.0.0.RELEASE-blue" alt="Maven Central" /></a>
   <img src="https://img.shields.io/badge/Java-8%2B-orange" alt="Java 8+" />
   <img src="https://img.shields.io/badge/Spring%20JDBC-5.3.x-brightgreen" alt="Spring JDBC 5.3.x" />
+  <img src="https://img.shields.io/badge/License-Apache%202.0-blue" alt="Apache 2.0" />
 </p>
 
 > A lightweight persistence framework based on Spring JdbcTemplate: preserves SQL expressiveness while reducing DAO boilerplate, helping Java projects write clean, maintainable data access logic faster.
@@ -51,8 +52,6 @@ GyJdbc is a great fit for:
 If your project needs full object-relational management, complex entity state tracking, first-level caching, or automatic dirty checking, Hibernate / JPA may be a better choice. GyJdbc's philosophy is more direct: write less code, produce clearer SQL, and build a maintainable data access layer.
 
 ## Installation
-
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.springstudent/GyJdbc?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.springstudent/GyJdbc)
 
 ```xml
 <dependency>
