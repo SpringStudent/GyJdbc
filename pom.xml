@@ -85,7 +85,7 @@
         <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
-            <version>1.9.4</version>
+            <version>1.11.0</version>
         </dependency>
         <!-- 提供 @Aspect/@Around 等注解（spring-aop 对 aspectjweaver 是 optional 依赖，不会传递） -->
         <dependency>
