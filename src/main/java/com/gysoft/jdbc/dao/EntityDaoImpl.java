@@ -142,13 +142,12 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         for (int i = 0; i < list.size(); i++) {
             batchArgs.add(SqlMakeTools.setArgs(list.get(i), SQL_INSERT));
         }
-        //将sql分为左右两部分
-        int index = sql.indexOf("VALUES");
-        index = sql.indexOf("(", index);
+        //将sql分为左右两部分（以 " VALUES " 定位，避免表名/列名含 VALUES 子串时切错位置）
+        Pair<String, String> sqlSplit = SqlMakeTools.splitInsertSql(sql);
         //sql的左侧insert into
-        String sqlLeft = sql.substring(0, index);
+        String sqlLeft = sqlSplit.getFirst();
         //sql的右侧values
-        String sqlRight = sql.substring(index);
+        String sqlRight = sqlSplit.getSecond();
         //分批次插入
         List<Object[]>[] batchArgsArr = MixUtils.slice(batchArgs, BATCH_PAGE_SIZE);
         //影响记录数量

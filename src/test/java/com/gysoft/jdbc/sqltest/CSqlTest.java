@@ -1,7 +1,9 @@
 package com.gysoft.jdbc.sqltest;
 
 import com.gysoft.jdbc.annotation.Column;
+import com.gysoft.jdbc.annotation.Table;
 import com.gysoft.jdbc.bean.*;
+import com.gysoft.jdbc.dao.EntityDao;
 import com.gysoft.jdbc.dao.EntityDaoImpl;
 import com.gysoft.jdbc.entity.UserEntity;
 import com.gysoft.jdbc.multi.*;
@@ -4588,5 +4590,92 @@ public class CSqlTest {
             }
         }
         return count;
+    }
+
+    /** 仅含主键字段的实体：UPDATE 时 SET 子句为空 */
+    @Table(name = "tb_only_pk")
+    public static class OnlyPkEntity {
+        private Integer id;
+
+        public Integer getId() {
+            return id;
+        }
+
+        public void setId(Integer id) {
+            this.id = id;
+        }
+    }
+
+    /** 无主键字段的实体：既无 @Table.pk，也无名为 id 的字段 */
+    public static class NoPkEntity {
+        private String name;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+    }
+
+    @Test
+    public void orderByDeduplicatesEqualSorts() {
+        // 相同的 (sortField, sortType) 在 Set 中只保留一份，不再生成重复排序列
+        Criteria criteria = new Criteria()
+                .orderBy(new Sort("age", "ASC"), new Sort("age", "ASC"), new Sort("name", "DESC"));
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
+
+        // 注意：排序字段间由 "," 拼接，无空格，属既有格式；此处断言去重后仅一份 age ASC
+        assertEquals("SELECT * FROM tb_test ORDER BY age ASC,name DESC", pair.getFirst());
+    }
+
+    @Test
+    public void updateSqlThrowsWhenPkMissing() {
+        try {
+            SqlMakeTools.makeSql(NoPkEntity.class, "tb_no_pk", EntityDao.SQL_UPDATE);
+            fail("缺少主键字段时应抛出异常，而非静默使用默认列名 id");
+        } catch (GyjdbcException expected) {
+            assertTrue(expected.getMessage().contains("Primary key field not found"));
+        }
+    }
+
+    @Test
+    public void updateSqlThrowsWhenOnlyPkColumn() {
+        try {
+            SqlMakeTools.makeSql(OnlyPkEntity.class, "tb_only_pk", EntityDao.SQL_UPDATE);
+            fail("仅主键字段时 SET 子句为空，应抛出异常而非生成非法 SQL");
+        } catch (GyjdbcException expected) {
+            assertTrue(expected.getMessage().contains("No non-primary-key fields"));
+        }
+    }
+
+    @Test
+    public void splitInsertSqlWithTableNameContainingValues() {
+        // 表名含 "VALUES" 子串：旧实现 indexOf("VALUES") 会在表名处提前命中，切错位置
+        String sql = SqlMakeTools.makeSql(OnlyPkEntity.class, "VALUES_LOG", EntityDao.SQL_INSERT);
+        Pair<String, String> split = SqlMakeTools.splitInsertSql(sql);
+
+        assertEquals(" INSERT INTO VALUES_LOG(id) VALUES ", split.getFirst());
+        assertEquals("(?)", split.getSecond());
+    }
+
+    @Test
+    public void splitInsertSqlNormalSql() {
+        String sql = SqlMakeTools.makeSql(NoPkEntity.class, "tb_normal", EntityDao.SQL_INSERT);
+        Pair<String, String> split = SqlMakeTools.splitInsertSql(sql);
+
+        assertEquals(" INSERT INTO tb_normal(name) VALUES ", split.getFirst());
+        assertEquals("(?)", split.getSecond());
+    }
+
+    @Test
+    public void splitInsertSqlMissingValuesThrows() {
+        try {
+            SqlMakeTools.splitInsertSql("DELETE FROM tb WHERE id = ?");
+            fail("无 VALUES 子句的 SQL 应抛出异常");
+        } catch (GyjdbcException expected) {
+            assertTrue(expected.getMessage().contains("VALUES"));
+        }
     }
 }

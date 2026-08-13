@@ -1,6 +1,7 @@
 package com.gysoft.jdbc.bean;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * @author 周宁
@@ -72,5 +73,23 @@ public class Sort implements Serializable {
 
     public void setSortType(String sortType) {
         this.sortType = sortType;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Sort sort = (Sort) o;
+        return Objects.equals(sortField, sort.sortField)
+                && Objects.equals(sortType, sort.sortType);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(sortField, sortType);
     }
 }

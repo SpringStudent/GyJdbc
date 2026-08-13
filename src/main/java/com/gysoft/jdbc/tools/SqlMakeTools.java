@@ -44,8 +44,9 @@ public class SqlMakeTools {
             sql = sql.deleteCharAt(sql.length() - 1);
             sql.append(")");
         } else if (sqlFlag.equals(SQL_UPDATE)) {
-            String primaryKey = "id";
-            sql.append(" UPDATE " + tbName + " SET ");
+            String primaryKey = null;
+            String setPrefix = " UPDATE " + tbName + " SET ";
+            sql.append(setPrefix);
             for (int i = 0; fields != null && i < fields.length; i++) {
                 String column = EntityTools.getColumnName(fields[i]);//获取属性对应字段名，没有注解默认按照属性名。有Column注解，获取Column的name作为字段名
                 if (EntityTools.isPk(clazz, fields[i])) { // id 代表主键
@@ -53,6 +54,12 @@ public class SqlMakeTools {
                     continue;
                 }
                 sql.append(column).append("=").append("?,");
+            }
+            if (primaryKey == null) {
+                throw new GyjdbcException("Primary key field not found in entity " + clazz.getName());
+            }
+            if (sql.length() == setPrefix.length()) {
+                throw new GyjdbcException("No non-primary-key fields to update in entity " + clazz.getName());
             }
             sql = sql.deleteCharAt(sql.length() - 1);
             sql.append(" WHERE " + primaryKey + " = ?");
@@ -68,6 +75,27 @@ public class SqlMakeTools {
             sql.append(" DELETE FROM " + tbName + " WHERE " + primaryKey + " = ?");
         }
         return sql.toString();
+    }
+
+    /**
+     * 将 INSERT 单行模板 SQL 拆分为「insert 前缀」与「列清单/values 后缀」两部分，
+     * 供 {@link com.gysoft.jdbc.dao.EntityDaoImpl#saveAll} 拼接多行 VALUES 使用。
+     * <p>以 " VALUES "（两侧带空格）定位关键字，避免表名/列名含 "VALUES" 子串时
+     * indexOf 提前命中而切错位置。</p>
+     *
+     * @param insertSql makeSql 生成的 INSERT 模板，形如 " INSERT INTO tb (a,b) VALUES (?,?)"
+     * @return first=insert 前缀（含 VALUES 关键字），second=以 "(" 开始的列清单部分
+     */
+    public static Pair<String, String> splitInsertSql(String insertSql) {
+        int valuesIndex = insertSql.indexOf(" VALUES ");
+        if (valuesIndex < 0) {
+            throw new GyjdbcException("insert sql does not contain a VALUES clause: " + insertSql);
+        }
+        int columnParenIndex = insertSql.indexOf("(", valuesIndex);
+        if (columnParenIndex < 0) {
+            throw new GyjdbcException("insert sql does not contain a column list: " + insertSql);
+        }
+        return new Pair<>(insertSql.substring(0, columnParenIndex), insertSql.substring(columnParenIndex));
     }
 
     /**
