@@ -17,11 +17,20 @@ public class Page implements Serializable {
     private int pageSize;
 
     public int getOffset() {
-        //当前页数小于0
+        // 当前页数小于 1 时按第一页处理
         if (currentPage < 1) {
             return 0;
         }
-        return (this.currentPage - 1) * this.pageSize;
+        // 每页记录数必须为正，否则分页无意义且会向下游 LIMIT 传入非法值
+        if (pageSize < 1) {
+            throw new GyjdbcException("pageSize must be positive, but got: " + pageSize);
+        }
+        // 用 long 计算偏移量，避免 int 乘法溢出为负数
+        long offset = (long) (currentPage - 1) * pageSize;
+        if (offset > Integer.MAX_VALUE) {
+            throw new GyjdbcException("分页偏移量超出 int 范围: currentPage=" + currentPage + ", pageSize=" + pageSize);
+        }
+        return (int) offset;
     }
 
     public Page() {

@@ -21,6 +21,7 @@ public class EntityTools {
     private static final Map<Class<?>, String> PK_CACHE = new ConcurrentHashMap<>();
     private static final Map<Class<?>, Field[]> FIELDS_CACHE = new ConcurrentHashMap<>();
     private static final Map<Field, String> COLUMN_NAME_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Boolean> HAS_COLUMN_ANNOTATION_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 根据实体类名，获取表名称
@@ -159,6 +160,23 @@ public class EntityTools {
             columnName = anno.name();
         }
         return columnName;
+    }
+
+    /**
+     * 判断实体是否存在带 @Column(name) 的字段。
+     * <p>存在时查询侧需按注解列名映射（用 {@link com.gysoft.jdbc.bean.EntityRowMapper}），
+     * 否则回退 BeanPropertyRowMapper 保持原有行为。</p>
+     */
+    public static boolean hasColumnAnnotation(Class<?> entity) {
+        return HAS_COLUMN_ANNOTATION_CACHE.computeIfAbsent(entity, clss -> {
+            for (Field field : getDeclaredFields(clss)) {
+                Column anno = field.getAnnotation(Column.class);
+                if (anno != null && StringUtils.isNotBlank(anno.name())) {
+                    return true;
+                }
+            }
+            return false;
+        });
     }
 
     public static String transferColumnName(String columnName) {

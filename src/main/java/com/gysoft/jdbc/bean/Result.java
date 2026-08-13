@@ -2,7 +2,6 @@ package com.gysoft.jdbc.bean;
 
 import org.springframework.dao.support.DataAccessUtils;
 import com.gysoft.jdbc.tools.MixUtils;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -42,7 +41,7 @@ public class Result<E> {
     }
 
     public List<E> queryList() {
-        return jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(type), params);
+        return jdbcTemplate.query(sql, EntityRowMapper.newRowMapper(type), params);
     }
 
     public List<E> queryForList() {
@@ -62,7 +61,7 @@ public class Result<E> {
         }
         String pageSql = "SELECT * FROM (" + sql + ") temp LIMIT ?,?";
         Object[] pageParams = MixUtils.appendParams(params, page.getOffset(), page.getPageSize());
-        List<E> paged = jdbcTemplate.query(pageSql, pageParams, BeanPropertyRowMapper.newInstance(type));
+        List<E> paged = jdbcTemplate.query(pageSql, pageParams, EntityRowMapper.newRowMapper(type));
         //独立统计总数,避免FOUND_ROWS()依赖同一连接在连接池/并发下取到错误计数
         String countSql = "SELECT COUNT(*) FROM (" + sql + ") temp";
         Integer count = jdbcTemplate.queryForObject(countSql, params, Integer.class);

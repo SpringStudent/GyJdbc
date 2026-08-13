@@ -1,13 +1,23 @@
 package com.gysoft.jdbc.jdbctest;
 
 import com.gysoft.jdbc.bean.*;
+import com.gysoft.jdbc.dao.EntityDao;
 import com.gysoft.jdbc.dao.EntityDaoImpl;
+import com.gysoft.jdbc.entity.ColumnMappedEntity;
 import com.gysoft.jdbc.entity.MemberEntity;
 import com.gysoft.jdbc.entity.OrderEntity;
 import com.gysoft.jdbc.entity.PkMappedEntity;
+import com.gysoft.jdbc.entity.PrimitiveFieldEntity;
 import org.junit.Assert;
 import org.junit.Test;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.cglib.proxy.Enhancer;
+import org.springframework.cglib.proxy.MethodInterceptor;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -1214,5 +1224,126 @@ public class EntityDaoImplIT extends AbstractJdbcIT {
         pkDao.saveOrUpdate(e);
         assertEquals("su-2", pkDao.queryOne(2).getName());
         assertEquals(1, pkDao.queryAll().size());
+    }
+
+    @Test
+    public void columnAnnotationMapsQuerySideWhenNameDiffers() {
+        // 属性名 nickname 与列名 real_name 无法经驼峰/下划线互转对上，用于实证
+        // 「@Column(name) 仅在写侧生效、查询侧读回 null」缺陷的修复
+        jdbcTemplate.execute("DROP TABLE IF EXISTS tb_column_mapped");
+        jdbcTemplate.execute("CREATE TABLE tb_column_mapped (" +
+                " id INTEGER PRIMARY KEY AUTO_INCREMENT," +
+                " real_name VARCHAR(64)," +
+                " age INTEGER)");
+
+        EntityDaoImpl<ColumnMappedEntity, Integer> dao = new EntityDaoImpl<ColumnMappedEntity, Integer>() {
+        };
+        injectJdbcTemplate(dao);
+
+        ColumnMappedEntity e = new ColumnMappedEntity();
+        e.setId(1);
+        e.setNickname("nick");
+        e.setAge(20);
+        assertEquals(1, dao.save(e));
+
+        // 写侧确实落库到 real_name 列（@Column 生效）
+        assertEquals("nick", jdbcTemplate.queryForObject(
+                "SELECT real_name FROM tb_column_mapped WHERE id = 1", String.class));
+
+        // 查询侧用同一列名回读：修复前 BeanPropertyRowMapper 按属性名 nickname 找列，读回 null
+        ColumnMappedEntity found = dao.queryOne(1);
+        assertNotNull(found);
+        assertEquals("nick", found.getNickname());
+        assertEquals(Integer.valueOf(20), found.getAge());
+
+        // 分页查询同样走 @Column 映射
+        List<ColumnMappedEntity> page = dao.pageQuery(new Page(1, 10)).getList();
+        assertEquals(1, page.size());
+        assertEquals("nick", page.get(0).getNickname());
+    }
+
+    @Test
+    public void primitiveFieldNullMapsToDefaultValue() {
+        jdbcTemplate.execute("DROP TABLE IF EXISTS tb_primitive");
+        jdbcTemplate.execute("CREATE TABLE tb_primitive (" +
+                " id INTEGER PRIMARY KEY AUTO_INCREMENT," +
+                " real_name VARCHAR(64)," +
+                " age INTEGER," +
+                " active BOOLEAN)");
+
+        EntityDaoImpl<PrimitiveFieldEntity, Integer> dao = new EntityDaoImpl<PrimitiveFieldEntity, Integer>() {
+        };
+        injectJdbcTemplate(dao);
+
+        // 直接插入 NULL 的 primitive 列（通过 dao.save 无法把 primitive 字段写成 NULL）
+        jdbcTemplate.update("INSERT INTO tb_primitive (id, real_name, age, active) VALUES (?, ?, ?, ?)",
+                1, "nick", null, null);
+
+        // 修复前：rs.getObject 对 NULL 返回 null，BeanWrapper 对 primitive 字段抛 TypeMismatchException
+        PrimitiveFieldEntity found = dao.queryOne(1);
+        assertNotNull(found);
+        assertEquals("nick", found.getNickname());
+        assertEquals(0, found.getAge());      // NULL → 默认 0
+        assertFalse(found.isActive());        // NULL → 默认 false
+    }
+
+    // ==================== 事务原子性 / 代理泛型解析 ====================
+
+    /** 供 CGLIB 代理测试使用的顶层嵌套 DAO 子类（方法内匿名类无法被 CGLIB 可靠继承） */
+    public static class TxMemberDao extends EntityDaoImpl<MemberEntity, Integer> {
+    }
+
+    @Test
+    public void cglibProxyResolvesGenericTypes() {
+        // CGLIB 直接代理（走构造器，非 Objenesis 绕过），修复前 EntityDaoImpl 构造器
+        // 对 getClass().getGenericSuperclass() 强转 ParameterizedType 会抛 ClassCastException
+        Enhancer enhancer = new Enhancer();
+        enhancer.setSuperclass(TxMemberDao.class);
+        enhancer.setCallback((MethodInterceptor) (obj, method, args, proxy) -> proxy.invokeSuper(obj, args));
+        TxMemberDao proxy = (TxMemberDao) enhancer.create();
+        injectJdbcTemplate(proxy);
+
+        proxy.save(newMember(1, "proxy", 18));
+        assertNotNull(proxy.queryOne(1));
+        assertEquals("proxy", proxy.queryOne(1).getName());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void batchSaveRollsBackOnPartialFailure() {
+        int oldSize = EntityDaoImpl.BATCH_PAGE_SIZE;
+        EntityDaoImpl.BATCH_PAGE_SIZE = 2;
+        try {
+            TxMemberDao target = new TxMemberDao();
+            injectJdbcTemplate(target);
+
+            DataSourceTransactionManager txManager = new DataSourceTransactionManager(jdbcTemplate.getDataSource());
+            TransactionInterceptor interceptor = new TransactionInterceptor(txManager, new AnnotationTransactionAttributeSource());
+            ProxyFactory factory = new ProxyFactory();
+            factory.setTarget(target);
+            factory.setProxyTargetClass(true);
+            factory.addAdvice(interceptor);
+            EntityDao<MemberEntity, Integer> txDao = (EntityDao<MemberEntity, Integer>) factory.getProxy();
+
+            // BATCH_PAGE_SIZE=2：第 1 片 [id=1,id=2] 成功，第 2 片 [id=3,id=1] 因 id=1 重复触发主键冲突
+            List<MemberEntity> list = Arrays.asList(
+                    newMember(1, "a", 10),
+                    newMember(2, "b", 20),
+                    newMember(3, "c", 30),
+                    newMember(1, "dup", 40),
+                    newMember(4, "d", 50));
+
+            try {
+                txDao.batchSave(list);
+                fail("批量保存应因主键冲突抛出异常");
+            } catch (DataAccessException expected) {
+                // 预期：第二片主键冲突
+            }
+
+            // 事务回滚后，第 1 片已插入的 id=1、id=2 也被回滚，表中应无数据
+            assertEquals("事务回滚后表中应无数据", 0, txDao.queryAll().size());
+        } finally {
+            EntityDaoImpl.BATCH_PAGE_SIZE = oldSize;
+        }
     }
 }

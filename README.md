@@ -753,14 +753,6 @@ mvn -Dtest=EntityDaoImplIT test # H2 integration tests only
 
 ## Important Notes
 
-### `@Column` on the Query Side
-
-`@Column(name)` takes effect on the `save` / `update` side (the SQL uses `name` as the column). On the query side, entity mapping is handled by Spring's `BeanPropertyRowMapper`, which does not read the `@Column` annotation.
-
-If `@Column(name)` and the Java property name do not convert to the same column name via the camelCase/underscore rule (e.g. property `email` with `@Column(name = "email_addr")`), the field is persisted on `save` but read back as `null` on query — causing save/query inconsistency. Names that convert cleanly (e.g. `emailAddr` ↔ `email_addr`) are consistent.
-
-Keep `@Column(name)` convertible to/from the property name, or provide a custom `RowMapper` when you need a non-convertible column name.
-
 ### Data-Source Binding Is Thread-Local
 
 Bindings from `@BindPoint` / `DataSourceContext.withDataSource` are stored in a `ThreadLocal` and are **not propagated to child threads**. In async scenarios (`@Async`, thread pools), a child thread cannot see the outer binding and its DB operations fall back to the default data source. To target a data source inside an async task, bind explicitly within the child thread.

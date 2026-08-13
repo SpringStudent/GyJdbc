@@ -750,14 +750,6 @@ mvn -Dtest=EntityDaoImplIT test # 只跑 H2 集成测试
 
 ## 重要提示
 
-### `@Column` 在查询侧的行为
-
-`@Column(name)` 只在 `save` / `update` 侧生效（生成 SQL 时使用 `name` 作为列名）。查询侧的实体映射由 Spring 的 `BeanPropertyRowMapper` 处理，它不识别 `@Column` 注解。
-
-当 `@Column(name)` 与 Java 属性名经驼峰/下划线互转后不一致时（如属性 `email` + `@Column(name = "email_addr")`），`save` 能写入但查询读回该字段恒为 `null`，造成 save/query 数据不一致。若两者经互转能对上（如 `emailAddr` ↔ `email_addr`）则保持一致。
-
-建议让 `@Column(name)` 与属性名保持驼峰/下划线互转一致，或在使用非常规列名时提供自定义 `RowMapper`。
-
 ### 多数据源绑定是线程隔离的
 
 `@BindPoint` / `DataSourceContext.withDataSource` 的绑定存放在 `ThreadLocal` 中，**不会传播到子线程**。在 `@Async`、线程池等异步场景中，子线程无法感知外层绑定，其数据库操作会回退到默认数据源。如需在异步任务内指定数据源，请在子线程内部显式绑定。

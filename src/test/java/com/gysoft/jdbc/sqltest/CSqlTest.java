@@ -42,6 +42,37 @@ import static org.junit.Assert.*;
 public class CSqlTest {
 
     @Test
+    public void offsetForFirstPageIsZero() {
+        assertEquals(0, new Page(1, 10).getOffset());
+        // 当前页 < 1 时容错为第一页
+        assertEquals(0, new Page(0, 10).getOffset());
+        assertEquals(0, new Page(-3, 10).getOffset());
+    }
+
+    @Test
+    public void offsetComputedCorrectly() {
+        assertEquals(0, new Page(1, 10).getOffset());
+        assertEquals(10, new Page(2, 10).getOffset());
+        assertEquals(20, new Page(3, 10).getOffset());
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void zeroPageSizeRejected() {
+        new Page(1, 0).getOffset();
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void negativePageSizeRejected() {
+        new Page(1, -5).getOffset();
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void offsetOverflowRejected() {
+        // (Integer.MAX_VALUE - 1) * 2 在 int 下溢出为负数，修复后应抛异常而非返回负偏移
+        new Page(Integer.MAX_VALUE, 2).getOffset();
+    }
+
+    @Test
     public void useSqlShouldBuildCreateSqlWithEmptyParams() {
         SQL sql = new SQL().create().table("halou")
                 .column(c -> c.name("id").integer().primary())
@@ -177,8 +208,8 @@ public class CSqlTest {
                 .where("flag", 1)
                 .orCriteria(new Criteria().where("type", "A"));
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
-       assertTrue("OR criteria missing: " + pair.getFirst(), pair.getFirst().contains("OR (type = ?)"));
-   }
+        assertTrue("OR criteria missing: " + pair.getFirst(), pair.getFirst().contains("OR (type = ?)"));
+    }
 
     @Test
     public void andCriteriaWithConditionTrueShouldInclude() {
@@ -696,65 +727,65 @@ public class CSqlTest {
 
         // ── 断言：精确校验最终 SQL 字符串与参数数组顺序 ──
         assertEquals(
-            "SELECT * FROM main_table WHERE status = ? AND type = ? AND score > ?"
-                + " OR priority = ? OR level > ? AND (col_a,col_b) = (?,?) AND age > ?"
-                + " AND rank >= ? AND max_retry < ? AND capacity <= ? AND flag <> ?"
-                + " AND create_time BETWEEN ? AND ?  AND optional_field IS NULL"
-                + " AND required_field IS NOT NULL AND name LIKE ? AND code LIKE ?"
-                + " AND email LIKE ? AND remark NOT LIKE ? AND prefix_col LIKE ?"
-                + " AND suffix_col LIKE ? OR or_like_key LIKE ? OR or_not_like_key NOT LIKE ?"
-                + " OR or_sw_key LIKE ? OR or_ew_key LIKE ? AND category IN(?,?,?)"
-                + " AND excluded_type NOT IN(?,?) AND sub_id IN(SELECT id FROM ref_table"
-                + " WHERE enabled = ?) AND bad_id NOT IN(SELECT id FROM blacklist)"
-                + " AND EXISTS (SELECT 1 FROM sub_a WHERE parent_id = ?)"
-                + " AND NOT EXISTS (SELECT 1 FROM sub_b WHERE ref_id = ?)"
-                + " AND (nested_type = ? OR nested_type = ?) OR (admin = ? AND verified = ?)"
-                + " AND (cond_true_col = ?) OR (or_cond_true = ?)"
-                + " AND chain_a = ? AND chain_b > ? OR or_chain LIKE ?"
-                + " AND wp_a = ? AND wp_b > ? OR wp_c LIKE ? OR wp_d <> ?"
-                + " AND (andr = ? AND andr2 < ?) OR (orr = ?)"
-                + " AND if_name = ? AND if_and_val = ? OR if_or_val = ?"
-                + " AND if_like LIKE ? AND if_in IN(?,?) AND if_ni NOT IN(?)"
-                + " AND if_ne <> ? AND if_bw BETWEEN ? AND ?  AND if_gt > ?"
-                + " AND if_gte >= ? AND if_lt < ? AND if_let <= ? AND if_ll LIKE ?"
-                + " AND if_lr LIKE ? AND if_nl NOT LIKE ? AND if_sw LIKE ?"
-                + " AND if_ew LIKE ? AND if_and_opt >= ? OR if_or_opt <> ?"
-                + " OR if_or_like LIKE ? OR if_or_nl NOT LIKE ? OR if_or_sw LIKE ?"
-                + " OR if_or_ew LIKE ? OR if_or_bw BETWEEN ? AND ?  AND `name` = ?"
-                + " AND `auths` LIKE ? AND `auths` IN(?,?) AND `size` > ?"
-                + " AND `size` < ? AND `name` <> ? AND `auths` NOT LIKE ?"
-                + " AND `name` LIKE ? AND `name` LIKE ? AND `auths` = ? OR `name` = ?"
-                + " GROUP BY dept_id,category HAVING COUNT(id) > ?"
-                + " ORDER BY create_time DESC,id ASC LIMIT ?, ?",
-            sql);
+                "SELECT * FROM main_table WHERE status = ? AND type = ? AND score > ?"
+                        + " OR priority = ? OR level > ? AND (col_a,col_b) = (?,?) AND age > ?"
+                        + " AND rank >= ? AND max_retry < ? AND capacity <= ? AND flag <> ?"
+                        + " AND create_time BETWEEN ? AND ?  AND optional_field IS NULL"
+                        + " AND required_field IS NOT NULL AND name LIKE ? AND code LIKE ?"
+                        + " AND email LIKE ? AND remark NOT LIKE ? AND prefix_col LIKE ?"
+                        + " AND suffix_col LIKE ? OR or_like_key LIKE ? OR or_not_like_key NOT LIKE ?"
+                        + " OR or_sw_key LIKE ? OR or_ew_key LIKE ? AND category IN(?,?,?)"
+                        + " AND excluded_type NOT IN(?,?) AND sub_id IN(SELECT id FROM ref_table"
+                        + " WHERE enabled = ?) AND bad_id NOT IN(SELECT id FROM blacklist)"
+                        + " AND EXISTS (SELECT 1 FROM sub_a WHERE parent_id = ?)"
+                        + " AND NOT EXISTS (SELECT 1 FROM sub_b WHERE ref_id = ?)"
+                        + " AND (nested_type = ? OR nested_type = ?) OR (admin = ? AND verified = ?)"
+                        + " AND (cond_true_col = ?) OR (or_cond_true = ?)"
+                        + " AND chain_a = ? AND chain_b > ? OR or_chain LIKE ?"
+                        + " AND wp_a = ? AND wp_b > ? OR wp_c LIKE ? OR wp_d <> ?"
+                        + " AND (andr = ? AND andr2 < ?) OR (orr = ?)"
+                        + " AND if_name = ? AND if_and_val = ? OR if_or_val = ?"
+                        + " AND if_like LIKE ? AND if_in IN(?,?) AND if_ni NOT IN(?)"
+                        + " AND if_ne <> ? AND if_bw BETWEEN ? AND ?  AND if_gt > ?"
+                        + " AND if_gte >= ? AND if_lt < ? AND if_let <= ? AND if_ll LIKE ?"
+                        + " AND if_lr LIKE ? AND if_nl NOT LIKE ? AND if_sw LIKE ?"
+                        + " AND if_ew LIKE ? AND if_and_opt >= ? OR if_or_opt <> ?"
+                        + " OR if_or_like LIKE ? OR if_or_nl NOT LIKE ? OR if_or_sw LIKE ?"
+                        + " OR if_or_ew LIKE ? OR if_or_bw BETWEEN ? AND ?  AND `name` = ?"
+                        + " AND `auths` LIKE ? AND `auths` IN(?,?) AND `size` > ?"
+                        + " AND `size` < ? AND `name` <> ? AND `auths` NOT LIKE ?"
+                        + " AND `name` LIKE ? AND `name` LIKE ? AND `auths` = ? OR `name` = ?"
+                        + " GROUP BY dept_id,category HAVING COUNT(id) > ?"
+                        + " ORDER BY create_time DESC,id ASC LIMIT ?, ?",
+                sql);
 
         assertArrayEquals(new Object[]{
-            // Part 1: basic operators (0-12)
-            1, "active", 60, "high", 5, 100, 200, 18, 3, 10, 200, "deleted", "2020-01-01", "2020-12-31",
-            // Part 2: LIKE family (13-22) — like/likeR/likeL/notLike/startsWith/endsWith + OR variants
-            "%test%", "GY%", "%@example.com", "%spam%", "pre%", "%suf",
-            "%or_pat%", "%bad%", "ORS%", "%ORE",
-            // Part 3: IN/NOT IN collections (23-29)
-            "A", "B", "C", "X", "Y",
-            // Part 3b: IN subquery param (28) — enabled=1
-            1,
-            // Part 4: EXISTS/NOT EXISTS subquery params (29-30)
-            "main.id", "main.id",
-            // Part 5: nested AND group (31-34)
-            "special", "vip", true, true,
-            // Part 5b: conditional criteria params (35-36)
-            1, "yes",
-            // Part 6: Where builder params (37-46)
-            "va", 50, "%or_val%", "eva", 200, "%lval%", "skip", 1, 100, 2,
-            // Part 7: IfAbsent — kept params (47-73)
-            "zhou", "keep", "keep_or", "%pat%", 10, 20, 999, "non-null", "lo", "hi",
-            100, 30, 500, 60, "%prefix_", "_suffix%", "%badword%", "SW_%", "%_EW",
-            80, "banned", "%or_pat_val%", "%or_spam%", "ORS_%", "%_ORE", "or_lo", "or_hi",
-            // Part 8: Lambda IfAbsent — kept params (74-85)
-            "roleName", "%role_pat%", "admin", "user", 50, 300,
-            "forbiddenName", "%spamRole%", "ROLE_%", "%_END", "authVal", "orRole",
-            // Part 9: HAVING + LIMIT (86-88)
-            2, 5, 10
+                // Part 1: basic operators (0-12)
+                1, "active", 60, "high", 5, 100, 200, 18, 3, 10, 200, "deleted", "2020-01-01", "2020-12-31",
+                // Part 2: LIKE family (13-22) — like/likeR/likeL/notLike/startsWith/endsWith + OR variants
+                "%test%", "GY%", "%@example.com", "%spam%", "pre%", "%suf",
+                "%or_pat%", "%bad%", "ORS%", "%ORE",
+                // Part 3: IN/NOT IN collections (23-29)
+                "A", "B", "C", "X", "Y",
+                // Part 3b: IN subquery param (28) — enabled=1
+                1,
+                // Part 4: EXISTS/NOT EXISTS subquery params (29-30)
+                "main.id", "main.id",
+                // Part 5: nested AND group (31-34)
+                "special", "vip", true, true,
+                // Part 5b: conditional criteria params (35-36)
+                1, "yes",
+                // Part 6: Where builder params (37-46)
+                "va", 50, "%or_val%", "eva", 200, "%lval%", "skip", 1, 100, 2,
+                // Part 7: IfAbsent — kept params (47-73)
+                "zhou", "keep", "keep_or", "%pat%", 10, 20, 999, "non-null", "lo", "hi",
+                100, 30, 500, 60, "%prefix_", "_suffix%", "%badword%", "SW_%", "%_EW",
+                80, "banned", "%or_pat_val%", "%or_spam%", "ORS_%", "%_ORE", "or_lo", "or_hi",
+                // Part 8: Lambda IfAbsent — kept params (74-85)
+                "roleName", "%role_pat%", "admin", "user", 50, 300,
+                "forbiddenName", "%spamRole%", "ROLE_%", "%_END", "authVal", "orRole",
+                // Part 9: HAVING + LIMIT (86-88)
+                2, 5, 10
         }, args);
     }
 
@@ -1294,7 +1325,7 @@ public class CSqlTest {
                 .whereIfAbsent("score", null);
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
         assertEquals("SELECT * FROM tb_test", pair.getFirst());
-       assertArrayEquals(new Object[]{}, pair.getSecond());
+        assertArrayEquals(new Object[]{}, pair.getSecond());
     }
 
     @Test
@@ -2575,7 +2606,9 @@ public class CSqlTest {
         assertEquals("real_name", EntityTools.getColumnName(realField));
     }
 
-    /** 测试用实体：@Column 带/不带 name 的两种情形 */
+    /**
+     * 测试用实体：@Column 带/不带 name 的两种情形
+     */
     private static class ColumnNameEntity {
         @Column
         private String nickName;
@@ -3946,14 +3979,14 @@ public class CSqlTest {
                                                 new SQL().select("e.*").from("nestTable")
                                         ).where("key", "k1")
                                 )
-                        ).like("keyLike","Lie").unionAll().select("f.*").from("f").isNotNull("notNull")
+                        ).like("keyLike", "Lie").unionAll().select("f.*").from("f").isNotNull("notNull")
                 ).where("condition", "1")
         );
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         assertEquals(
                 "SELECT * FROM(SELECT a.* FROM( (SELECT b.* FROM(SELECT c.* FROM(SELECT d.* FROM(SELECT e.* FROM nestTable)  WHERE key = ?) )  WHERE keyLike LIKE ?) UNION ALL (SELECT f.* FROM f WHERE notNull IS NOT NULL))  WHERE condition = ?)",
                 pair.getFirst());
-        assertArrayEquals(new Object[]{"k1","%Lie%","1"}, pair.getSecond());
+        assertArrayEquals(new Object[]{"k1", "%Lie%", "1"}, pair.getSecond());
     }
 
     /**
@@ -3993,10 +4026,10 @@ public class CSqlTest {
                         .on("u.id", "a.member_id"))
                 // RIGHT JOIN + SQL 子查询作连接表
                 .rightJoin(Joins.joinWith(new SQL()
-                        .select("member_id", FuncBuilder.max("paid_at").toString() + " AS last_paid")
-                        .from("payment")
-                        .where("amount", ">", 0)
-                        .groupBy("member_id"))
+                                .select("member_id", FuncBuilder.max("paid_at").toString() + " AS last_paid")
+                                .from("payment")
+                                .where("amount", ">", 0)
+                                .groupBy("member_id"))
                         .as("p").on("p.member_id", "u.id"))
                 // NATURE JOIN（逗号连接）
                 .natureJoin("member_extra", "me")
@@ -4025,22 +4058,22 @@ public class CSqlTest {
 
         // ── 断言：精确 SQL 字符串 ──
         assertEquals(
-            "SELECT u.id, ?, o.order_no, p.last_paid, COUNT(o.id) AS order_count"
-                + " FROM( ( (SELECT id, name, score FROM active_member WHERE status = ?)"
-                + " UNION (SELECT id, name, score FROM vip_member WHERE level >= ?)) u )"
-                + "  INNER JOIN order o ON u.id = o.member_id AND o.deleted = ?"
-                + " LEFT JOIN address a ON u.id = a.member_id"
-                + " RIGHT JOIN (SELECT member_id, MAX(paid_at) AS last_paid FROM payment"
-                + " WHERE amount > ? GROUP BY member_id) p ON p.member_id = u.id"
-                + ", member_extra me"
-                + " WHERE u.type <> ?"
-                + " AND o.amount >(SELECT AVG(amount) FROM order)"
-                + " AND u.score > u.baseline"
-                + " AND (a.city = ? OR a.city = ?)"
-                + " AND EXISTS (SELECT 1 FROM member_log WHERE member_id = ?)"
-                + " GROUP BY u.id HAVING COUNT(o.id) > ?"
-                + " ORDER BY u.id ASC LIMIT ?, ?",
-            sqlStr);
+                "SELECT u.id, ?, o.order_no, p.last_paid, COUNT(o.id) AS order_count"
+                        + " FROM( ( (SELECT id, name, score FROM active_member WHERE status = ?)"
+                        + " UNION (SELECT id, name, score FROM vip_member WHERE level >= ?)) u )"
+                        + "  INNER JOIN order o ON u.id = o.member_id AND o.deleted = ?"
+                        + " LEFT JOIN address a ON u.id = a.member_id"
+                        + " RIGHT JOIN (SELECT member_id, MAX(paid_at) AS last_paid FROM payment"
+                        + " WHERE amount > ? GROUP BY member_id) p ON p.member_id = u.id"
+                        + ", member_extra me"
+                        + " WHERE u.type <> ?"
+                        + " AND o.amount >(SELECT AVG(amount) FROM order)"
+                        + " AND u.score > u.baseline"
+                        + " AND (a.city = ? OR a.city = ?)"
+                        + " AND EXISTS (SELECT 1 FROM member_log WHERE member_id = ?)"
+                        + " GROUP BY u.id HAVING COUNT(o.id) > ?"
+                        + " ORDER BY u.id ASC LIMIT ?, ?",
+                sqlStr);
 
         // ── 断言：参数数组精确顺序 ──
         // [0]  ValueReference 字面值
@@ -4056,33 +4089,33 @@ public class CSqlTest {
         // [10] LIMIT offset
         // [11] LIMIT size
         assertArrayEquals(new Object[]{
-            "head_title", "active", 3, 0, 0, "banned", "Shanghai", "Beijing", "u.id", 1, 5, 10
+                "head_title", "active", 3, 0, 0, "banned", "Shanghai", "Beijing", "u.id", 1, 5, 10
         }, params);
 
         // ── 语义断言：确认关键 SQL 片段的拼接正确性 ──
         // UNION
-        assertTrue("UNION keyword missing",           sqlStr.contains(" UNION "));
+        assertTrue("UNION keyword missing", sqlStr.contains(" UNION "));
         // JOIN 类型
-        assertTrue("INNER JOIN missing",              sqlStr.contains("INNER JOIN"));
-        assertTrue("LEFT JOIN missing",               sqlStr.contains("LEFT JOIN"));
-        assertTrue("RIGHT JOIN missing",              sqlStr.contains("RIGHT JOIN"));
+        assertTrue("INNER JOIN missing", sqlStr.contains("INNER JOIN"));
+        assertTrue("LEFT JOIN missing", sqlStr.contains("LEFT JOIN"));
+        assertTrue("RIGHT JOIN missing", sqlStr.contains("RIGHT JOIN"));
         // NATURE JOIN → 逗号连接表
-        assertTrue("comma-join missing",              sqlStr.contains(", member_extra me"));
+        assertTrue("comma-join missing", sqlStr.contains(", member_extra me"));
         // FieldReference: 列名直接拼接（非 ? 占位符）
-        assertTrue("baseline FieldRef missing",       sqlStr.contains("u.score > u.baseline"));
+        assertTrue("baseline FieldRef missing", sqlStr.contains("u.score > u.baseline"));
         // ValueReference: ? 占位符注入
-        assertTrue("ValueRef ? missing",              sqlStr.contains("?, o.order_no"));
+        assertTrue("ValueRef ? missing", sqlStr.contains("?, o.order_no"));
         // FROM 子查询括号包裹
-        assertTrue("FROM-subquery wrapping wrong",    sqlStr.contains("FROM( ( (SELECT"));
+        assertTrue("FROM-subquery wrapping wrong", sqlStr.contains("FROM( ( (SELECT"));
         // EXISTS 子查询
-        assertTrue("EXISTS missing",                  sqlStr.contains("EXISTS ("));
+        assertTrue("EXISTS missing", sqlStr.contains("EXISTS ("));
         // GROUP BY / HAVING / ORDER BY / LIMIT
-        assertTrue("GROUP BY missing",                sqlStr.contains("GROUP BY u.id"));
-        assertTrue("HAVING missing",                  sqlStr.contains("HAVING COUNT(o.id) > ?"));
-        assertTrue("ORDER BY missing",                sqlStr.contains("ORDER BY u.id ASC"));
-        assertTrue("LIMIT missing",                   sqlStr.contains("LIMIT ?, ?"));
+        assertTrue("GROUP BY missing", sqlStr.contains("GROUP BY u.id"));
+        assertTrue("HAVING missing", sqlStr.contains("HAVING COUNT(o.id) > ?"));
+        assertTrue("ORDER BY missing", sqlStr.contains("ORDER BY u.id ASC"));
+        assertTrue("LIMIT missing", sqlStr.contains("LIMIT ?, ?"));
         // WHERE 子查询（无参数）
-        assertTrue("amount > subquery missing",       sqlStr.contains("o.amount >(SELECT AVG(amount) FROM order)"));
+        assertTrue("amount > subquery missing", sqlStr.contains("o.amount >(SELECT AVG(amount) FROM order)"));
     }
 
     private final TestRoutingDataSource routingDataSource = routingDataSource("primary");
@@ -4511,23 +4544,41 @@ public class CSqlTest {
         assertEquals("tb_role", EntityTools.getTableName(Role.class));
     }
 
-    /** 无注解测试实体：连续大写缩写 + 尾大写 */
-    static class UserDAO {}
+    /**
+     * 无注解测试实体：连续大写缩写 + 尾大写
+     */
+    static class UserDAO {
+    }
 
-    /** 无注解测试实体：缩写开头 */
-    static class HTTPClient {}
+    /**
+     * 无注解测试实体：缩写开头
+     */
+    static class HTTPClient {
+    }
 
-    /** 无注解测试实体：缩写 + 驼峰 */
-    static class XMLParser {}
+    /**
+     * 无注解测试实体：缩写 + 驼峰
+     */
+    static class XMLParser {
+    }
 
-    /** 无注解测试实体：全大写 */
-    static class ABC {}
+    /**
+     * 无注解测试实体：全大写
+     */
+    static class ABC {
+    }
 
-    /** 无注解测试实体：常规驼峰 */
-    static class MemberEntity {}
+    /**
+     * 无注解测试实体：常规驼峰
+     */
+    static class MemberEntity {
+    }
 
-    /** 无注解测试实体：首字母小写 */
-    static class userInfo {}
+    /**
+     * 无注解测试实体：首字母小写
+     */
+    static class userInfo {
+    }
 
     private int countPlaceholders(String sql) {
         int count = 0;

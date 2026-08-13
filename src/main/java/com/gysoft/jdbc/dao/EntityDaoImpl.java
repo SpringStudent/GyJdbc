@@ -7,13 +7,14 @@ import com.gysoft.jdbc.tools.MixUtils;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.GenericTypeResolver;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.*;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ReflectionUtils;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -56,12 +57,15 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @SuppressWarnings("unchecked")
     public EntityDaoImpl() {
-        ParameterizedType type = (ParameterizedType) getClass().getGenericSuperclass();
-        entityClass = (Class<T>) type.getActualTypeArguments()[0];
-        idClass = (Class<Id>) type.getActualTypeArguments()[1];
+        Class<?>[] typeArgs = GenericTypeResolver.resolveTypeArguments(getClass(), EntityDaoImpl.class);
+        if (typeArgs == null || typeArgs.length != 2) {
+            throw new GyjdbcException("无法解析 EntityDaoImpl 的泛型类型: " + getClass().getName());
+        }
+        entityClass = (Class<T>) typeArgs[0];
+        idClass = (Class<Id>) typeArgs[1];
         tableName = EntityTools.getTableName(entityClass);
         pkColumnName = EntityTools.getPkColumnName(entityClass);
-        rowMapper = BeanPropertyRowMapper.newInstance(entityClass);
+        rowMapper = EntityRowMapper.newRowMapper(entityClass);
 
     }
 
@@ -82,6 +86,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
+    @Transactional
     public void batchSave(List<T> list) {
         if (CollectionUtils.isEmpty(list)) {
             return;
@@ -125,6 +130,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
+    @Transactional
     public int saveAll(List<T> list) {
         if (CollectionUtils.isEmpty(list)) {
             return 0;
@@ -174,6 +180,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
+    @Transactional
     public void batchUpdate(List<T> list) {
         if (CollectionUtils.isEmpty(list)) {
             return;
@@ -360,13 +367,13 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     @Override
     public <E> List<E> queryListWithSql(Class<E> clss, SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), BeanPropertyRowMapper.newInstance(clss));
+        return jdbcTemplate.query(pair.getFirst(), pair.getSecond(), EntityRowMapper.newRowMapper(clss));
     }
 
     @Override
     public <E> E queryOneWithSql(Class<E> clss, SQL sql) {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        List<E> results = jdbcTemplate.query(pair.getFirst(), pair.getSecond(), BeanPropertyRowMapper.newInstance(clss));
+        List<E> results = jdbcTemplate.query(pair.getFirst(), pair.getSecond(), EntityRowMapper.newRowMapper(clss));
         return DataAccessUtils.singleResult(results);
     }
 
@@ -383,7 +390,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         Object[] baseParams = pair.getSecond();
         String pageSql = "SELECT * FROM (" + baseSql + ") temp LIMIT ?,?";
         Object[] pageParams = MixUtils.appendParams(baseParams, page.getOffset(), page.getPageSize());
-        List<E> paged = jdbcTemplate.query(pageSql, pageParams, BeanPropertyRowMapper.newInstance(clss));
+        List<E> paged = jdbcTemplate.query(pageSql, pageParams, EntityRowMapper.newRowMapper(clss));
         String countSql = "SELECT COUNT(*) FROM (" + baseSql + ") temp";
         Integer count = jdbcTemplate.queryForObject(countSql, baseParams, Integer.class);
         return new PageResult<>(paged, count == null ? 0 : count);
@@ -437,6 +444,7 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
     }
 
     @Override
+    @Transactional
     public int insertWithSql(SQL sql) {
         String originTbName = sql.tableName();
         String originSqlType = sql.getSqlType();
