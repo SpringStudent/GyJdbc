@@ -195,7 +195,7 @@ public class CriteriaTest {
         SQL s3 = new SQL().select(abs(Token::getSize), ceil(Token::getSize), floor(Token::getSize)).from(Token.class);
         //时间处理函数
         SQL s4 = new SQL().select(curdate(), curtime(), now(), month(curdate()), week(curdate()), minute(curtime()));
-        SQL s5 = new SQL().select(formatAs("10000", "2").as("a")).from(Book.class);
+        SQL s5 = new SQL().select(format("10000", "2").as("a")).from(Book.class);
 
         Pair<String, Object[]> pair = SqlMakeTools.useSql(s);
         System.out.println(pair.getFirst());
@@ -346,7 +346,7 @@ public class CriteriaTest {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select("*").from(Book.class).where(Book::getId, "this is a id").groupBy(Book::getNum).having(new Criteria().gt(count("name"), 1).or("fix", "heihei"));
+        sql = new SQL().select("*").from(Book.class).where(Book::getId, "this is a id").groupBy(Book::getNum).having(new Criteria().gt(count("name").getSql(), 1).or("fix", "heihei"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
@@ -446,11 +446,11 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select(count("average")).from(new SQL().select("sid", avgAs("score").as("average")).from("sc").groupBy("sid")).gt("average", "t2.average").asTable("rank");
+        sql = new SQL().select(count("average")).from(new SQL().select("sid", avg("score").as("average")).from("sc").groupBy("sid")).gt("average", "t2.average").asTable("rank");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
-        sql = new SQL().select("t2.sid", "sutdent.sname", "t2.average", new SQL().select(count("average")).from(new SQL().select("sid", avgAs("score").as("average")).from("sc").groupBy("sid").asTable("t1")).gt("average", "t2.average").asTable("rank"))
+        sql = new SQL().select("t2.sid", "sutdent.sname", "t2.average", new SQL().select(count("average")).from(new SQL().select("sid", avg("score").as("average")).from("sc").groupBy("sid").asTable("t1")).gt("average", "t2.average").asTable("rank"))
                 .from("student").where("t2.sid", "student.sid").orderBy(new Sort("average", "desc"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
@@ -498,12 +498,12 @@ public class CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
         sql = new SQL().delete().from("t_order").where(new String[]{"user_id", "product_id"}, "in", new SQL().select("t.user_id,t.product_id").from(new SQL().select("user_id,product_id").from("t_order").groupBy("user_id", "product_id").having("count(1)", ">", 1).asTable("t")))
-                .notIn("id", new SQL().select("t.id").from(new SQL().select(minAs("id").as("id")).from("t_order")).groupBy("user_id", "product_id").having("count(1)", ">", 1).asTable("t"));
+                .notIn("id", new SQL().select("t.id").from(new SQL().select(min("id").as("id")).from("t_order")).groupBy("user_id", "product_id").having("count(1)", ">", 1).asTable("t"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
         sql = new SQL().select(count("average")).from(
-                new SQL().select("sid", avgAs("score").as("average")
+                new SQL().select("sid", avg("score").as("average")
                 ).from("sc").groupBy("sid")).gt("average", "t2.average").asTable("rank");
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());

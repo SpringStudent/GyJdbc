@@ -4,702 +4,723 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 /**
+ * SQL 函数表达式工厂。
+ * <p>所有方法返回不可变的 {@link FuncExpr} 表达式对象，支持函数嵌套组合与链式
+ * {@link FuncExpr#as(String)}。参数约定：</p>
+ * <ul>
+ *   <li>{@code String} 参数 = 裸 SQL 片段（列名 / 表达式 / 变量），原样拼接，不加引号；</li>
+ *   <li>{@code TypeFunction} 参数 = 实体方法引用，解析为对应列名；</li>
+ *   <li>{@code FuncExpr} 参数 = 已组合的表达式（{@link #col} / {@link #lit} / 其它函数结果）；</li>
+ *   <li>{@code Object} 值参数 = 值字面量：{@code String} 自动加单引号并转义（' → ''），
+ *       {@code Number}/{@code Boolean} 原样输出，{@code FuncExpr} 取表达式文本，
+ *       {@link FieldReference} 取列名，{@code null} 输出 NULL。</li>
+ * </ul>
+ * <p>由此列/表达式与字符串常量在类型上区分开：想拼常量必须用 {@link #lit(String)} 或直接传
+ * 值参数，杜绝手写引号导致的 SQL 语法破坏与注入。</p>
+ *
  * @author 周宁
  */
-public class FuncBuilder {
-
-    protected String funcSql;
-
-    public FuncBuilder(String funcSql) {
-        this.funcSql = funcSql;
-    }
-
-    public String as(String as) {
-        return funcSql + " AS " + as;
-    }
-
-    public static FuncBuilder lengthAs(String field) {
-        return new FuncBuilder(length(field));
-    }
-
-    public static <T, R> FuncBuilder lengthAs(TypeFunction<T, R> function) {
-        return lengthAs(TypeFunction.getLambdaColumnName(function));
-    }
-
-    public static <T, R> String length(TypeFunction<T, R> function) {
-        return length(TypeFunction.getLambdaColumnName(function));
-    }
-
-    public static String length(String field) {
-        return "LENGTH(" + field + ")";
-    }
-
-    public static String charLength(String field) {
-        return "CHAR_LENGTH(" + field + ")";
-    }
-
-    public static <T, R> String charLength(TypeFunction<T, R> function) {
-        return charLength(TypeFunction.getLambdaColumnName(function));
-    }
-
-    public static FuncBuilder charLengthAs(String field) {
-        return new FuncBuilder(charLength(field));
-    }
-
-    public static <T, R> FuncBuilder charLengthAs(TypeFunction<T, R> field) {
-        return charLengthAs(TypeFunction.getLambdaColumnName(field));
+public final class FuncBuilder {
+
+    private FuncBuilder() {
+    }
+
+    // ==================== 基础工厂 ====================
+
+    /**
+     * 校验列名/表达式非空，防痴呆使用
+     *
+     * @param sql 列名或 SQL 片段
+     * @return String 校验后的列名
+     */
+    private static String require(String sql) {
+        if (sql == null) {
+            throw new GyjdbcException("func field cannot be null");
+        }
+        return sql;
     }
 
-    public static FuncBuilder avgAs(String field) {
-        return new FuncBuilder(avg(field));
+    /**
+     * 列名 / 裸表达式
+     *
+     * @param field 列名或 SQL 片段
+     * @return FuncExpr 表达式
+     */
+    public static FuncExpr col(String field) {
+        return new FuncExpr(require(field));
     }
 
-    public static <T, R> FuncBuilder avgAs(TypeFunction<T, R> function) {
-        return avgAs(TypeFunction.getLambdaColumnName(function));
+    /**
+     * 实体字段方法引用对应的列
+     *
+     * @param function 方法引用
+     * @return FuncExpr 表达式
+     */
+    public static <T, R> FuncExpr col(TypeFunction<T, R> function) {
+        if (function == null) {
+            throw new GyjdbcException("func field cannot be null");
+        }
+        return new FuncExpr(TypeFunction.getLambdaColumnName(function));
     }
 
-    public static String avg(String field) {
-        return "AVG(" + field + ")";
+    /**
+     * 字符串字面量：自动加单引号并转义（' → ''）。
+     * <p>与 {@code val()} 语义统一：{@code null} 输出 NULL 而非空字符串。</p>
+     *
+     * @param value 字符串常量
+     * @return FuncExpr 如 'Tom''s'，null 时为 NULL
+     */
+    public static FuncExpr lit(String value) {
+        if (value == null) {
+            return new FuncExpr("NULL");
+        }
+        return new FuncExpr("'" + escape(value) + "'");
     }
 
-    public static <T, R> String avg(TypeFunction<T, R> function) {
-        return avg(TypeFunction.getLambdaColumnName(function));
+    /**
+     * 单引号转义（' → ''）
+     *
+     * @param s 原始字符串
+     * @return String 转义后字符串
+     */
+    private static String escape(String s) {
+        return s.replace("'", "''");
     }
 
-    public static <T, R> FuncBuilder countAs(TypeFunction<T, R> function) {
-        return countAs(TypeFunction.getLambdaColumnName(function));
+    /**
+     * 值字面量归一化：String 加引号转义，Number/Boolean 原样，表达式/列取文本，null→NULL
+     *
+     * @param v 值
+     * @return String SQL 值文本
+     */
+    private static String val(Object v) {
+        if (v == null) {
+            return "NULL";
+        }
+        if (v instanceof FuncExpr) {
+            return ((FuncExpr) v).getSql();
+        }
+        if (v instanceof FieldReference) {
+            return ((FieldReference) v).getField();
+        }
+        if (v instanceof Number || v instanceof Boolean) {
+            return v.toString();
+        }
+        return "'" + escape(String.valueOf(v)) + "'";
     }
 
-    public static FuncBuilder countAs(String field) {
-        return new FuncBuilder(count(field));
-    }
+    // ==================== 聚合函数 ====================
 
-    public static String count(String field) {
-        return "COUNT(" + field + ")";
+    public static FuncExpr count() {
+        return new FuncExpr("COUNT(*)");
     }
 
-    public static <T, R> String count(TypeFunction<T, R> function) {
-        return count(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr count(String field) {
+        return new FuncExpr("COUNT(" + require(field) + ")");
     }
 
-    public static FuncBuilder maxAs(String field) {
-        return new FuncBuilder(max(field));
+    public static <T, R> FuncExpr count(TypeFunction<T, R> function) {
+        return count(col(function));
     }
 
-    public static <T, R> FuncBuilder maxAs(TypeFunction<T, R> function) {
-        return maxAs(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr count(FuncExpr field) {
+        return count(field.getSql());
     }
 
-
-    public static String max(String field) {
-        return "MAX(" + field + ")";
+    public static FuncExpr countDistinct(String field) {
+        return new FuncExpr("COUNT(DISTINCT " + require(field) + ")");
     }
 
-    public static <T, R> String max(TypeFunction<T, R> function) {
-        return max(TypeFunction.getLambdaColumnName(function));
+    public static <T, R> FuncExpr countDistinct(TypeFunction<T, R> function) {
+        return countDistinct(col(function));
     }
-
 
-    public static FuncBuilder minAs(String field) {
-        return new FuncBuilder(min(field));
+    public static FuncExpr countDistinct(FuncExpr field) {
+        return countDistinct(field.getSql());
     }
 
-    public static <T, R> FuncBuilder minAs(TypeFunction<T, R> function) {
-        return minAs(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr sum(String field) {
+        return new FuncExpr("SUM(" + require(field) + ")");
     }
 
-    public static <T, R> String min(TypeFunction<T, R> function) {
-        return min(TypeFunction.getLambdaColumnName(function));
+    public static <T, R> FuncExpr sum(TypeFunction<T, R> function) {
+        return sum(col(function));
     }
 
-    public static String min(String field) {
-        return "MIN(" + field + ")";
+    public static FuncExpr sum(FuncExpr field) {
+        return sum(field.getSql());
     }
 
-    public static FuncBuilder sumAs(String field) {
-        return new FuncBuilder(sum(field));
+    public static FuncExpr avg(String field) {
+        return new FuncExpr("AVG(" + require(field) + ")");
     }
 
-    public static <T, R> FuncBuilder sumAs(TypeFunction<T, R> function) {
-        return sumAs(TypeFunction.getLambdaColumnName(function));
+    public static <T, R> FuncExpr avg(TypeFunction<T, R> function) {
+        return avg(col(function));
     }
 
-    public static <T, R> String sum(TypeFunction<T, R> function) {
-        return sum(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr avg(FuncExpr field) {
+        return avg(field.getSql());
     }
 
-
-    public static String sum(String field) {
-        return "SUM(" + field + ")";
+    public static FuncExpr max(String field) {
+        return new FuncExpr("MAX(" + require(field) + ")");
     }
 
-    public static FuncBuilder groupConcatAs(String field) {
-        return new FuncBuilder(groupConcat(field));
+    public static <T, R> FuncExpr max(TypeFunction<T, R> function) {
+        return max(col(function));
     }
 
-    public static <T, R> FuncBuilder groupConcatAs(TypeFunction<T, R> function) {
-        return groupConcatAs(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr max(FuncExpr field) {
+        return max(field.getSql());
     }
 
-    public static String groupConcat(String field) {
-        return "GROUP_CONCAT(" + field + ")";
+    public static FuncExpr min(String field) {
+        return new FuncExpr("MIN(" + require(field) + ")");
     }
 
-    public static <T, R> String groupConcat(TypeFunction<T, R> function) {
-        return groupConcat(TypeFunction.getLambdaColumnName(function));
+    public static <T, R> FuncExpr min(TypeFunction<T, R> function) {
+        return min(col(function));
     }
 
-    public static FuncBuilder groupConcatDistinctAs(String field) {
-        return new FuncBuilder(groupConcatDistinct(field));
+    public static FuncExpr min(FuncExpr field) {
+        return min(field.getSql());
     }
 
-    public static <T, R> FuncBuilder groupConcatDistinctAs(TypeFunction<T, R> function) {
-        return groupConcatDistinctAs(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr groupConcat(String field) {
+        return new FuncExpr("GROUP_CONCAT(" + require(field) + ")");
     }
 
-    public static String groupConcatDistinct(String field) {
-        return "GROUP_CONCAT(DISTINCT " + field + ")";
+    public static <T, R> FuncExpr groupConcat(TypeFunction<T, R> function) {
+        return groupConcat(col(function));
     }
 
-    public static <T, R> String groupConcatDistinct(TypeFunction<T, R> function) {
-        return groupConcatDistinct(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr groupConcat(FuncExpr field) {
+        return groupConcat(field.getSql());
     }
 
-    public static FuncBuilder groupConcatAs(String field, String separator) {
-        return new FuncBuilder(groupConcat(field, separator));
+    public static FuncExpr groupConcat(String field, Object separator) {
+        return new FuncExpr("GROUP_CONCAT(" + require(field) + " SEPARATOR " + val(separator) + ")");
     }
 
-    public static <T, R> FuncBuilder groupConcatAs(TypeFunction<T, R> function, String separator) {
-        return groupConcatAs(TypeFunction.getLambdaColumnName(function), separator);
+    public static <T, R> FuncExpr groupConcat(TypeFunction<T, R> function, Object separator) {
+        return groupConcat(col(function), separator);
     }
 
-    public static String groupConcat(String field, String separator) {
-        return "GROUP_CONCAT(" + field + " SEPARATOR " + separator + ")";
+    public static FuncExpr groupConcat(FuncExpr field, Object separator) {
+        return groupConcat(field.getSql(), separator);
     }
 
-    public static <T, R> String groupConcat(TypeFunction<T, R> function, String separator) {
-        return groupConcat(TypeFunction.getLambdaColumnName(function), separator);
+    public static FuncExpr groupConcatDistinct(String field) {
+        return new FuncExpr("GROUP_CONCAT(DISTINCT " + require(field) + ")");
     }
 
-    public static String concat(String... fields) {
-        return "CONCAT(" + Arrays.stream(fields).collect(Collectors.joining(",")) + ")";
+    public static <T, R> FuncExpr groupConcatDistinct(TypeFunction<T, R> function) {
+        return groupConcatDistinct(col(function));
     }
 
-    public static <T, R> String concat(TypeFunction<T, R>... functions) {
-        return concat(Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()).toArray(new String[0]));
+    public static FuncExpr groupConcatDistinct(FuncExpr field) {
+        return groupConcatDistinct(field.getSql());
     }
 
-    public static FuncBuilder concatAs(String... fields) {
-        return new FuncBuilder(concat(fields));
-    }
+    // ==================== 字符串函数 ====================
 
-    public static <T, R> FuncBuilder concatAs(TypeFunction<T, R>... functions) {
-        return concatAs(Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()).toArray(new String[0]));
+    public static FuncExpr length(String field) {
+        return new FuncExpr("LENGTH(" + field + ")");
     }
 
-    public static FuncBuilder concat_wsAs(String joinStr, String... fields) {
-        return new FuncBuilder(concat_ws(joinStr, fields));
+    public static <T, R> FuncExpr length(TypeFunction<T, R> function) {
+        return length(col(function));
     }
 
-    public static <T, R> FuncBuilder concat_wsAs(String joinStr, TypeFunction<T, R>... functions) {
-        return concat_wsAs(joinStr, Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()).toArray(new String[0]));
+    public static FuncExpr length(FuncExpr field) {
+        return length(field.getSql());
     }
 
-    public static String concat_ws(String joinStr, String... fields) {
-        return "CONCAT_WS(" + joinStr + "," + Arrays.stream(fields).collect(Collectors.joining(",")) + ")";
+    public static FuncExpr charLength(String field) {
+        return new FuncExpr("CHAR_LENGTH(" + field + ")");
     }
-    public static <T, R> String concat_ws(String joinStr, TypeFunction<T, R>... functions) {
-        return concat_ws(joinStr, Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()).toArray(new String[0]));
-    }
-    public static FuncBuilder upperAs(String field) {
-        return new FuncBuilder(upper(field));
-    }
 
-    public static <T, R> FuncBuilder upperAs(TypeFunction<T, R> function) {
-        return upperAs(TypeFunction.getLambdaColumnName(function));
+    public static <T, R> FuncExpr charLength(TypeFunction<T, R> function) {
+        return charLength(col(function));
     }
 
-    public static String upper(String field) {
-        return "UPPER(" + field + ")";
+    public static FuncExpr charLength(FuncExpr field) {
+        return charLength(field.getSql());
     }
 
-    public static <T, R> String upper(TypeFunction<T, R> field) {
-        return upper(TypeFunction.getLambdaColumnName(field));
+    /**
+     * 拼接：参数为裸 SQL 片段或表达式，字符串常量请用 {@link #lit(String)} 组合
+     */
+    public static FuncExpr concat(String... fields) {
+        return new FuncExpr("CONCAT(" + Arrays.stream(fields).collect(Collectors.joining(",")) + ")");
     }
 
-    public static FuncBuilder lowerAs(String field) {
-        return new FuncBuilder(lower(field));
+    @SafeVarargs
+    public static <T, R> FuncExpr concat(TypeFunction<T, R>... functions) {
+        return concat(Arrays.stream(functions).map(FuncBuilder::col).toArray(FuncExpr[]::new));
     }
 
-    public static <T, R> FuncBuilder lowerAs(TypeFunction<T, R> function) {
-        return lowerAs(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr concat(FuncExpr... fields) {
+        return new FuncExpr("CONCAT(" + Arrays.stream(fields).map(FuncExpr::getSql).collect(Collectors.joining(",")) + ")");
     }
 
-    public static String lower(String field) {
-        return "LOWER(" + field + ")";
+    public static FuncExpr concat_ws(String joinStr, String... fields) {
+        return new FuncExpr("CONCAT_WS(" + val(joinStr) + "," + Arrays.stream(fields).collect(Collectors.joining(",")) + ")");
     }
 
-    public static <T, R> String lower(TypeFunction<T, R> function) {
-        return lower(TypeFunction.getLambdaColumnName(function));
+    @SafeVarargs
+    public static <T, R> FuncExpr concat_ws(String joinStr, TypeFunction<T, R>... functions) {
+        return concat_ws(joinStr, Arrays.stream(functions).map(FuncBuilder::col).toArray(FuncExpr[]::new));
     }
 
-    public static FuncBuilder findInSetAs(String field, String field2) {
-        return new FuncBuilder(findInSet(field, field2));
+    public static FuncExpr concat_ws(String joinStr, FuncExpr... fields) {
+        return new FuncExpr("CONCAT_WS(" + val(joinStr) + "," + Arrays.stream(fields).map(FuncExpr::getSql).collect(Collectors.joining(",")) + ")");
     }
 
-    public static String findInSet(String field, String field2) {
-        return "FIND_IN_SET(" + field + "," + field2 + ")";
+    public static FuncExpr upper(String field) {
+        return new FuncExpr("UPPER(" + field + ")");
     }
 
-    public static FuncBuilder locateAs(String field, String field2) {
-        return new FuncBuilder(locate(field, field2));
+    public static <T, R> FuncExpr upper(TypeFunction<T, R> function) {
+        return upper(col(function));
     }
 
-    public static String locate(String field, String field2) {
-        return "LOCATE(" + field + "," + field2 + ")";
+    public static FuncExpr upper(FuncExpr field) {
+        return upper(field.getSql());
     }
 
-    public static FuncBuilder positionAs(String field, String field2) {
-        return new FuncBuilder(position(field, field2));
+    public static FuncExpr lower(String field) {
+        return new FuncExpr("LOWER(" + field + ")");
     }
 
-    public static String position(String field, String field2) {
-        return "POSITION(" + field + " IN " + field2 + ")";
+    public static <T, R> FuncExpr lower(TypeFunction<T, R> function) {
+        return lower(col(function));
     }
 
-
-    public static FuncBuilder instrAs(String field, String field2) {
-        return new FuncBuilder(instr(field, field2));
+    public static FuncExpr lower(FuncExpr field) {
+        return lower(field.getSql());
     }
 
-    public static String instr(String field, String field2) {
-        return "INSTR(" + field + "," + field2 + ")";
+    public static FuncExpr ltrim(String field) {
+        return new FuncExpr("LTRIM(" + field + ")");
     }
 
-    public static FuncBuilder leftAs(String field, int index) {
-        return new FuncBuilder(left(field, index));
+    public static <T, R> FuncExpr ltrim(TypeFunction<T, R> function) {
+        return ltrim(col(function));
     }
 
-    public static String left(String field, int index) {
-        return "LEFT(" + field + "," + index + ")";
+    public static FuncExpr ltrim(FuncExpr field) {
+        return ltrim(field.getSql());
     }
 
-    public static FuncBuilder eltAs(int index, String... fields) {
-        return new FuncBuilder(elt(index, fields));
+    public static FuncExpr rtrim(String field) {
+        return new FuncExpr("RTRIM(" + field + ")");
     }
 
-    public static String elt(int index, String... fields) {
-        return "ELT(" + index + "," + Arrays.stream(fields).collect(Collectors.joining(",")) + ")";
+    public static <T, R> FuncExpr rtrim(TypeFunction<T, R> function) {
+        return rtrim(col(function));
     }
-
 
-    public static FuncBuilder rightAs(String field, int index) {
-        return new FuncBuilder(right(field, index));
+    public static FuncExpr rtrim(FuncExpr field) {
+        return rtrim(field.getSql());
     }
 
-    public static String right(String field, int index) {
-        return "RIGHT(" + field + "," + index + ")";
+    public static FuncExpr trim(String field) {
+        return new FuncExpr("TRIM(" + field + ")");
     }
 
-    public static FuncBuilder substringAs(String field, int index, int index2) {
-        return new FuncBuilder(substring(field, index, index2));
+    public static <T, R> FuncExpr trim(TypeFunction<T, R> function) {
+        return trim(col(function));
     }
 
-    public static String substring(String field, int index, int index2) {
-        return "SUBSTRING(" + field + "," + index + "," + index2 + ")";
+    public static FuncExpr trim(FuncExpr field) {
+        return trim(field.getSql());
     }
 
-    public static FuncBuilder ltrimAs(String field) {
-        return new FuncBuilder(ltrim(field));
+    public static FuncExpr findInSet(String field, String field2) {
+        return new FuncExpr("FIND_IN_SET(" + field + "," + field2 + ")");
     }
 
-    public static <T, R> FuncBuilder ltrimAs(TypeFunction<T, R> function) {
-        return ltrimAs(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr findInSet(FuncExpr field, FuncExpr field2) {
+        return findInSet(field.getSql(), field2.getSql());
     }
 
-    public static String ltrim(String field) {
-        return "LTRIM(" + field + ")";
+    public static FuncExpr locate(String field, String field2) {
+        return new FuncExpr("LOCATE(" + field + "," + field2 + ")");
     }
 
-    public static <T, R> String ltrim(TypeFunction<T, R> function) {
-        return ltrim(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr locate(FuncExpr field, FuncExpr field2) {
+        return locate(field.getSql(), field2.getSql());
     }
 
-    public static FuncBuilder rtrimAs(String field) {
-        return new FuncBuilder(rtrim(field));
+    public static FuncExpr position(String field, String field2) {
+        return new FuncExpr("POSITION(" + field + " IN " + field2 + ")");
     }
 
-    public static <T, R> FuncBuilder rtrimAs(TypeFunction<T, R> function) {
-        return rtrimAs(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr position(FuncExpr field, FuncExpr field2) {
+        return position(field.getSql(), field2.getSql());
     }
 
-    public static String rtrim(String field) {
-        return "RTRIM(" + field + ")";
+    public static FuncExpr instr(String field, String field2) {
+        return new FuncExpr("INSTR(" + field + "," + field2 + ")");
     }
 
-    public static <T, R> String rtrim(TypeFunction<T, R> function) {
-        return rtrim(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr instr(FuncExpr field, FuncExpr field2) {
+        return instr(field.getSql(), field2.getSql());
     }
 
-    public static FuncBuilder trimAs(String field) {
-        return new FuncBuilder(trim(field));
+    public static FuncExpr left(String field, int index) {
+        return new FuncExpr("LEFT(" + field + "," + index + ")");
     }
 
-    public static <T, R> FuncBuilder trimAs(TypeFunction<T, R> function) {
-        return trimAs(TypeFunction.getLambdaColumnName(function));
+    public static <T, R> FuncExpr left(TypeFunction<T, R> function, int index) {
+        return left(col(function), index);
     }
 
-    public static String trim(String field) {
-        return "TRIM(" + field + ")";
+    public static FuncExpr left(FuncExpr field, int index) {
+        return left(field.getSql(), index);
     }
 
-    public static <T, R> String trim(TypeFunction<T, R> function) {
-        return trim(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr right(String field, int index) {
+        return new FuncExpr("RIGHT(" + field + "," + index + ")");
     }
 
-    public static FuncBuilder insertAs(String field, int start, int end, String field2) {
-        return new FuncBuilder(insert(field, start, end, field2));
+    public static <T, R> FuncExpr right(TypeFunction<T, R> function, int index) {
+        return right(col(function), index);
     }
 
-    public static String insert(String field, int start, int end, String field2) {
-        return "INSERT(" + field + "," + start + "," + end + "," + field2 + ")";
+    public static FuncExpr right(FuncExpr field, int index) {
+        return right(field.getSql(), index);
     }
 
-    public static FuncBuilder replaceAs(String field, String field2, String field3) {
-        return new FuncBuilder(replace(field, field2, field3));
+    public static FuncExpr substring(String field, int index, int index2) {
+        return new FuncExpr("SUBSTRING(" + field + "," + index + "," + index2 + ")");
     }
 
-    public static String replace(String field, String field2, String field3) {
-        return "REPLACE(" + field + "," + field2 + "," + field3 + ")";
+    public static <T, R> FuncExpr substring(TypeFunction<T, R> function, int index, int index2) {
+        return substring(col(function), index, index2);
     }
 
-    public static FuncBuilder absAs(String field) {
-        return new FuncBuilder(abs(field));
+    public static FuncExpr substring(FuncExpr field, int index, int index2) {
+        return substring(field.getSql(), index, index2);
     }
 
-    public static <T, R> FuncBuilder absAs(TypeFunction<T, R> function) {
-        return absAs(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr elt(int index, String... fields) {
+        return new FuncExpr("ELT(" + index + "," + Arrays.stream(fields).collect(Collectors.joining(",")) + ")");
     }
 
-    public static String abs(String field) {
-        return "ABS(" + field + ")";
+    public static FuncExpr insert(String field, int start, int end, Object field2) {
+        return new FuncExpr("INSERT(" + field + "," + start + "," + end + "," + val(field2) + ")");
     }
 
-    public static <T, R> String abs(TypeFunction<T, R> function) {
-        return abs(TypeFunction.getLambdaColumnName(function));
+    public static <T, R> FuncExpr insert(TypeFunction<T, R> function, int start, int end, Object field2) {
+        return insert(col(function), start, end, field2);
     }
 
-    public static FuncBuilder ceilAs(String field) {
-        return new FuncBuilder(ceil(field));
+    public static FuncExpr insert(FuncExpr field, int start, int end, Object field2) {
+        return insert(field.getSql(), start, end, field2);
     }
 
-    public static <T, R> FuncBuilder ceilAs(TypeFunction<T, R> function) {
-        return ceilAs(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr replace(String field, Object field2, Object field3) {
+        return new FuncExpr("REPLACE(" + field + "," + val(field2) + "," + val(field3) + ")");
     }
 
-    public static String ceil(String field) {
-        return "CEIL(" + field + ")";
+    public static <T, R> FuncExpr replace(TypeFunction<T, R> function, Object field2, Object field3) {
+        return replace(col(function), field2, field3);
     }
 
-    public static <T, R> String ceil(TypeFunction<T, R> function) {
-        return ceil(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr replace(FuncExpr field, Object field2, Object field3) {
+        return replace(field.getSql(), field2, field3);
     }
 
+    // ==================== 数值函数 ====================
 
-    public static FuncBuilder floorAs(String field) {
-        return new FuncBuilder(floor(field));
+    public static FuncExpr abs(String field) {
+        return new FuncExpr("ABS(" + field + ")");
     }
 
-    public static <T, R> FuncBuilder floorAs(TypeFunction<T, R> function) {
-        return floorAs(TypeFunction.getLambdaColumnName(function));
+    public static <T, R> FuncExpr abs(TypeFunction<T, R> function) {
+        return abs(col(function));
     }
 
-    public static String floor(String field) {
-        return "FLOOR(" + field + ")";
+    public static FuncExpr abs(FuncExpr field) {
+        return abs(field.getSql());
     }
 
-    public static <T, R> String floor(TypeFunction<T, R> function) {
-        return floor(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr ceil(String field) {
+        return new FuncExpr("CEIL(" + field + ")");
     }
 
-    public static FuncBuilder modAs(String field, String field2) {
-        return new FuncBuilder(mod(field, field2));
+    public static <T, R> FuncExpr ceil(TypeFunction<T, R> function) {
+        return ceil(col(function));
     }
 
-    public static String mod(String field, String field2) {
-        return "MOD(" + field + "," + field2 + ")";
+    public static FuncExpr ceil(FuncExpr field) {
+        return ceil(field.getSql());
     }
 
-    public static FuncBuilder randAs() {
-        return new FuncBuilder(rand());
+    public static FuncExpr floor(String field) {
+        return new FuncExpr("FLOOR(" + field + ")");
     }
 
-    public static FuncBuilder randAs(int seed) {
-        return new FuncBuilder(rand(seed));
+    public static <T, R> FuncExpr floor(TypeFunction<T, R> function) {
+        return floor(col(function));
     }
 
-    public static String rand() {
-        return "RAND()";
+    public static FuncExpr floor(FuncExpr field) {
+        return floor(field.getSql());
     }
 
-    public static String rand(int seed) {
-        return "RAND(" + seed + ")";
+    public static FuncExpr mod(String field, String field2) {
+        return new FuncExpr("MOD(" + field + "," + field2 + ")");
     }
 
-    public static FuncBuilder roundAs(String field, int digit) {
-        return new FuncBuilder(round(field, digit));
+    public static FuncExpr mod(FuncExpr field, FuncExpr field2) {
+        return mod(field.getSql(), field2.getSql());
     }
 
-    public static String round(String field, int digit) {
-        return "ROUND(" + field + "," + digit + ")";
+    public static FuncExpr rand() {
+        return new FuncExpr("RAND()");
     }
 
-    public static FuncBuilder truncateAs(String field, int digit) {
-        return new FuncBuilder(truncate(field, digit));
+    public static FuncExpr rand(int seed) {
+        return new FuncExpr("RAND(" + seed + ")");
     }
 
-    public static String truncate(String field, int digit) {
-        return "TRUNCATE(" + field + "," + digit + ")";
+    public static FuncExpr round(String field, int digit) {
+        return new FuncExpr("ROUND(" + field + "," + digit + ")");
     }
 
-    public static FuncBuilder curdateAs() {
-        return new FuncBuilder(curdate());
+    public static <T, R> FuncExpr round(TypeFunction<T, R> function, int digit) {
+        return round(col(function), digit);
     }
 
-    public static String curdate() {
-        return "CURDATE()";
+    public static FuncExpr round(FuncExpr field, int digit) {
+        return round(field.getSql(), digit);
     }
 
-    public static FuncBuilder curtimeAs() {
-        return new FuncBuilder(curtime());
+    public static FuncExpr truncate(String field, int digit) {
+        return new FuncExpr("TRUNCATE(" + field + "," + digit + ")");
     }
 
-    public static String curtime() {
-        return "CURTIME()";
+    public static <T, R> FuncExpr truncate(TypeFunction<T, R> function, int digit) {
+        return truncate(col(function), digit);
     }
 
-    public static FuncBuilder nowAs() {
-        return new FuncBuilder(now());
+    public static FuncExpr truncate(FuncExpr field, int digit) {
+        return truncate(field.getSql(), digit);
     }
 
-    public static String now() {
-        return "NOW()";
-    }
-
-    public static FuncBuilder monthAs(String dateField) {
-        return new FuncBuilder(month(dateField));
-    }
+    // ==================== 日期函数 ====================
 
-    public static String month(String dateField) {
-        return "MONTH(" + dateField + ")";
+    public static FuncExpr curdate() {
+        return new FuncExpr("CURDATE()");
     }
 
-    public static FuncBuilder monthnameAs(String dateField) {
-        return new FuncBuilder(monthname(dateField));
+    public static FuncExpr curtime() {
+        return new FuncExpr("CURTIME()");
     }
 
-    public static String monthname(String dateField) {
-        return "MONTHNAME(" + dateField + ")";
+    public static FuncExpr now() {
+        return new FuncExpr("NOW()");
     }
 
-    public static FuncBuilder weekAs(String dateField) {
-        return new FuncBuilder(week(dateField));
+    public static FuncExpr month(String dateField) {
+        return new FuncExpr("MONTH(" + dateField + ")");
     }
 
-    public static String week(String dateField) {
-        return "WEEK(" + dateField + ")";
+    public static <T, R> FuncExpr month(TypeFunction<T, R> function) {
+        return month(col(function));
     }
 
-    public static FuncBuilder yearAs(String dateField) {
-        return new FuncBuilder(year(dateField));
+    public static FuncExpr month(FuncExpr field) {
+        return month(field.getSql());
     }
 
-    public static String year(String dateField) {
-        return "YEAR(" + dateField + ")";
+    public static FuncExpr monthname(String dateField) {
+        return new FuncExpr("MONTHNAME(" + dateField + ")");
     }
 
-    public static FuncBuilder hourAs(String timeField) {
-        return new FuncBuilder(hour(timeField));
+    public static <T, R> FuncExpr monthname(TypeFunction<T, R> function) {
+        return monthname(col(function));
     }
 
-    public static String hour(String timeField) {
-        return "HOUR(" + timeField + ")";
+    public static FuncExpr monthname(FuncExpr field) {
+        return monthname(field.getSql());
     }
 
-    public static FuncBuilder minuteAs(String timeField) {
-        return new FuncBuilder(minute(timeField));
+    public static FuncExpr week(String dateField) {
+        return new FuncExpr("WEEK(" + dateField + ")");
     }
 
-    public static String minute(String timeField) {
-        return "MINUTE(" + timeField + ")";
+    public static <T, R> FuncExpr week(TypeFunction<T, R> function) {
+        return week(col(function));
     }
 
-    public static FuncBuilder weekdayAs(String dateField) {
-        return new FuncBuilder(weekday(dateField));
+    public static FuncExpr week(FuncExpr field) {
+        return week(field.getSql());
     }
 
-    public static String weekday(String dateField) {
-        return "WEEKDAY(" + dateField + ")";
+    public static FuncExpr year(String dateField) {
+        return new FuncExpr("YEAR(" + dateField + ")");
     }
 
-    public static FuncBuilder daynameAs(String dateField) {
-        return new FuncBuilder(dayname(dateField));
+    public static <T, R> FuncExpr year(TypeFunction<T, R> function) {
+        return year(col(function));
     }
 
-    public static String dayname(String dateField) {
-        return "DAYNAME(" + dateField + ")";
+    public static FuncExpr year(FuncExpr field) {
+        return year(field.getSql());
     }
 
-    public static FuncBuilder distinctAs(String field) {
-        return new FuncBuilder(distinct(field));
+    public static FuncExpr hour(String timeField) {
+        return new FuncExpr("HOUR(" + timeField + ")");
     }
 
-    public static String distinct(String field) {
-        return "DISTINCT(" + field + ")";
+    public static <T, R> FuncExpr hour(TypeFunction<T, R> function) {
+        return hour(col(function));
     }
 
-    public static <T, R> FuncBuilder distinctAs(TypeFunction<T, R> function) {
-        return distinctAs(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr hour(FuncExpr field) {
+        return hour(field.getSql());
     }
 
-    public static <T, R> String distinct(TypeFunction<T, R> function) {
-        return distinct(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr minute(String timeField) {
+        return new FuncExpr("MINUTE(" + timeField + ")");
     }
 
-    public static FuncBuilder convertUsingGbkAs(String field) {
-        return new FuncBuilder(convertUsingGbk(field));
+    public static <T, R> FuncExpr minute(TypeFunction<T, R> function) {
+        return minute(col(function));
     }
 
-    public static <T, R> FuncBuilder convertUsingGbkAs(TypeFunction<T, R> function) {
-        return convertUsingGbkAs(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr minute(FuncExpr field) {
+        return minute(field.getSql());
     }
 
-    public static String convertUsingGbk(String field) {
-        return "CONVERT(" + field + " USING GBK)";
+    public static FuncExpr weekday(String dateField) {
+        return new FuncExpr("WEEKDAY(" + dateField + ")");
     }
 
-    public static <T, R> String convertUsingGbk(TypeFunction<T, R> function) {
-        return convertUsingGbk(TypeFunction.getLambdaColumnName(function));
+    public static <T, R> FuncExpr weekday(TypeFunction<T, R> function) {
+        return weekday(col(function));
     }
 
-    public static FuncBuilder dateFormatAs(String field, String formatPattern) {
-        return new FuncBuilder(dateFormat(field, formatPattern));
+    public static FuncExpr weekday(FuncExpr field) {
+        return weekday(field.getSql());
     }
 
-    public static <T, R> FuncBuilder dateFormatAs(TypeFunction<T, R> function, String formatPattern) {
-        return dateFormatAs(TypeFunction.getLambdaColumnName(function), formatPattern);
+    public static FuncExpr dayname(String dateField) {
+        return new FuncExpr("DAYNAME(" + dateField + ")");
     }
 
-    public static String dateFormat(String field, String formatPattern) {
-        return "DATE_FORMAT(" + field + ",'" + formatPattern + "')";
+    public static <T, R> FuncExpr dayname(TypeFunction<T, R> function) {
+        return dayname(col(function));
     }
 
-    public static <T, R> String dateFormat(TypeFunction<T, R> function, String formatPattern) {
-        return dateFormat(TypeFunction.getLambdaColumnName(function), formatPattern);
+    public static FuncExpr dayname(FuncExpr field) {
+        return dayname(field.getSql());
     }
 
-    public static FuncBuilder formatAs(String field, String formatPattern) {
-        return new FuncBuilder(format(field, formatPattern));
+    public static FuncExpr date(String field) {
+        return new FuncExpr("DATE(" + field + ")");
     }
 
-    public static <T, R> FuncBuilder formatAs(TypeFunction<T, R> function, String formatPattern) {
-        return formatAs(TypeFunction.getLambdaColumnName(function), formatPattern);
+    public static <T, R> FuncExpr date(TypeFunction<T, R> function) {
+        return date(col(function));
     }
 
-    public static String format(String field, String formatPattern) {
-        return "FORMAT(" + field + ",'" + formatPattern + "')";
+    public static FuncExpr date(FuncExpr field) {
+        return date(field.getSql());
     }
 
-    public static <T, R> String format(TypeFunction<T, R> function, String formatPattern) {
-        return format(TypeFunction.getLambdaColumnName(function), formatPattern);
+    public static FuncExpr dateFormat(String field, Object formatPattern) {
+        return new FuncExpr("DATE_FORMAT(" + field + "," + val(formatPattern) + ")");
     }
 
-    public static FuncBuilder dateSubAs(String field, String express) {
-        return new FuncBuilder(dateSub(field, express));
+    public static <T, R> FuncExpr dateFormat(TypeFunction<T, R> function, Object formatPattern) {
+        return dateFormat(col(function), formatPattern);
     }
 
-    public static <T, R> FuncBuilder dateSubAs(TypeFunction<T, R> function, String express) {
-        return dateSubAs(TypeFunction.getLambdaColumnName(function), express);
+    public static FuncExpr dateFormat(FuncExpr field, Object formatPattern) {
+        return dateFormat(field.getSql(), formatPattern);
     }
 
-    public static String dateSub(String field, String express) {
-        return "DATE_SUB(" + field + "," + express + ")";
+    public static FuncExpr format(String field, Object formatPattern) {
+        return new FuncExpr("FORMAT(" + field + "," + val(formatPattern) + ")");
     }
 
-    public static <T, R> String dateSub(TypeFunction<T, R> function, String express) {
-        return dateSub(TypeFunction.getLambdaColumnName(function), express);
+    public static <T, R> FuncExpr format(TypeFunction<T, R> function, Object formatPattern) {
+        return format(col(function), formatPattern);
     }
 
-
-    public static FuncBuilder dateAddAs(String field, String express) {
-        return new FuncBuilder(dateAdd(field, express));
+    public static FuncExpr format(FuncExpr field, Object formatPattern) {
+        return format(field.getSql(), formatPattern);
     }
 
-    public static <T, R> FuncBuilder dateAddAs(TypeFunction<T, R> function, String express) {
-        return dateAddAs(TypeFunction.getLambdaColumnName(function), express);
+    public static FuncExpr dateSub(String field, String express) {
+        return new FuncExpr("DATE_SUB(" + field + "," + express + ")");
     }
 
-    public static String dateAdd(String field, String express) {
-        return "DATE_ADD(" + field + "," + express + ")";
+    public static <T, R> FuncExpr dateSub(TypeFunction<T, R> function, String express) {
+        return dateSub(col(function), express);
     }
 
-    public static <T, R> String dateAdd(TypeFunction<T, R> function, String express) {
-        return dateAdd(TypeFunction.getLambdaColumnName(function), express);
+    public static FuncExpr dateSub(FuncExpr field, String express) {
+        return dateSub(field.getSql(), express);
     }
 
-    public static FuncBuilder strToDateAs(String field, String formatPattern) {
-        return new FuncBuilder(strToDate(field, formatPattern));
+    public static FuncExpr dateAdd(String field, String express) {
+        return new FuncExpr("DATE_ADD(" + field + "," + express + ")");
     }
 
-    public static <T, R> FuncBuilder strToDateAs(TypeFunction<T, R> function, String formatPattern) {
-        return strToDateAs(TypeFunction.getLambdaColumnName(function), formatPattern);
+    public static <T, R> FuncExpr dateAdd(TypeFunction<T, R> function, String express) {
+        return dateAdd(col(function), express);
     }
 
-    public static String strToDate(String field, String formatPattern) {
-        return "STR_TO_DATE(" + field + ",'" + formatPattern + "')";
+    public static FuncExpr dateAdd(FuncExpr field, String express) {
+        return dateAdd(field.getSql(), express);
     }
 
-    public static <T, R> String strToDate(TypeFunction<T, R> function, String formatPattern) {
-        return strToDate(TypeFunction.getLambdaColumnName(function), formatPattern);
+    public static FuncExpr strToDate(String field, Object formatPattern) {
+        return new FuncExpr("STR_TO_DATE(" + field + "," + val(formatPattern) + ")");
     }
 
-    public static FuncBuilder ifNullAs(String field, Object val) {
-        return new FuncBuilder(ifNull(field, val));
+    public static <T, R> FuncExpr strToDate(TypeFunction<T, R> function, Object formatPattern) {
+        return strToDate(col(function), formatPattern);
     }
 
-    public static <T, R> FuncBuilder ifNullAs(TypeFunction<T, R> function, Object val) {
-        return ifNullAs(TypeFunction.getLambdaColumnName(function), val);
+    public static FuncExpr strToDate(FuncExpr field, Object formatPattern) {
+        return strToDate(field.getSql(), formatPattern);
     }
 
-    public static String ifNull(String field, Object val) {
-        return "IFNULL(" + field + "," + val + ")";
-    }
+    // ==================== 条件函数 ====================
 
-    public static <T, R> String ifNull(TypeFunction<T, R> function, Object val) {
-        return ifNull(TypeFunction.getLambdaColumnName(function), val);
+    public static FuncExpr ifNull(String field, Object val) {
+        return new FuncExpr("IFNULL(" + field + "," + FuncBuilder.val(val) + ")");
     }
 
-    public static FuncBuilder ifAs(String express, Object val1, Object val2) {
-        return new FuncBuilder(_if(express, val1, val2));
+    public static <T, R> FuncExpr ifNull(TypeFunction<T, R> function, Object val) {
+        return ifNull(col(function), val);
     }
 
-    public static <T, R> FuncBuilder ifAs(TypeFunction<T, R> function, Object val1, Object val2) {
-        return ifAs(TypeFunction.getLambdaColumnName(function), val1, val2);
+    public static FuncExpr ifNull(FuncExpr field, Object val) {
+        return ifNull(field.getSql(), val);
     }
 
-    public static String _if(String express, Object val1, Object val2) {
-        return "IF(" + express + "," + val1 + "," + val2 + ")";
+    public static FuncExpr _if(String express, Object val1, Object val2) {
+        return new FuncExpr("IF(" + express + "," + FuncBuilder.val(val1) + "," + FuncBuilder.val(val2) + ")");
     }
 
-    public static <T, R> String _if(TypeFunction<T, R> function, Object val1, Object val2) {
-        return _if(TypeFunction.getLambdaColumnName(function), val1, val2);
+    public static <T, R> FuncExpr _if(TypeFunction<T, R> function, Object val1, Object val2) {
+        return _if(col(function), val1, val2);
     }
 
-    public static FuncBuilder caseWhenAs(String express, Object thenVal, Object elseVal) {
-        return new FuncBuilder(caseWhen(express, thenVal, elseVal));
+    public static FuncExpr _if(FuncExpr express, Object val1, Object val2) {
+        return _if(express.getSql(), val1, val2);
     }
 
-    public static String caseWhen(String express, Object thenVal, Object elseVal) {
+    public static FuncExpr caseWhen(String express, Object thenVal, Object elseVal) {
         return caseWhen(express, thenVal).elseThen(elseVal).end();
     }
 
@@ -707,191 +728,168 @@ public class FuncBuilder {
         return new CaseWhenBuilder().when(express, thenVal);
     }
 
+    /**
+     * CASE WHEN 构建器
+     */
     public static class CaseWhenBuilder {
         private final StringBuilder caseSql = new StringBuilder("CASE");
 
         public CaseWhenBuilder when(String express, Object thenVal) {
-            caseSql.append(" WHEN ").append(express).append(" THEN ").append(thenVal);
+            caseSql.append(" WHEN ").append(express).append(" THEN ").append(FuncBuilder.val(thenVal));
             return this;
         }
 
         public CaseWhenBuilder elseThen(Object elseVal) {
-            caseSql.append(" ELSE ").append(elseVal);
+            caseSql.append(" ELSE ").append(FuncBuilder.val(elseVal));
             return this;
         }
 
-        public String end() {
-            return caseSql + " END";
+        public FuncExpr end() {
+            return new FuncExpr(caseSql + " END");
         }
 
-        @Deprecated
-        public FuncBuilder asBuilder() {
-            return new FuncBuilder(end());
-        }
-
-        public String as(String as){
-            return new FuncBuilder(end()).as(as);
+        public FuncExpr as(String as) {
+            return end().as(as);
         }
     }
 
-    public static FuncBuilder unixTimeStampAs(String field) {
-        return new FuncBuilder(unixTimeStamp(field));
+    // ==================== JSON 函数 ====================
+
+    public static FuncExpr jsonExtract(String field, Object key) {
+        return new FuncExpr("JSON_EXTRACT(" + field + "," + val(key) + ")");
     }
 
-    public static <T, R> FuncBuilder unixTimeStampAs(TypeFunction<T, R> function) {
-        return unixTimeStampAs(TypeFunction.getLambdaColumnName(function));
+    public static <T, R> FuncExpr jsonExtract(TypeFunction<T, R> function, Object key) {
+        return jsonExtract(col(function), key);
     }
 
-    public static String unixTimeStamp(String field) {
-        return "UNIX_TIMESTAMP(" + field + ")";
+    public static FuncExpr jsonExtract(FuncExpr field, Object key) {
+        return jsonExtract(field.getSql(), key);
     }
 
-    public static <T, R> String unixTimeStamp(TypeFunction<T, R> function) {
-        return unixTimeStamp(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr jsonUnquote(String express) {
+        return new FuncExpr("JSON_UNQUOTE(" + express + ")");
     }
 
-    public static FuncBuilder fromUnixTimeAs(String field, String formatPattern) {
-        return new FuncBuilder(fromUnixTime(field, formatPattern));
+    public static FuncExpr jsonUnquote(FuncExpr express) {
+        return jsonUnquote(express.getSql());
     }
 
-    public static <T, R> FuncBuilder fromUnixTimeAs(TypeFunction<T, R> function, String formatPattern) {
-        return fromUnixTimeAs(TypeFunction.getLambdaColumnName(function), formatPattern);
+    public static FuncExpr jsonContains(String field, Object candidate) {
+        return new FuncExpr("JSON_CONTAINS(" + field + "," + val(candidate) + ")");
     }
 
-    public static String fromUnixTime(String field, String formatPattern) {
-        return "FROM_UNIXTIME(" + field + ",'" + formatPattern + "')";
+    public static <T, R> FuncExpr jsonContains(TypeFunction<T, R> function, Object candidate) {
+        return jsonContains(col(function), candidate);
     }
 
-    public static <T, R> String fromUnixTime(TypeFunction<T, R> function, String formatPattern) {
-        return fromUnixTime(TypeFunction.getLambdaColumnName(function), formatPattern);
+    public static FuncExpr jsonContains(FuncExpr field, Object candidate) {
+        return jsonContains(field.getSql(), candidate);
     }
 
-    public static FuncBuilder dateAs(String field) {
-        return new FuncBuilder(date(field));
+    public static FuncExpr jsonContains(String field, Object candidate, Object key) {
+        return new FuncExpr("JSON_CONTAINS(" + field + "," + val(candidate) + "," + val(key) + ")");
     }
 
-    public static <T, R> FuncBuilder dateAs(TypeFunction<T, R> function) {
-        return dateAs(TypeFunction.getLambdaColumnName(function));
+    public static <T, R> FuncExpr jsonContains(TypeFunction<T, R> function, Object candidate, Object key) {
+        return jsonContains(col(function), candidate, key);
     }
 
-    public static String date(String field) {
-        return "DATE(" + field + ")";
+    public static FuncExpr jsonContains(FuncExpr field, Object candidate, Object key) {
+        return jsonContains(field.getSql(), candidate, key);
     }
 
-    public static <T, R> String date(TypeFunction<T, R> function) {
-        return date(TypeFunction.getLambdaColumnName(function));
+    public static FuncExpr jsonSet(String field, Object key, Object val) {
+        return new FuncExpr("JSON_SET(" + field + "," + FuncBuilder.val(key) + "," + FuncBuilder.val(val) + ")");
     }
 
-    public static String jsonExtract(String field, String $key) {
-        return "JSON_EXTRACT(" + field + ",'" + $key + "')";
+    public static <T, R> FuncExpr jsonSet(TypeFunction<T, R> function, Object key, Object val) {
+        return jsonSet(col(function), key, val);
     }
 
-    public static <T, R> String jsonExtract(TypeFunction<T, R> function, String $key) {
-        return jsonExtract(TypeFunction.getLambdaColumnName(function), $key);
+    public static FuncExpr jsonSet(FuncExpr field, Object key, Object val) {
+        return jsonSet(field.getSql(), key, val);
     }
 
-    public static FuncBuilder jsonExtractAs(String field, String $key) {
-        return new FuncBuilder(jsonExtract(field, $key));
+    public static FuncExpr jsonRemove(String field, Object... keys) {
+        return new FuncExpr("JSON_REMOVE(" + field + "," + Arrays.stream(keys).map(FuncBuilder::val).collect(Collectors.joining(",")) + ")");
     }
 
-    public static <T, R> FuncBuilder jsonExtractAs(TypeFunction<T, R> function, String $key) {
-        return jsonExtractAs(TypeFunction.getLambdaColumnName(function), $key);
+    public static <T, R> FuncExpr jsonRemove(TypeFunction<T, R> function, Object... keys) {
+        return jsonRemove(col(function), keys);
     }
 
-    public static String jsonUnquote(String express) {
-        return "JSON_UNQUOTE(" + express + ")";
+    public static FuncExpr jsonRemove(FuncExpr field, Object... keys) {
+        return jsonRemove(field.getSql(), keys);
     }
 
-    public static FuncBuilder jsonUnquoteAs(String express) {
-        return new FuncBuilder(jsonUnquote(express));
+    /**
+     * 键值对均为值字面量：键自动加引号转义，值按 {@code val()} 归一化
+     */
+    public static FuncExpr jsonObject(Object... keyValues) {
+        return new FuncExpr("JSON_OBJECT(" + Arrays.stream(keyValues).map(FuncBuilder::val).collect(Collectors.joining(",")) + ")");
     }
 
-    public static String jsonContains(String field, String candidate) {
-        return "JSON_CONTAINS(" + field + "," + candidate + ")";
+    public static FuncExpr jsonArray(String... fields) {
+        return new FuncExpr("JSON_ARRAY(" + Arrays.stream(fields).collect(Collectors.joining(",")) + ")");
     }
 
-    public static <T, R> String jsonContains(TypeFunction<T, R> function, String candidate) {
-        return jsonContains(TypeFunction.getLambdaColumnName(function), candidate);
+    @SafeVarargs
+    public static <T, R> FuncExpr jsonArray(TypeFunction<T, R>... functions) {
+        return jsonArray(Arrays.stream(functions).map(FuncBuilder::col).toArray(FuncExpr[]::new));
     }
 
-    public static String jsonContains(String field, String candidate, String $key) {
-        return "JSON_CONTAINS(" + field + "," + candidate + ",'" + $key + "')";
+    public static FuncExpr jsonArray(FuncExpr... fields) {
+        return new FuncExpr("JSON_ARRAY(" + Arrays.stream(fields).map(FuncExpr::getSql).collect(Collectors.joining(",")) + ")");
     }
 
-    public static <T, R> String jsonContains(TypeFunction<T, R> function, String candidate, String $key) {
-        return jsonContains(TypeFunction.getLambdaColumnName(function), candidate, $key);
+    // ==================== 其他函数 ====================
+
+    public static FuncExpr distinct(String field) {
+        return new FuncExpr("DISTINCT(" + field + ")");
     }
 
-    public static FuncBuilder jsonContainsAs(String field, String candidate) {
-        return new FuncBuilder(jsonContains(field, candidate));
+    public static <T, R> FuncExpr distinct(TypeFunction<T, R> function) {
+        return distinct(col(function));
     }
 
-    public static <T, R> FuncBuilder jsonContainsAs(TypeFunction<T, R> function, String candidate) {
-        return jsonContainsAs(TypeFunction.getLambdaColumnName(function), candidate);
+    public static FuncExpr distinct(FuncExpr field) {
+        return distinct(field.getSql());
     }
 
-    public static FuncBuilder jsonContainsAs(String field, String candidate, String $key) {
-        return new FuncBuilder(jsonContains(field, candidate, $key));
+    public static FuncExpr convertUsingGbk(String field) {
+        return new FuncExpr("CONVERT(" + field + " USING GBK)");
     }
 
-    public static <T, R> FuncBuilder jsonContainsAs(TypeFunction<T, R> function, String candidate, String $key) {
-        return jsonContainsAs(TypeFunction.getLambdaColumnName(function), candidate, $key);
+    public static <T, R> FuncExpr convertUsingGbk(TypeFunction<T, R> function) {
+        return convertUsingGbk(col(function));
     }
 
-    public static String jsonSet(String field, String $key, String val) {
-        return "JSON_SET(" + field + ",'" + $key + "'," + val + ")";
+    public static FuncExpr convertUsingGbk(FuncExpr field) {
+        return convertUsingGbk(field.getSql());
     }
 
-    public static <T, R> String jsonSet(TypeFunction<T, R> function, String $key, String val) {
-        return jsonSet(TypeFunction.getLambdaColumnName(function), $key, val);
+    public static FuncExpr unixTimeStamp(String field) {
+        return new FuncExpr("UNIX_TIMESTAMP(" + field + ")");
     }
 
-    public static FuncBuilder jsonSetAs(String field, String $key, String val) {
-        return new FuncBuilder(jsonSet(field, $key, val));
+    public static <T, R> FuncExpr unixTimeStamp(TypeFunction<T, R> function) {
+        return unixTimeStamp(col(function));
     }
 
-    public static <T, R> FuncBuilder jsonSetAs(TypeFunction<T, R> function, String $key, String val) {
-        return jsonSetAs(TypeFunction.getLambdaColumnName(function), $key, val);
+    public static FuncExpr unixTimeStamp(FuncExpr field) {
+        return unixTimeStamp(field.getSql());
     }
 
-    public static String jsonRemove(String field, String... $keys) {
-        return "JSON_REMOVE(" + field + "," + Arrays.stream($keys).map($key -> "'" + $key + "'").collect(Collectors.joining(",")) + ")";
+    public static FuncExpr fromUnixTime(String field, Object formatPattern) {
+        return new FuncExpr("FROM_UNIXTIME(" + field + "," + val(formatPattern) + ")");
     }
 
-    public static <T, R> String jsonRemove(TypeFunction<T, R> function, String... $keys) {
-        return jsonRemove(TypeFunction.getLambdaColumnName(function), $keys);
+    public static <T, R> FuncExpr fromUnixTime(TypeFunction<T, R> function, Object formatPattern) {
+        return fromUnixTime(col(function), formatPattern);
     }
 
-    public static FuncBuilder jsonRemoveAs(String field, String... $keys) {
-        return new FuncBuilder(jsonRemove(field, $keys));
+    public static FuncExpr fromUnixTime(FuncExpr field, Object formatPattern) {
+        return fromUnixTime(field.getSql(), formatPattern);
     }
-
-    public static <T, R> FuncBuilder jsonRemoveAs(TypeFunction<T, R> function, String... $keys) {
-        return jsonRemoveAs(TypeFunction.getLambdaColumnName(function), $keys);
-    }
-
-    public static String jsonObject(String... fields) {
-        return "JSON_OBJECT(" + Arrays.stream(fields).collect(Collectors.joining(",")) + ")";
-    }
-
-    public static FuncBuilder jsonObjectAs(String... fields) {
-        return new FuncBuilder(jsonObject(fields));
-    }
-
-    public static String jsonArray(String... fields) {
-        return "JSON_ARRAY(" + Arrays.stream(fields).collect(Collectors.joining(",")) + ")";
-    }
-
-    public static <T, R> String jsonArray(TypeFunction<T, R>... functions) {
-        return jsonArray(Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()).toArray(new String[0]));
-    }
-
-    public static FuncBuilder jsonArrayAs(String... fields) {
-        return new FuncBuilder(jsonArray(fields));
-    }
-
-    public static <T, R> FuncBuilder jsonArrayAs(TypeFunction<T, R>... functions) {
-        return jsonArrayAs(Arrays.stream(functions).map(function -> TypeFunction.getLambdaColumnName(function)).collect(Collectors.toList()).toArray(new String[0]));
-    }
-
 }

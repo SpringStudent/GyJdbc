@@ -5,7 +5,6 @@ import com.gysoft.jdbc.dao.EntityDao;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.sql.JDBCType;
 import java.util.*;
@@ -317,6 +316,9 @@ public class SqlMakeTools {
                     } else {
                         if (value instanceof FieldReference) {
                             wpSql.append(opt).append(" ").append(((FieldReference) value).getField());
+                        } else if (value instanceof FuncExpr) {
+                            // 函数/表达式作为比较值：整段取表达式文本，不做参数绑定（列对列/列对函数比较）
+                            wpSql.append(opt).append(" ").append(((FuncExpr) value).getSql());
                         } else if (value instanceof SQL) {
                             SQL whereSql = (SQL) value;
                             Pair<String, Object[]> wherePair = useSql(whereSql);
@@ -481,6 +483,8 @@ public class SqlMakeTools {
                     Pair<String, Object[]> pair = useSql((SQL) field);
                     selectLength += pair.getFirst().length() + (pair.getFirst().startsWith("(") ? 0 : 2) + 2;
                     paramsBeforeFrom += pair.getSecond().length;
+                } else if (field instanceof FuncExpr) {
+                    selectLength += ((FuncExpr) field).getSql().length() + 2;
                 } else {
                     selectLength += field.toString().length() + 2;
                 }
@@ -525,8 +529,10 @@ public class SqlMakeTools {
                         sql.append("(").append(temp.getFirst()).append("), ");
                     }
                     MixUtils.addAll(params, temp.getSecond());
+                } else if (obj instanceof FuncExpr) {
+                    sql.append(((FuncExpr) obj).getSql()).append(", ");
                 } else {
-                    sql.append(obj.toString() + ", ");
+                    sql.append(obj.toString()).append(", ");
                 }
             }
             sql.setLength(sql.length() - 2);
@@ -635,7 +641,7 @@ public class SqlMakeTools {
                     if (columnMeta.getJdbcType().equals(JDBCType.TIMESTAMP) || "NULL".equals(upperVal) || "CURRENT_TIMESTAMP".equals(upperVal) || upperVal.contains("()")) {
                         createSql.append(String.format(" DEFAULT %s", (columnMeta.getVal())));
                     } else {
-                        createSql.append(String.format(" DEFAULT '%s'", (columnMeta.getVal())));
+                        createSql.append(String.format(" DEFAULT '%s'", columnMeta.getVal()));
                     }
                 }
                 if (StringUtils.isNotEmpty(columnMeta.getComment())) {
@@ -680,7 +686,7 @@ public class SqlMakeTools {
                 createSql.append(" ROW_FORMAT=").append(tableMeta.getRowFormat());
             }
             if (StringUtils.isNotEmpty(tableMeta.getComment())) {
-                createSql.append(" COMMENT=" + "'" + tableMeta.getComment() + "'");
+                createSql.append(" COMMENT='" + tableMeta.getComment() + "'");
             }
             return new Pair<>(createSql.toString(), new Object[]{tbName});
         }

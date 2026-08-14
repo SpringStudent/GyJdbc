@@ -19,6 +19,25 @@ public class FieldReference {
         return new FieldReference(TypeFunction.getLambdaColumnName(function));
     }
 
+    /**
+     * 以函数表达式作为字段引用（列对列/列对函数比较等场景）
+     *
+     * @param expr 函数表达式
+     * @return FieldReference 字段引用
+     */
+    public static FieldReference newFieldRef(FuncExpr expr) {
+        return new FieldReference(expr);
+    }
+
+    /**
+     * 以函数表达式作为字段引用（列对列比较等场景）
+     *
+     * @param expr 函数表达式
+     */
+    public FieldReference(FuncExpr expr) {
+        this(expr.getSql());
+    }
+
     public FieldReference(String field) {
         this.field = field;
     }

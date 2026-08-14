@@ -113,6 +113,21 @@ public class CSqlTest {
     }
 
     @Test
+    public void useSqlShouldEscapeQuotesInDefaultAndComment() {
+        SQL sql = new SQL().create().table("quote_tb")
+                .comment("o'brien's table")
+                .column().name("name").varchar(16).notNull().defaultVal("it's").comment("a 'quoted' comment").commit()
+                .column().name("createdAt").datetime(6).notNull().defaultCurrentTimestamp().comment("time 'x'").commit()
+                .index().name("uk_name").unique().column("name").comment("unique 'name'").commit()
+                .commit();
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+
+        assertEquals("CREATE TABLE `quote_tb` (`name` varchar(16) NOT NULL DEFAULT 'it''s' COMMENT 'a ''quoted'' comment',`createdAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'time ''x''',UNIQUE KEY `uk_name` (`name`) COMMENT 'unique ''name''') DEFAULT CHARSET=utf8mb4 COMMENT='o''brien''s table'", pair.getFirst());
+        assertArrayEquals(new Object[]{"`quote_tb`"}, pair.getSecond());
+    }
+
+    @Test
     public void testSimpleWhere() {
         Criteria criteria = new Criteria().where("name", "zhouning");
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));
@@ -492,11 +507,11 @@ public class CSqlTest {
     @Test
     public void testAggregateFunctionSql() {
         SQL sql = new SQL().select(
-                countAs("id").as("cid"),
-                avgAs("size").as("avgSize"),
-                maxAs("size").as("maxSize"),
-                minAs("size").as("minSize"),
-                sumAs("size").as("sumSize")
+                count("id").as("cid"),
+                avg("size").as("avgSize"),
+                max("size").as("maxSize"),
+                min("size").as("minSize"),
+                sum("size").as("sumSize")
         ).from("tb_test");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         assertTrue("COUNT missing: " + pair.getFirst(), pair.getFirst().contains("COUNT"));
@@ -508,53 +523,90 @@ public class CSqlTest {
 
     @Test
     public void testFuncBuilderDateFormat() {
-        String result = dateFormat("create_time", "%Y-%m-%d");
+        String result = dateFormat("create_time", "%Y-%m-%d").getSql();
         assertEquals("DATE_FORMAT(create_time,'%Y-%m-%d')", result);
     }
 
     @Test
     public void testFuncBuilderIfNull() {
-        String result = ifNull("name", "'default'");
+        String result = ifNull("name", "default").getSql();
         assertEquals("IFNULL(name,'default')", result);
     }
 
     @Test
     public void testFuncBuilderConcat() {
-        String result = concat("a", "b", "c");
+        String result = concat("a", "b", "c").getSql();
         assertEquals("CONCAT(a,b,c)", result);
     }
 
     @Test
     public void testFuncBuilderGroupConcat() {
-        assertEquals("GROUP_CONCAT(name)", groupConcat("name"));
-        assertEquals("GROUP_CONCAT(DISTINCT name)", groupConcatDistinct("name"));
-        assertEquals("GROUP_CONCAT(name SEPARATOR ',')", groupConcat("name", "','"));
-        assertEquals("GROUP_CONCAT(`name`)", groupConcat(Role::getName));
-        assertEquals("GROUP_CONCAT(name) AS names", groupConcatAs("name").as("names"));
+        assertEquals("GROUP_CONCAT(name)", groupConcat("name").getSql());
+        assertEquals("GROUP_CONCAT(DISTINCT name)", groupConcatDistinct("name").getSql());
+        assertEquals("GROUP_CONCAT(name SEPARATOR ',')", groupConcat("name", ",").getSql());
+        assertEquals("GROUP_CONCAT(`name`)", groupConcat(Role::getName).getSql());
+        assertEquals("GROUP_CONCAT(name) AS names", groupConcat("name").as("names").getSql());
     }
 
     @Test
     public void testFuncBuilderCaseWhen() {
-        assertEquals("CASE WHEN score >= 60 THEN 'pass' ELSE 'fail' END", caseWhen("score >= 60", "'pass'", "'fail'"));
+        assertEquals("CASE WHEN score >= 60 THEN 'pass' ELSE 'fail' END", caseWhen("score >= 60", "pass", "fail").getSql());
         assertEquals("CASE WHEN score >= 90 THEN 'A' WHEN score >= 60 THEN 'B' ELSE 'C' END",
-                caseWhen("score >= 90", "'A'").when("score >= 60", "'B'").elseThen("'C'").end());
+                caseWhen("score >= 90", "A").when("score >= 60", "B").elseThen("C").end().getSql());
         assertEquals("CASE WHEN status = 1 THEN 'enabled' ELSE 'disabled' END AS statusName",
-                caseWhen("status = 1", "'enabled'").elseThen("'disabled'").as("statusName"));
+                caseWhen("status = 1", "enabled").elseThen("disabled").as("statusName").getSql());
+    }
+
+    @Test
+    public void testFuncExprAsWhereValue() {
+        // 函数/表达式作为 where 比较值：整段拼接，不产生绑定参数
+        SQL sql = new SQL().select("*").from("tb_user").where("name", "=", length("code"));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE name = LENGTH(code)", pair.getFirst());
+        assertEquals(0, pair.getSecond().length);
+    }
+
+    @Test
+    public void fieldReferenceFactoryShouldAcceptFuncExpr() {
+        FieldReference fieldReference = FieldReference.newFieldRef(length("name"));
+        assertEquals("LENGTH(name)", fieldReference.getField());
+
+        SQL sql = new SQL().select("*").from("tb_user").where("name", ">=", fieldReference);
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_user WHERE name >= LENGTH(name)", pair.getFirst());
+        assertEquals(0, pair.getSecond().length);
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void colWithNullFieldShouldThrow() {
+        // 本类有私有 col(TypeFunction) 辅助方法，需用全限定调用指向 FuncBuilder.col(String)
+        FuncBuilder.col((String) null);
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void countWithNullFieldShouldThrow() {
+        count((String) null);
+    }
+
+    @Test
+    public void litNullShouldBeNull() {
+        // 与 val(null)=NULL 语义统一，而非空字符串 ''
+        assertEquals("NULL", lit(null).getSql());
     }
 
     @Test
     public void testFuncBuilderJsonFunctions() {
-        assertEquals("JSON_EXTRACT(extra,'$.name')", jsonExtract("extra", "$.name"));
-        assertEquals("JSON_EXTRACT(`auths`,'$.name')", jsonExtract(Role::getAuths, "$.name"));
-        assertEquals("JSON_UNQUOTE(JSON_EXTRACT(extra,'$.name'))", jsonUnquote(jsonExtract("extra", "$.name")));
-        assertEquals("JSON_CONTAINS(extra,'1')", jsonContains("extra", "'1'"));
-        assertEquals("JSON_CONTAINS(extra,'1','$.ids')", jsonContains("extra", "'1'", "$.ids"));
-        assertEquals("JSON_SET(extra,'$.name','Tom')", jsonSet("extra", "$.name", "'Tom'"));
-        assertEquals("JSON_REMOVE(extra,'$.temp','$.debug')", jsonRemove("extra", "$.temp", "$.debug"));
-        assertEquals("JSON_OBJECT('id',id,'name',name)", jsonObject("'id'", "id", "'name'", "name"));
-        assertEquals("JSON_ARRAY(id,name)", jsonArray("id", "name"));
-        assertEquals("JSON_ARRAY(`name`,`auths`)", jsonArray(Role::getName, Role::getAuths));
-        assertEquals("JSON_EXTRACT(extra,'$.name') AS nameJson", jsonExtractAs("extra", "$.name").as("nameJson"));
+        assertEquals("JSON_EXTRACT(extra,'$.name')", jsonExtract("extra", "$.name").getSql());
+        assertEquals("JSON_EXTRACT(`auths`,'$.name')", jsonExtract(Role::getAuths, "$.name").getSql());
+        assertEquals("JSON_UNQUOTE(JSON_EXTRACT(extra,'$.name'))", jsonUnquote(jsonExtract("extra", "$.name")).getSql());
+        assertEquals("JSON_CONTAINS(extra,'1')", jsonContains("extra", "1").getSql());
+        assertEquals("JSON_CONTAINS(extra,'1','$.ids')", jsonContains("extra", "1", "$.ids").getSql());
+        assertEquals("JSON_SET(extra,'$.name','Tom')", jsonSet("extra", "$.name", "Tom").getSql());
+        assertEquals("JSON_REMOVE(extra,'$.temp','$.debug')", jsonRemove("extra", "$.temp", "$.debug").getSql());
+        assertEquals("JSON_OBJECT('id',id,'name',name)", jsonObject("id", FuncBuilder.col("id"), "name", FuncBuilder.col("name")).getSql());
+        assertEquals("JSON_ARRAY(id,name)", jsonArray("id", "name").getSql());
+        assertEquals("JSON_ARRAY(`name`,`auths`)", jsonArray(Role::getName, Role::getAuths).getSql());
+        assertEquals("JSON_EXTRACT(extra,'$.name') AS nameJson", jsonExtract("extra", "$.name").as("nameJson").getSql());
     }
 
     @Test
@@ -4015,7 +4067,7 @@ public class CSqlTest {
                         ValueReference.newValueRef("head_title"),
                         "o.order_no",
                         "p.last_paid",
-                        FuncBuilder.countAs("o.id").as("order_count")
+                        FuncBuilder.count("o.id").as("order_count")
                 )
                 // FROM 包装 UNION 子查询
                 .from(unionSub, "u")
