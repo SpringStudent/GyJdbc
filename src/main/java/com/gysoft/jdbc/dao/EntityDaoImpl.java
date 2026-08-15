@@ -135,19 +135,6 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         return resultSize;
     }
 
-    /**
-     * 汇总 batchUpdate 返回的逐行影响数（int[] 每元素为一条记录的影响行数）
-     */
-    private static int sumBatchResults(int[] results) {
-        int sum = 0;
-        if (results != null) {
-            for (int r : results) {
-                sum += r;
-            }
-        }
-        return sum;
-    }
-
     @Override
     public int saveOrUpdate(T t) {
         // 用 isPk 双重比对定位主键字段，兼容主键字段带 @Column 改名
@@ -271,6 +258,20 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
             resultSize += sumBatchResults(jdbcTemplate.batchUpdate(sql, batchArgs, argTypes));
         }
         return resultSize;
+    }
+
+
+    /**
+     * 汇总 batchUpdate 返回的逐行影响数（int[] 每元素为一条记录的影响行数）
+     */
+    private static int sumBatchResults(int[] results) {
+        int sum = 0;
+        if (results != null) {
+            for (int r : results) {
+                sum += r;
+            }
+        }
+        return sum;
     }
 
 
