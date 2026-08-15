@@ -24,6 +24,7 @@ import javax.sql.DataSource;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.sql.Connection;
+import java.sql.JDBCType;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Types;
@@ -4714,5 +4715,236 @@ public class CSqlTest {
         } catch (GyjdbcException expected) {
             assertTrue(expected.getMessage().contains("VALUES"));
         }
+    }
+
+    // ==================== 移植自 CriteriaTest 的补充用例（断言化） ====================
+
+    @Test
+    public void funcBuilderStringFunctionsShouldBuildCorrectSql() {
+        // String 参数按裸 SQL 列名处理，不自动加引号
+        assertEquals("LENGTH(name)", length("name").getSql());
+        assertEquals("LENGTH(`name`)", length(Role::getName).getSql());
+        assertEquals("CHAR_LENGTH(name)", charLength("name").getSql());
+        assertEquals("CHAR_LENGTH(`name`)", charLength(Role::getName).getSql());
+        assertEquals("UPPER(name)", upper("name").getSql());
+        assertEquals("LOWER(name)", lower("name").getSql());
+        assertEquals("LTRIM(name)", ltrim("name").getSql());
+        assertEquals("RTRIM(name)", rtrim("name").getSql());
+        assertEquals("TRIM(name)", trim("name").getSql());
+        // 截取 / 替换类
+        assertEquals("LEFT(name,2)", left("name", 2).getSql());
+        assertEquals("RIGHT(name,2)", right("name", 2).getSql());
+        assertEquals("SUBSTRING(name,1,2)", substring("name", 1, 2).getSql());
+        assertEquals("ELT(2,name,age)", elt(2, "name", "age").getSql());
+        assertEquals("INSERT(name,1,2,'x')", insert("name", 1, 2, "x").getSql());
+        assertEquals("REPLACE(name,'a','b')", replace("name", "a", "b").getSql());
+        // 分隔符拼接：joinStr 加引号，字段按裸 SQL
+        assertEquals("CONCAT_WS(',',name,auths)", concat_ws(",", "name", "auths").getSql());
+        assertEquals("CONCAT_WS(',',`name`,`auths`)", concat_ws(",", Role::getName, Role::getAuths).getSql());
+    }
+
+    @Test
+    public void funcBuilderNumericFunctionsShouldBuildCorrectSql() {
+        assertEquals("ABS(score)", abs("score").getSql());
+        assertEquals("ABS(`size`)", abs(Token::getSize).getSql());
+        assertEquals("CEIL(score)", ceil("score").getSql());
+        assertEquals("FLOOR(score)", floor("score").getSql());
+        assertEquals("MOD(a,b)", mod("a", "b").getSql());
+        assertEquals("RAND()", rand().getSql());
+        assertEquals("RAND(42)", rand(42).getSql());
+        assertEquals("ROUND(score,2)", round("score", 2).getSql());
+        assertEquals("TRUNCATE(score,2)", truncate("score", 2).getSql());
+    }
+
+    @Test
+    public void funcBuilderDateFunctionsShouldBuildCorrectSql() {
+        // 无参日期函数
+        assertEquals("CURDATE()", curdate().getSql());
+        assertEquals("CURTIME()", curtime().getSql());
+        assertEquals("NOW()", now().getSql());
+        // 日期截取
+        assertEquals("MONTH(create_time)", month("create_time").getSql());
+        assertEquals("MONTHNAME(create_time)", monthname("create_time").getSql());
+        assertEquals("WEEK(create_time)", week("create_time").getSql());
+        assertEquals("YEAR(create_time)", year("create_time").getSql());
+        assertEquals("HOUR(create_time)", hour("create_time").getSql());
+        assertEquals("MINUTE(create_time)", minute("create_time").getSql());
+        // 格式化 / 运算：格式化参数经 val() 加引号，表达式原样拼接
+        assertEquals("FORMAT(10000,'2')", format("10000", "2").getSql());
+        assertEquals("DATE_FORMAT(create_time,'%Y-%m-%d')", dateFormat("create_time", "%Y-%m-%d").getSql());
+        assertEquals("DATE_SUB(create_time,INTERVAL 1 DAY)", dateSub("create_time", "INTERVAL 1 DAY").getSql());
+        assertEquals("DATE_ADD(create_time,INTERVAL 1 DAY)", dateAdd("create_time", "INTERVAL 1 DAY").getSql());
+        // 时间戳互转
+        assertEquals("UNIX_TIMESTAMP(comTime)", unixTimeStamp("comTime").getSql());
+        assertEquals("FROM_UNIXTIME(ts,'%Y-%m-%d')", fromUnixTime("ts", "%Y-%m-%d").getSql());
+    }
+
+    @Test
+    public void funcBuilderConditionalAndMiscFunctionsShouldBuildCorrectSql() {
+        // 条件函数：表达式裸 SQL，分支值经 val() 归一化
+        assertEquals("IF(status,1,0)", _if("status", 1, 0).getSql());
+        assertEquals("IF(status,'y','n')", _if("status", "y", "n").getSql());
+        // 去重 / 编码转换
+        assertEquals("COUNT(DISTINCT name)", countDistinct("name").getSql());
+        assertEquals("COUNT(DISTINCT `name`)", countDistinct(col(Role::getName)).getSql());
+        assertEquals("DISTINCT(name)", distinct("name").getSql());
+        assertEquals("CONVERT(name USING GBK)", convertUsingGbk("name").getSql());
+    }
+
+    @Test
+    public void funcBuilderComposedSelectShouldBuildCorrectSql() {
+        // 多个函数列组合 + Lambda 列引用（@Column 列名 ddd 生效）
+        SQL sql = new SQL()
+                .select(concat(Token::getTk, Token::getSize), length(Token::getTk), charLength(Token::getTk), upper(Token::getTk), lower(Token::getTk))
+                .from(Token.class);
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT CONCAT(ddd,`size`), LENGTH(ddd), CHAR_LENGTH(ddd), UPPER(ddd), LOWER(ddd) FROM tb_token", pair.getFirst());
+        assertEquals(0, pair.getSecond().length);
+
+        // 数值函数列
+        SQL numericSql = new SQL().select(abs(Token::getSize), ceil(Token::getSize), floor(Token::getSize)).from(Token.class);
+        assertEquals("SELECT ABS(`size`), CEIL(`size`), FLOOR(`size`) FROM tb_token", SqlMakeTools.useSql(numericSql).getFirst());
+
+        // 无参日期函数 + 嵌套（month 接收 FuncExpr 后原样拼接）
+        SQL dateSql = new SQL().select(curdate(), curtime(), now(), month(curdate()), week(curdate()), minute(curtime())).from("tb_time");
+        assertEquals("SELECT CURDATE(), CURTIME(), NOW(), MONTH(CURDATE()), WEEK(CURDATE()), MINUTE(CURTIME()) FROM tb_time", SqlMakeTools.useSql(dateSql).getFirst());
+
+        // 别名：as() 追加 AS，不影响函数拼接
+        SQL aliasSql = new SQL().select(format("10000", "2").as("a")).from("BOOK");
+        assertEquals("SELECT FORMAT(10000,'2') AS a FROM BOOK", SqlMakeTools.useSql(aliasSql).getFirst());
+    }
+
+    @Test
+    public void createTableWithTemporaryJdbcTypeDefaultNullAndUtf8mb4ShouldBuildCorrectSql() {
+        // 移植自 CriteriaTest.testCreate：temporary + LONGVARCHAR + defaultNull + 多索引 + utf8mb4 快捷方法
+        SQL sql = new SQL().create().table("halou").temporary()
+                .column().name("id").integer().notNull().primary().autoIncrement().comment("主键").commit()
+                .column().name("name").varchar(5).notNull().comment("名称").defaultVal("").commit()
+                .column().name("age").tinyint().notNull().commit()
+                .column().name("email").jdbcType(JDBCType.LONGVARCHAR).defaultNull().commit()
+                .column().name("birthday").datetime().notNull().defaultCurrentTimestamp().commit()
+                .index().unique().column("name", "age").name("ix_name_age").commit()
+                .index().name("ix_name").column("name").commit()
+                .engine(TableEnum.Engine.InnoDB).utf8mb4().comment("用户").commit();
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+
+        assertEquals("CREATE TEMPORARY TABLE `halou` (`id` int NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT '主键',`name` varchar(5) NOT NULL DEFAULT '' COMMENT '名称',`age` tinyint NOT NULL,`email` longtext DEFAULT NULL,`birthday` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,UNIQUE KEY `ix_name_age` (`name`,`age`), KEY `ix_name` (`name`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户'", pair.getFirst());
+        assertArrayEquals(new Object[]{"`halou`"}, pair.getSecond());
+    }
+
+    @Test
+    public void updateWithJoinAndFieldReferenceShouldBuildCorrectSql() {
+        // 多表 UPDATE：JOIN + set 列引用（右值按列名而非参数拼接）
+        SQL sql = new SQL().update("tb_user", "u")
+                .innerJoin("tb_account", "a")
+                .on("u.id", "a.user_id")
+                .set("u.email", new FieldReference("a.email"))
+                .where("a.status", 1);
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("UPDATE tb_user u INNER JOIN tb_account a ON u.id = a.user_id SET u.email = a.email WHERE a.status = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{1}, pair.getSecond());
+    }
+
+    @Test
+    public void updateSetSubqueryShouldBuildCorrectSql() {
+        // SET (列列表) = (子查询)，赋值右侧整体拼接子查询
+        SQL sql = new SQL().update("a")
+                .set("(a1,a2,a3)", new SQL().select("B1", "B2", "B3").from("B").where("B1", 2));
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("UPDATE a SET (a1,a2,a3) = (SELECT B1, B2, B3 FROM B WHERE B1 = ?)", pair.getFirst());
+        assertArrayEquals(new Object[]{2}, pair.getSecond());
+    }
+
+    @Test
+    public void deleteMultiTableCommaShouldBuildCorrectSql() {
+        // 多表 DELETE：delete/from 均以逗号分隔表名，条件列引用拼接
+        SQL sql = new SQL().delete("orders,items").from("orders,items")
+                .where("orders.userid", new FieldReference("items.userid"))
+                .and("orders.orderid", new FieldReference("items.orderid"))
+                .let("orders.date", "2000/03/01");
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        String sqlText = pair.getFirst();
+        assertTrue(sqlText.startsWith("DELETE orders,items FROM orders,items WHERE orders.userid = items.userid"));
+        assertTrue(sqlText.contains("AND orders.orderid = items.orderid"));
+        assertTrue(sqlText.contains("AND orders.date <= ?"));
+        assertArrayEquals(new Object[]{"2000/03/01"}, pair.getSecond());
+    }
+
+    @Test
+    public void selectNestedSubqueryAsColumnShouldBuildCorrectSql() {
+        // 子查询作为 select 列：整体以括号包裹，别名直接追加在子查询后
+        SQL sql = new SQL().select("*")
+                .select(new SQL().select(count("*")).from("tb_role").as("role_count"))
+                .from("tb_user");
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT *, (SELECT COUNT(*) FROM tb_role role_count) FROM tb_user", pair.getFirst());
+        assertEquals(0, pair.getSecond().length);
+    }
+
+    @Test
+    public void whereTupleWithSubqueryShouldBuildCorrectSql() {
+        // WHERE 元组与子查询比较：字段列表 + 子查询
+        SQL sql = new SQL().select("*").from("student_score")
+                .where(new String[]{"number", "subject"}, new SQL()
+                        .select("number", new ValueReference("母猪的产后护理")).from("student_info").limit(1));
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM student_score WHERE (number,subject) =(SELECT number, ? FROM student_info LIMIT ?)", pair.getFirst());
+        assertArrayEquals(new Object[]{"母猪的产后护理", 1}, pair.getSecond());
+    }
+
+    @Test
+    public void notInLambdaWithSubqueryShouldBuildCorrectSql() {
+        // NOT IN + Lambda 列 + SQL 子查询，后续 and/or 拼接为括号组
+        SQL sql = new SQL().select("*").from(Role.class)
+                .notIn(Role::getName, new SQL().select("id").from("author").where("f1", 123).in("f2", Arrays.asList("g", "l")))
+                .where(Role::getName, "name1").or(Role::getAuths, "asdsd");
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_role WHERE `name` NOT IN(SELECT id FROM author WHERE f1 = ? AND f2 IN(?,?)) AND `name` = ? OR `auths` = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{123, "g", "l", "name1", "asdsd"}, pair.getSecond());
+    }
+
+    @Test
+    public void havingWithNestedCriteriaAggregateShouldBuildCorrectSql() {
+        // HAVING 后接内嵌 Criteria：聚合表达式做值 + or 拼接
+        SQL sql = new SQL().select("*").from(Token.class)
+                .where(Token::getId, "this is a id")
+                .groupBy(Token::getSize)
+                .having(new Criteria().gt(count("name").getSql(), 1).or("fix", "heihei"));
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM tb_token WHERE `id` = ? GROUP BY `size` HAVING COUNT(name) > ? OR fix = ?", pair.getFirst());
+        assertArrayEquals(new Object[]{"this is a id", 1, "heihei"}, pair.getSecond());
+    }
+
+    @Test
+    public void joinConsumerVariantsShouldBuildCorrectSql() {
+        // JOIN 三变体 + Lambda on 条件 + andCriteria 括号组
+        SQL sql = new SQL().select("*").from("table111")
+                .innerJoin("table222", "b", c -> c.on("table111.id", "b.id").and("b.name", "=", "testname"))
+                .leftJoin("table333", "c", c -> c.on(Role::getName, Token::getTk).on("table111.id", "c.id").and("c.type", ">", 2))
+                .rightJoin(Token.class, "d", c -> c.on("table111.id", "d.id").and("d.status", "=", "active"))
+                .where("table111.flag", 1).andCriteria(c -> c.where("table111.type", "A").or("table111.type", "B"));
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM table111 INNER JOIN table222 b ON table111.id = b.id AND b.name = ? LEFT JOIN table333 c ON `name` = ddd AND table111.id = c.id AND c.type > ? RIGHT JOIN tb_token d ON table111.id = d.id AND d.status = ? WHERE table111.flag = ? AND (table111.type = ? OR table111.type = ?)", pair.getFirst());
+        assertArrayEquals(new Object[]{"testname", 2, "active", 1, "A", "B"}, pair.getSecond());
+    }
+
+    @Test
+    public void whereColumnEqualToSubqueryColumnShouldBuildCorrectSql() {
+        // 列与子查询列比较（FieldReference 右值）
+        SQL sql = new SQL().select("*").from("student_score")
+                .where("student_score.number", new FieldReference("stu_info.number"));
+
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertEquals("SELECT * FROM student_score WHERE student_score.number = stu_info.number", pair.getFirst());
+        assertEquals(0, pair.getSecond().length);
     }
 }
