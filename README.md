@@ -742,8 +742,10 @@ A transaction cannot change its physical data source after it has obtained a con
 Data source resolution priority:
 
 ```text
-EntityDao.bindXxx > @BindPoint on method > @BindPoint on class > JdbcRoutingDataSource.defaultLookUpKey
+ThreadLocal binding stack top (last pushed wins, from @BindPoint or DataSourceContext) > JdbcRoutingDataSource.defaultLookUpKey
 ```
+
+Within `@BindPoint`: method annotation > class annotation.
 
 ## Testing
 

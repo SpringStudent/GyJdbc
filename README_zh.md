@@ -739,8 +739,10 @@ DataSourceContext.withDataSource("secondary", transactionalService::execute);
 数据源选择优先级：
 
 ```text
-EntityDao.bindXxx > 方法上的 @BindPoint > 类上的 @BindPoint > JdbcRoutingDataSource.defaultLookUpKey
+ThreadLocal 绑定栈顶（后 push 优先，含 @BindPoint 切面与 DataSourceContext 编程式绑定）> JdbcRoutingDataSource.defaultLookUpKey
 ```
+
+`@BindPoint` 内部：方法注解优先于类注解。
 
 ## 测试
 

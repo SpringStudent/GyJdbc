@@ -8,6 +8,8 @@ import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
@@ -22,6 +24,11 @@ public interface TypeFunction<T, R> extends Serializable, Function<T, R> {
      * @param lambda lamda表达式
      * @return String 列名称
      */
+    /**
+     * Lambda 列名解析结果缓存：key 为「实现类全限定名#字段名」，避免同一 Lambda 引用重复反射解析
+     */
+    Map<String, String> LAMBDA_COLUMN_CACHE = new ConcurrentHashMap<>();
+
     static String getLambdaColumnName(Serializable lambda) {
         try {
             Method method = lambda.getClass().getDeclaredMethod("writeReplace");
@@ -39,9 +46,27 @@ public interface TypeFunction<T, R> extends Serializable, Function<T, R> {
                 propertyName = implMethodName;
             }
             String fieldName = Introspector.decapitalize(propertyName);
-            Class<?> implClass = Class.forName(serializedLambda.getImplClass().replace("/", "."));
+            String implClass = serializedLambda.getImplClass().replace("/", ".");
+            // writeReplace 反射每次都要执行（否则拿不到 SerializedLambda），只缓存字段名解析结果
+            return LAMBDA_COLUMN_CACHE.computeIfAbsent(implClass + "#" + fieldName,
+                    key -> resolveColumnName(implClass, fieldName));
+        } catch (ReflectiveOperationException e) {
+            throw new GyjdbcException(e);
+        }
+    }
+
+    /**
+     * 解析列名：优先取字段上的 @Column 注解列名，否则按驼峰转下划线
+     *
+     * @param implClass 实现类全限定名
+     * @param fieldName 字段名
+     * @return String 列名
+     */
+    static String resolveColumnName(String implClass, String fieldName) {
+        try {
+            Class<?> clazz = Class.forName(implClass);
             Field field = null;
-            for (Field f : EntityTools.getDeclaredFields(implClass)) {
+            for (Field f : EntityTools.getDeclaredFields(clazz)) {
                 if (f.getName().equals(fieldName)) {
                     field = f;
                     break;
@@ -49,7 +74,7 @@ public interface TypeFunction<T, R> extends Serializable, Function<T, R> {
             }
             if (field == null) {
                 throw new GyjdbcException(
-                        "cannot resolve field '" + fieldName + "' in " + implClass.getName() + " or its superclasses");
+                        "cannot resolve field '" + fieldName + "' in " + clazz.getName() + " or its superclasses");
             }
             Column anno = field.getAnnotation(Column.class);
             if (anno != null) {
@@ -57,7 +82,7 @@ public interface TypeFunction<T, R> extends Serializable, Function<T, R> {
             } else {
                 return EntityTools.transferColumnName(fieldName);
             }
-        } catch (ReflectiveOperationException e) {
+        } catch (ClassNotFoundException e) {
             throw new GyjdbcException(e);
         }
     }
