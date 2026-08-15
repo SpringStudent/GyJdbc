@@ -10,11 +10,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.GenericTypeResolver;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.*;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.NumberUtils;
 import org.springframework.util.ReflectionUtils;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -74,6 +78,25 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         String sql = SqlMakeTools.makeSql(entityClass, tableName, SQL_INSERT);
         Object[] args = SqlMakeTools.setArgs(t, SQL_INSERT);
         int[] argTypes = SqlMakeTools.setArgTypes(t, SQL_INSERT);
+        Field pkField = EntityTools.getPkField(entityClass);
+        Object pkValue = pkField == null ? null : ReflectionUtils.getField(pkField, t);
+        // 主键为 null 且类型为 Number（自增主键场景）：走 KeyHolder 回填生成主键；否则维持原路径
+        if (pkValue == null && pkField != null && Number.class.isAssignableFrom(pkField.getType())) {
+            GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+            int rows = jdbcTemplate.update(connection -> {
+                PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+                for (int i = 0; i < args.length; i++) {
+                    ps.setObject(i + 1, args[i], argTypes[i]);
+                }
+                return ps;
+            }, keyHolder);
+            Number key = keyHolder.getKey();
+            if (key != null) {
+                ReflectionUtils.setField(pkField, t,
+                        NumberUtils.convertNumberToTargetClass(key, (Class<? extends Number>) pkField.getType()));
+            }
+            return rows;
+        }
         return jdbcTemplate.update(sql, args, argTypes);
     }
 
@@ -87,31 +110,46 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     @Transactional
-    public void batchSave(List<T> list) {
+    public int batchSave(List<T> list) {
         if (CollectionUtils.isEmpty(list)) {
-            return;
+            return 0;
         }
         //分页操作
         String sql = SqlMakeTools.makeSql(entityClass, tableName, SQL_INSERT);
         int[] argTypes = SqlMakeTools.setArgTypes(list.get(0), SQL_INSERT);
         Integer j = 0;
+        int resultSize = 0;
         List<Object[]> batchArgs = new ArrayList<Object[]>();
         for (int i = 0; i < list.size(); i++) {
             batchArgs.add(SqlMakeTools.setArgs(list.get(i), SQL_INSERT));
             j++;
             if (j.intValue() == BATCH_PAGE_SIZE) {
-                jdbcTemplate.batchUpdate(sql, batchArgs, argTypes);
+                resultSize += sumBatchResults(jdbcTemplate.batchUpdate(sql, batchArgs, argTypes));
                 batchArgs = new ArrayList<>();
                 j = 0;
             }
         }
         if (!batchArgs.isEmpty()) {
-            jdbcTemplate.batchUpdate(sql, batchArgs, argTypes);
+            resultSize += sumBatchResults(jdbcTemplate.batchUpdate(sql, batchArgs, argTypes));
         }
+        return resultSize;
+    }
+
+    /**
+     * 汇总 batchUpdate 返回的逐行影响数（int[] 每元素为一条记录的影响行数）
+     */
+    private static int sumBatchResults(int[] results) {
+        int sum = 0;
+        if (results != null) {
+            for (int r : results) {
+                sum += r;
+            }
+        }
+        return sum;
     }
 
     @Override
-    public void saveOrUpdate(T t) {
+    public int saveOrUpdate(T t) {
         // 用 isPk 双重比对定位主键字段，兼容主键字段带 @Column 改名
         Field field = EntityTools.getPkField(entityClass);
         if (field == null) {
@@ -121,12 +159,11 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         if (id == null) {
             throw new GyjdbcException("entity primary key must not be null");
         }
-        T existing = this.queryOne(id);
-        if (existing != null) {
-            this.update(t);
-        } else {
-            this.save(t);
-        }
+        // 单条 INSERT ... ON DUPLICATE KEY UPDATE：由数据库原子决定插入或更新，避免先查后写并发竞态
+        String sql = SqlMakeTools.makeSaveOrUpdateSql(entityClass, tableName);
+        Object[] args = SqlMakeTools.setArgs(t, SQL_INSERT);
+        int[] argTypes = SqlMakeTools.setArgTypes(t, SQL_INSERT);
+        return jdbcTemplate.update(sql, args, argTypes);
     }
 
     @Override
@@ -152,6 +189,13 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         List<Object[]>[] batchArgsArr = MixUtils.slice(batchArgs, BATCH_PAGE_SIZE);
         //影响记录数量
         int resultSize = 0;
+        // 自增主键场景：主键字段为 Number 类型且所有记录主键均为 null 时，走 RETURN_GENERATED_KEYS 回填生成主键
+        // （混合显式主键与 null 时无法按行对齐生成键，保持原路径不回填）
+        Field pkField = EntityTools.getPkField(entityClass);
+        boolean fillPk = pkField != null && Number.class.isAssignableFrom(pkField.getType())
+                && list.stream().allMatch(t -> ReflectionUtils.getField(pkField, t) == null);
+        // 当前批次在 list 中的起始下标，用于按行序回填主键到对应实体
+        int offset = 0;
         for (List<Object[]> args : batchArgsArr) {
             //本批次的大小
             int batchSize = args.size();
@@ -173,34 +217,60 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
                     params.add(arg);
                 }
             }
-            resultSize = resultSize + jdbcTemplate.update(insSql.toString(), params.toArray(), types);
+            if (fillPk) {
+                // 用 RETURN_GENERATED_KEYS 拿回本批次每行生成的自增主键
+                GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+                Object[] finalParams = params.toArray();
+                resultSize += jdbcTemplate.update(connection -> {
+                    PreparedStatement ps = connection.prepareStatement(insSql.toString(), Statement.RETURN_GENERATED_KEYS);
+                    for (int i = 0; i < finalParams.length; i++) {
+                        ps.setObject(i + 1, finalParams[i], types[i]);
+                    }
+                    return ps;
+                }, keyHolder);
+                // keyList 按行序与插入顺序一致，回填到对应实体
+                List<Map<String, Object>> keyList = keyHolder.getKeyList();
+                for (int i = 0; i < keyList.size(); i++) {
+                    Object keyVal = keyList.get(i).values().iterator().next();
+                    if (keyVal != null) {
+                        ReflectionUtils.setField(pkField, list.get(offset + i),
+                                NumberUtils.convertNumberToTargetClass((Number) keyVal,
+                                        (Class<? extends Number>) pkField.getType()));
+                    }
+                }
+                offset += batchSize;
+            } else {
+                resultSize += jdbcTemplate.update(insSql.toString(), params.toArray(), types);
+            }
         }
         return resultSize;
     }
 
     @Override
     @Transactional
-    public void batchUpdate(List<T> list) {
+    public int batchUpdate(List<T> list) {
         if (CollectionUtils.isEmpty(list)) {
-            return;
+            return 0;
         }
         //分页操作
         String sql = SqlMakeTools.makeSql(entityClass, tableName, SQL_UPDATE);
         int[] argTypes = SqlMakeTools.setArgTypes(list.get(0), SQL_UPDATE);
         Integer j = 0;
+        int resultSize = 0;
         List<Object[]> batchArgs = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) {
             batchArgs.add(SqlMakeTools.setArgs(list.get(i), SQL_UPDATE));
             j++;
             if (j.intValue() == BATCH_PAGE_SIZE) {
-                jdbcTemplate.batchUpdate(sql, batchArgs, argTypes);
+                resultSize += sumBatchResults(jdbcTemplate.batchUpdate(sql, batchArgs, argTypes));
                 batchArgs = new ArrayList<>();
                 j = 0;
             }
         }
         if (!batchArgs.isEmpty()) {
-            jdbcTemplate.batchUpdate(sql, batchArgs, argTypes);
+            resultSize += sumBatchResults(jdbcTemplate.batchUpdate(sql, batchArgs, argTypes));
         }
+        return resultSize;
     }
 
 

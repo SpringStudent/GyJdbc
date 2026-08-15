@@ -328,10 +328,10 @@ new SQL()
 ### 聚合、分组、排序
 
 ```java
-import static com.gysoft.jdbc.bean.FuncBuilder.countAs;
+import static com.gysoft.jdbc.bean.FuncBuilder.count;
 
 new SQL()
-        .select("age", countAs("age").as("num"))
+        .select("age", count("age").as("num"))
         .from(TbUser.class)
         .groupBy(TbUser::getAge)
         .orderBy(new Sort(TbUser::getAge));
@@ -476,20 +476,41 @@ new SQL().select("*").from(
 );
 ```
 
-### MySQL 常用函数
+### 通过 FuncBuilder 使用 SQL 函数
+
+`FuncBuilder` 用于构建 SQL 函数表达式，返回不可变的 `FuncExpr` 对象，支持嵌套组合与链式别名（`.as(alias)`）。使用前务必理解它的**参数约定**：
+
+- `String` → **裸 SQL**（列名 / 表达式 / 变量），原样拼接，**不加引号**；
+- `TypeFunction`（如 `TbUser::getAge`）→ 解析为对应的列名（兼容 `@Column` 改名）；
+- `FuncExpr` → 已组合的表达式（`col()` / `lit()` / 其它函数的结果）；
+- 值参数（`Object`）→ **值字面量**：`String` 自动加引号并转义（`'` → `''`），`Number` / `Boolean` 原样输出，`null` 输出 `NULL`。
+
+由此列与字面量在类型层面被区分开——列用 `col("...")` / 裸 `String`，字符串常量用 `lit("...")`，数字直接传值。这正是框架避免手写引号、杜绝 SQL 注入的设计。
 
 ```java
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
 
-new SQL()
-        .select(
-                countAs("id").as("total"),
-                maxAs("age").as("maxAge"),
-                jsonExtractAs("extra", "$.name").as("nameJson")
-        )
-        .from("tb_user")
-        .where("is_active", 1);
+// 聚合 + 别名：SELECT COUNT(id) AS total, MAX(age) AS maxAge FROM tb_user
+new SQL().select(count("id").as("total"), max("age").as("maxAge"))
+        .from("tb_user");
+
+// Lambda 列引用 + lit() 字面量：CONCAT(realName, ', ', name) AS display
+new SQL().select(concat(TbUser::getRealName, lit(", "), TbUser::getName).as("display"))
+        .from(TbUser.class);
+
+// String 为裸列名，Object 值为字面量（自动加引号转义）：IFNULL(remark, 'no remark')
+new SQL().select(ifNull("remark", "no remark").as("remark"))
+        .from("tb_order");
+
+// 条件 + 日期函数
+new SQL().select(
+                caseWhen("salary > 10000", "high", "normal").as("level"),
+                dateFormat("create_time", "%Y-%m-%d").as("day"),
+                year(now()).as("current_year")
+        ).from("tb_user");
 ```
+
+可用函数分组：聚合（`count`、`countDistinct`、`sum`、`avg`、`max`、`min`、`groupConcat`、`groupConcatDistinct`）；字符串（`concat`、`concat_ws`、`length`、`charLength`、`substring`、`upper`、`lower`、`ltrim`、`rtrim`、`trim`、`left`、`right`、`replace`、`findInSet`、`locate`、`position`、`instr`、`elt`、`insert`）；数值（`abs`、`ceil`、`floor`、`round`、`truncate`、`mod`、`rand`）；日期（`now`、`curdate`、`curtime`、`dateFormat`、`format`、`dateAdd`、`dateSub`、`strToDate`、`month`、`monthname`、`week`、`year`、`hour`、`minute`、`weekday`、`dayname`、`date`）；条件（`ifNull`、`_if`、`caseWhen`）；JSON（`jsonExtract`、`jsonUnquote`、`jsonContains`、`jsonSet`、`jsonRemove`、`jsonObject`、`jsonArray`）；其它（`distinct`、`convertUsingGbk`、`unixTimeStamp`、`fromUnixTime`）。
 
 ### 复杂 UPDATE
 

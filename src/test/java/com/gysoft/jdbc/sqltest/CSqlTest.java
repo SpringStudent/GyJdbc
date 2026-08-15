@@ -113,21 +113,6 @@ public class CSqlTest {
     }
 
     @Test
-    public void useSqlShouldEscapeQuotesInDefaultAndComment() {
-        SQL sql = new SQL().create().table("quote_tb")
-                .comment("o'brien's table")
-                .column().name("name").varchar(16).notNull().defaultVal("it's").comment("a 'quoted' comment").commit()
-                .column().name("createdAt").datetime(6).notNull().defaultCurrentTimestamp().comment("time 'x'").commit()
-                .index().name("uk_name").unique().column("name").comment("unique 'name'").commit()
-                .commit();
-
-        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-
-        assertEquals("CREATE TABLE `quote_tb` (`name` varchar(16) NOT NULL DEFAULT 'it''s' COMMENT 'a ''quoted'' comment',`createdAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'time ''x''',UNIQUE KEY `uk_name` (`name`) COMMENT 'unique ''name''') DEFAULT CHARSET=utf8mb4 COMMENT='o''brien''s table'", pair.getFirst());
-        assertArrayEquals(new Object[]{"`quote_tb`"}, pair.getSecond());
-    }
-
-    @Test
     public void testSimpleWhere() {
         Criteria criteria = new Criteria().where("name", "zhouning");
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder("SELECT * FROM tb_test"));

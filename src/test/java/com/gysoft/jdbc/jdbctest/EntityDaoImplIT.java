@@ -69,6 +69,9 @@ public class EntityDaoImplIT extends AbstractJdbcIT {
         assertEquals(1, all.size());
         assertNotNull("自增主键应被数据库生成", all.get(0).getId());
         assertEquals("lisi", all.get(0).getName());
+        // save 应通过 KeyHolder 将生成的自增主键回填到实体
+        assertNotNull("save 应回填自增主键", member.getId());
+        assertEquals("回填主键应与落库主键一致", all.get(0).getId(), member.getId());
     }
 
     @Test
@@ -123,12 +126,13 @@ public class EntityDaoImplIT extends AbstractJdbcIT {
 
     @Test
     public void batchSaveInsertsInBatches() {
-        memberDao.batchSave(Arrays.asList(
+        int inserted = memberDao.batchSave(Arrays.asList(
                 newMember(1, "a", 10),
                 newMember(2, "b", 20),
                 newMember(3, "c", 30),
                 newMember(4, "d", 40)));
 
+        assertEquals("batchSave 应返回插入行数", 4, inserted);
         assertEquals(4, memberDao.queryAll().size());
         assertNotNull(memberDao.queryOne(4));
     }
@@ -146,6 +150,28 @@ public class EntityDaoImplIT extends AbstractJdbcIT {
     }
 
     @Test
+    public void saveAllBackfillsAutoIncrementPk() {
+        MemberEntity m1 = newMember(0, "a", 10);
+        m1.setId(null);
+        MemberEntity m2 = newMember(0, "b", 20);
+        m2.setId(null);
+        MemberEntity m3 = newMember(0, "c", 30);
+        m3.setId(null);
+
+        int rows = memberDao.saveAll(Arrays.asList(m1, m2, m3));
+
+        assertEquals("saveAll 应返回插入行数", 3, rows);
+        // 每个实体的自增主键都应被回填，且互不重复
+        assertNotNull("主键为空", m1.getId());
+        assertNotNull("主键为空", m2.getId());
+        assertNotNull("主键为空", m3.getId());
+        assertEquals("回填主键互不相同", 3, new HashSet<>(Arrays.asList(m1.getId(), m2.getId(), m3.getId())).size());
+        // 与落库主键一致
+        List<Integer> dbIds = memberDao.queryIds(null);
+        assertTrue("回填主键应全部落库", dbIds.containsAll(Arrays.asList(m1.getId(), m2.getId(), m3.getId())));
+    }
+
+    @Test
     public void batchUpdateUpdatesEachRow() {
         memberDao.save(newMember(1, "a", 10));
         memberDao.save(newMember(2, "b", 20));
@@ -154,8 +180,9 @@ public class EntityDaoImplIT extends AbstractJdbcIT {
         m1.setName("a1");
         MemberEntity m2 = memberDao.queryOne(2);
         m2.setName("b1");
-        memberDao.batchUpdate(Arrays.asList(m1, m2));
+        int updated = memberDao.batchUpdate(Arrays.asList(m1, m2));
 
+        assertEquals("batchUpdate 应返回更新行数", 2, updated);
         assertEquals("a1", memberDao.queryOne(1).getName());
         assertEquals("b1", memberDao.queryOne(2).getName());
     }

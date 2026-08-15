@@ -328,10 +328,10 @@ new SQL()
 ### Aggregate, Group, Order
 
 ```java
-import static com.gysoft.jdbc.bean.FuncBuilder.countAs;
+import static com.gysoft.jdbc.bean.FuncBuilder.count;
 
 new SQL()
-        .select("age", countAs("age").as("num"))
+        .select("age", count("age").as("num"))
         .from(TbUser.class)
         .groupBy(TbUser::getAge)
         .orderBy(new Sort(TbUser::getAge));
@@ -476,20 +476,41 @@ new SQL().select("*").from(
 );
 ```
 
-### Common MySQL Functions
+### SQL Functions via FuncBuilder
+
+`FuncBuilder` builds SQL function expressions as immutable, nestable `FuncExpr` objects with chained aliases (`.as(alias)`). The **parameter convention** is the key to using it correctly:
+
+- `String` → **raw SQL** (column name / expression / variable), concatenated as-is, **never quoted**;
+- `TypeFunction` (e.g. `TbUser::getAge`) → resolved to the mapped column name (respects `@Column`);
+- `FuncExpr` → an already-composed expression (result of `col()` / `lit()` / another function);
+- value parameters (`Object`) → **literals**: `String` is auto-quoted and escaped (`'` → `''`), `Number` / `Boolean` are output as-is, `null` becomes `NULL`.
+
+Columns and literals are therefore distinguished at the type level — use `col("...")` / a bare `String` for columns, `lit("...")` for literal strings, and a plain value for numbers. This is what prevents hand-written quotes and accidental SQL injection.
 
 ```java
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
 
-new SQL()
-        .select(
-                countAs("id").as("total"),
-                maxAs("age").as("maxAge"),
-                jsonExtractAs("extra", "$.name").as("nameJson")
-        )
-        .from("tb_user")
-        .where("is_active", 1);
+// Aggregate + alias: SELECT COUNT(id) AS total, MAX(age) AS maxAge FROM tb_user
+new SQL().select(count("id").as("total"), max("age").as("maxAge"))
+        .from("tb_user");
+
+// Lambda references + lit() literal: CONCAT(realName, ', ', name) AS display
+new SQL().select(concat(TbUser::getRealName, lit(", "), TbUser::getName).as("display"))
+        .from(TbUser.class);
+
+// String = raw column, Object value = literal (auto-quoted & escaped): IFNULL(remark, 'no remark')
+new SQL().select(ifNull("remark", "no remark").as("remark"))
+        .from("tb_order");
+
+// Conditional + date functions
+new SQL().select(
+                caseWhen("salary > 10000", "high", "normal").as("level"),
+                dateFormat("create_time", "%Y-%m-%d").as("day"),
+                year(now()).as("current_year")
+        ).from("tb_user");
 ```
+
+Available function groups: aggregates (`count`, `countDistinct`, `sum`, `avg`, `max`, `min`, `groupConcat`, `groupConcatDistinct`); string (`concat`, `concat_ws`, `length`, `charLength`, `substring`, `upper`, `lower`, `ltrim`, `rtrim`, `trim`, `left`, `right`, `replace`, `findInSet`, `locate`, `position`, `instr`, `elt`, `insert`); numeric (`abs`, `ceil`, `floor`, `round`, `truncate`, `mod`, `rand`); date/time (`now`, `curdate`, `curtime`, `dateFormat`, `format`, `dateAdd`, `dateSub`, `strToDate`, `month`, `monthname`, `week`, `year`, `hour`, `minute`, `weekday`, `dayname`, `date`); conditional (`ifNull`, `_if`, `caseWhen`); JSON (`jsonExtract`, `jsonUnquote`, `jsonContains`, `jsonSet`, `jsonRemove`, `jsonObject`, `jsonArray`); misc (`distinct`, `convertUsingGbk`, `unixTimeStamp`, `fromUnixTime`).
 
 ### Complex UPDATE
 

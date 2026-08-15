@@ -77,6 +77,33 @@ public class SqlMakeTools {
     }
 
     /**
+     * 组装 INSERT ... ON DUPLICATE KEY UPDATE 单语句（saveOrUpdate 专用）。
+     * <p>以单条原子语句实现"存在则更新、不存在则插入"，消除先查后写的并发竞态。
+     * 除主键外的所有列写入 ON DUPLICATE KEY UPDATE 子句，用 {@code VALUES(col)} 引用插入值
+     * （与 {@code SQL#onDuplicateKeyUpdateValues} 生成语法一致）。</p>
+     *
+     * @param clazz  实体类型
+     * @param tbName 表名
+     * @return String upsert SQL
+     */
+    public static String makeSaveOrUpdateSql(Class clazz, String tbName) {
+        String insertSql = makeSql(clazz, tbName, SQL_INSERT);
+        Field[] fields = EntityTools.getDeclaredFields(clazz);
+        List<String> updates = new ArrayList<>();
+        for (Field field : fields) {
+            if (EntityTools.isPk(clazz, field)) {
+                continue;
+            }
+            String column = EntityTools.getColumnName(field);
+            updates.add(column + " = VALUES(" + column + ")");
+        }
+        if (updates.isEmpty()) {
+            throw new GyjdbcException("No non-primary-key fields to upsert in entity " + clazz.getName());
+        }
+        return insertSql + " ON DUPLICATE KEY UPDATE " + String.join(", ", updates);
+    }
+
+    /**
      * 将 INSERT 单行模板 SQL 拆分为「insert 前缀」与「列清单/values 后缀」两部分，
      * 供 {@link com.gysoft.jdbc.dao.EntityDaoImpl#saveAll} 拼接多行 VALUES 使用。
      * <p>以 " VALUES "（两侧带空格）定位关键字，避免表名/列名含 "VALUES" 子串时

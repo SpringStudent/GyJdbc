@@ -28,7 +28,7 @@ public interface EntityDao<T, Id extends Serializable> {
     String SQL_CREATE = "create";
 
     /**
-     * 插入指定的持久化对象
+     * 插入指定的持久化对象，支持主键回填
      *
      * @param t 实体对象
      */
@@ -45,18 +45,19 @@ public interface EntityDao<T, Id extends Serializable> {
      * 批量保存指定的持久化对象
      *
      * @param list 实体对象集合
+     * @return int 插入记录的条数
      */
-    void batchSave(List<T> list);
+    int batchSave(List<T> list);
 
     /**
      * 保存或更新持久化对象
      *
      * @param t 实体对象
      */
-    void saveOrUpdate(T t);
+    int saveOrUpdate(T t);
 
     /**
-     * 批量保存指定的持久化对象
+     * 批量保存指定的持久化对象，支持对象主键回填
      *
      * @param list 实体对象集合
      * @return int插入记录的条数
@@ -67,8 +68,9 @@ public interface EntityDao<T, Id extends Serializable> {
      * 批量更新指定的持久化对象
      *
      * @param list 实体对象集合
+     * @return int 更新记录的条数
      */
-    void batchUpdate(List<T> list);
+    int batchUpdate(List<T> list);
 
     /**
      * 根据主键删除
@@ -215,15 +217,15 @@ public interface EntityDao<T, Id extends Serializable> {
      * @param tRowMapper 自定义实体映射mapper
      * @return T 实体对象
      */
-   <E> E queryOne(Criteria criteria, RowMapper<E> tRowMapper);
+    <E> E queryOne(Criteria criteria, RowMapper<E> tRowMapper);
 
-   /**
-    * 根据sql查询
-    *
-    * @param sql sql拼接器
-    * @param <E> 查询结果类型
-    */
-   <E> Result<E> queryWithSql(Class<E> clss, SQL sql);
+    /**
+     * 根据sql查询
+     *
+     * @param sql sql拼接器
+     * @param <E> 查询结果类型
+     */
+    <E> Result<E> queryWithSql(Class<E> clss, SQL sql);
 
     /**
      * 根据sql查询，直接返回对象列表
