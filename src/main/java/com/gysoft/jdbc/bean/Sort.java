@@ -51,12 +51,12 @@ public class Sort implements Serializable {
 
     public Sort(String sortField, String sortType) {
         this.sortField = sortField;
-        this.sortType = sortType;
+        this.sortType = normalizeSortType(sortType);
     }
 
     public <T, R> Sort(TypeFunction<T, R> function, String sortType) {
         this.sortField = TypeFunction.getLambdaColumnName(function);
-        this.sortType = sortType;
+        this.sortType = normalizeSortType(sortType);
     }
 
     public String getSortField() {
@@ -72,7 +72,18 @@ public class Sort implements Serializable {
     }
 
     public void setSortType(String sortType) {
-        this.sortType = sortType;
+        this.sortType = normalizeSortType(sortType);
+    }
+
+    private static String normalizeSortType(String sortType) {
+        if (sortType == null || sortType.trim().isEmpty()) {
+            throw new GyjdbcException("sort type cannot be null or empty");
+        }
+        String upper = sortType.trim().toUpperCase();
+        if (!"ASC".equals(upper) && !"DESC".equals(upper)) {
+            throw new GyjdbcException("invalid sort type: '" + sortType + "', only ASC or DESC is allowed");
+        }
+        return upper;
     }
 
     @Override

@@ -1,6 +1,5 @@
 package com.gysoft.jdbc.bean;
 
-import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ResultSetExtractor;
 
 import java.math.BigDecimal;
@@ -25,16 +24,12 @@ public abstract class ResultSetExractorFactory {
      * 两列结果值得映射Mapper类
      */
     public static <A, B> ResultSetExtractor createDoubleColumnValueResultSetExtractor(Class<A> kCls, Class<B> vCls) {
-        return new ResultSetExtractor() {
-            Map result = new LinkedHashMap<>(1);
-
-            @Override
-            public Object extractData(ResultSet rs) throws SQLException, DataAccessException {
-                while (rs.next()) {
-                    result.put(getColumVal(kCls, rs, 1), getColumVal(vCls, rs, 2));
-                }
-                return result;
+        return rs -> {
+            Map result = new LinkedHashMap<>();
+            while (rs.next()) {
+                result.put(getColumVal(kCls, rs, 1), getColumVal(vCls, rs, 2));
             }
+            return result;
         };
     }
 
