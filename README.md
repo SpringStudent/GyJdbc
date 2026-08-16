@@ -26,7 +26,6 @@ GyJdbc is for projects that don't want a heavy ORM but are tired of writing DAO 
 - [Testing](#testing)
 - [Important Notes](#important-notes)
 - [More Examples](#more-examples)
-- [Project Philosophy](#project-philosophy)
 - [License](#license)
 
 ## Why GyJdbc
@@ -787,17 +786,6 @@ Bindings from `@BindPoint` / `DataSourceContext.withDataSource` are stored in a 
 - Sample projects:
   - [remote-desktop-control](https://github.com/SpringStudent/remote-desktop-control)
   - [webrtc-meetings](https://github.com/SpringStudent/webrtc-meetings)
-
-## Project Philosophy
-
-GyJdbc isn't meant to replace all ORMs, nor is it about hiding SQL. It's a practical SQL assistant:
-
-- Simple CRUD → `EntityDao`;
-- Dynamic queries → `Criteria`;
-- Complex SQL → the `SQL` builder;
-- Multi-data-source routing → `JdbcRoutingDataSource` and `@BindPoint`.
-
-You stay in control of your SQL — but you no longer waste time on repetitive DAO code, string concatenation, or scattered data-source-switching logic.
 
 ## License
 

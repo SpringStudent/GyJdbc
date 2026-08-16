@@ -26,7 +26,6 @@ GyJdbc 适合那些不想引入重型 ORM、又不想反复手写 DAO 和 SQL �
 - [测试](#测试)
 - [重要提示](#重要提示)
 - [更多示例](#更多示例)
-- [项目定位](#项目定位)
 - [License](#license)
 
 ## 为什么选择 GyJdbc
@@ -784,18 +783,7 @@ mvn -Dtest=EntityDaoImplIT test # 只跑 H2 集成测试
 - 使用示例项目：
   - [remote-desktop-control](https://github.com/SpringStudent/remote-desktop-control)
   - [webrtc-meetings](https://github.com/SpringStudent/webrtc-meetings)
-
-## 项目定位
-
-GyJdbc 不是为了取代所有 ORM，也不是为了隐藏 SQL。它更像是一个面向实战的 SQL 助手：
-
-- 简单 CRUD 交给 `EntityDao`；
-- 动态查询交给 `Criteria`；
-- 复杂 SQL 交给 `SQL` 构建器；
-- 多数据源选择交给 `JdbcRoutingDataSource` 和 `@BindPoint`。
-
-你仍然掌控 SQL，但不用再把时间浪费在重复 DAO、字符串拼接和散落各处的数据源切换代码上。
-
+  
 ## License
 
 GyJdbc 使用 Apache License 2.0 开源协议。
