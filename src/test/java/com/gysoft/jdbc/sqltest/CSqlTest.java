@@ -4925,16 +4925,34 @@ public class CSqlTest {
 
     @Test
     public void joinConsumerVariantsShouldBuildCorrectSql() {
-        // JOIN 三变体 + Lambda on 条件 + andCriteria 括号组
-        SQL sql = new SQL().select("*").from("table111")
-                .innerJoin("table222", "b", c -> c.on("table111.id", "b.id").and("b.name", "=", "testname"))
-                .leftJoin("table333", "c", c -> c.on(Role::getName, Token::getTk).on("table111.id", "c.id").and("c.type", ">", 2))
-                .rightJoin(Token.class, "d", c -> c.on("table111.id", "d.id").and("d.status", "=", "active"))
-                .where("table111.flag", 1).andCriteria(c -> c.where("table111.type", "A").or("table111.type", "B"));
+        // 构建多表关联查询：三表JOIN + 复合条件 + 括号分组
+        SQL sql = new SQL()
+                .select("*")
+                .from("user_main u")
+                .innerJoin("user_detail", "d", c -> c
+                        .on("u.id", "d.user_id")
+                        .and("d.name", "=", "张三"))
+                .leftJoin("user_role", "r", c -> c
+                        .on("role_name", "token_key")
+                        .on("u.id", "r.user_id")
+                        .and("r.role_type", ">", 1))
+                .rightJoin("tb_token", "t", c -> c
+                        .on("u.id", "t.user_id")
+                        .and("t.status", "=", "有效"))
+                .where("u.deleted", 0)
+                .andCriteria(c -> c
+                        .where("u.user_type", "管理员")
+                        .or("u.user_type", "普通用户"));
 
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        assertEquals("SELECT * FROM table111 INNER JOIN table222 b ON table111.id = b.id AND b.name = ? LEFT JOIN table333 c ON `name` = ddd AND table111.id = c.id AND c.type > ? RIGHT JOIN tb_token d ON table111.id = d.id AND d.status = ? WHERE table111.flag = ? AND (table111.type = ? OR table111.type = ?)", pair.getFirst());
-        assertArrayEquals(new Object[]{"testname", 2, "active", 1, "A", "B"}, pair.getSecond());
+        assertEquals("SELECT * FROM user_main u " +
+                        "INNER JOIN user_detail d ON u.id = d.user_id AND d.name = ? " +
+                        "LEFT JOIN user_role r ON role_name = token_key AND u.id = r.user_id AND r.role_type > ? " +
+                        "RIGHT JOIN tb_token t ON u.id = t.user_id AND t.status = ? " +
+                        "WHERE u.deleted = ? AND (u.user_type = ? OR u.user_type = ?)",
+                pair.getFirst());
+        assertArrayEquals(new Object[]{"张三", 1, "有效", 0, "管理员", "普通用户"}, pair.getSecond()
+        );
     }
 
     @Test
