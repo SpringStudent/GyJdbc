@@ -1373,4 +1373,109 @@ public class EntityDaoImplIT extends AbstractJdbcIT {
             EntityDaoImpl.BATCH_PAGE_SIZE = oldSize;
         }
     }
+
+    // ───────────────── countWithCriteria 前置校验 ─────────────────
+
+    @Test(expected = GyjdbcException.class)
+    public void countWithCriteriaShouldRejectGroupBy() {
+        // 曾生成 SELECT COUNT(*) ... GROUP BY，多组时 queryForObject 抛 IncorrectResultSizeDataAccessException
+        memberDao.save(newMember(1, "a", 10));
+        memberDao.save(newMember(2, "b", 20));
+        memberDao.countWithCriteria(new Criteria().groupBy("age"));
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void countWithCriteriaShouldRejectHaving() {
+        memberDao.countWithCriteria(new Criteria().having("age", ">", 1));
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void countWithCriteriaShouldRejectLimit() {
+        // 带 offset 的 LIMIT 会让 COUNT(*) 结果集为空，抛 EmptyResultDataAccessException
+        memberDao.countWithCriteria(new Criteria().limit(10, 10));
+    }
+
+    @Test
+    public void countWithCriteriaShouldIgnoreOrderBy() {
+        // ORDER BY 拼进 COUNT(*) 会被 MySQL ONLY_FULL_GROUP_BY / H2 直接拒绝，应被忽略
+        memberDao.save(newMember(1, "a", 10));
+        memberDao.save(newMember(2, "b", 20));
+        assertEquals(2L, memberDao.countWithCriteria(new Criteria().orderBy(Sort.asc("age"))));
+    }
+
+    // ───────────────── 分页 ORDER BY 必须作用于 LIMIT ─────────────────
+
+    @Test
+    public void pageQueryWithCriteriaShouldKeepOrderAcrossPages() {
+        for (int i = 1; i <= 5; i++) {
+            memberDao.save(newMember(i, "name" + i, 10 + i));
+        }
+        Criteria desc = new Criteria().orderBy(Sort.desc("age"));
+
+        PageResult<MemberEntity> page1 = memberDao.pageQueryWithCriteria(new Page(1, 2), desc);
+        PageResult<MemberEntity> page2 = memberDao.pageQueryWithCriteria(new Page(2, 2), desc);
+
+        assertEquals(5, page1.getTotal().intValue());
+        assertEquals(Arrays.asList(15, 14),
+                Arrays.asList(page1.getList().get(0).getAge(), page1.getList().get(1).getAge()));
+        assertEquals(Arrays.asList(13, 12),
+                Arrays.asList(page2.getList().get(0).getAge(), page2.getList().get(1).getAge()));
+    }
+
+    @Test
+    public void pageQueryWithSqlShouldKeepOrderAcrossPages() {
+        for (int i = 1; i <= 5; i++) {
+            memberDao.save(newMember(i, "name" + i, 10 + i));
+        }
+        PageResult<MemberEntity> page2 = memberDao.pageQueryWithSql(new Page(2, 2), MemberEntity.class,
+                new SQL().select("*").from(MemberEntity.class).orderBy(Sort.desc("age")));
+
+        assertEquals(5, page2.getTotal().intValue());
+        assertEquals(Integer.valueOf(13), page2.getList().get(0).getAge());
+        assertEquals(Integer.valueOf(12), page2.getList().get(1).getAge());
+    }
+
+    // ───────────────── getColumVal 取值语义 ─────────────────
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void getColumValShouldKeepTimeForUtilDate() {
+        // 曾用 rs.getDate() 取 java.util.Date，时分秒被截断成 00:00:00
+        Map<String, Date> result = (Map<String, Date>) jdbcTemplate.query(
+                "SELECT 'k', TIMESTAMP '2026-08-21 13:45:56'",
+                ResultSetExractorFactory.createDoubleColumnValueResultSetExtractor(String.class, Date.class));
+
+        Date value = result.get("k");
+        assertNotNull(value);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(value);
+        assertEquals(13, calendar.get(Calendar.HOUR_OF_DAY));
+        assertEquals(45, calendar.get(Calendar.MINUTE));
+        assertEquals(56, calendar.get(Calendar.SECOND));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void getColumValShouldReturnNullForWrapperTypesOnSqlNull() {
+        // 曾返回 0 而非 null，调用方无法区分"值为 0"和"列为 NULL"
+        Map<String, Integer> ints = (Map<String, Integer>) jdbcTemplate.query(
+                "SELECT 'k', CAST(NULL AS INT)",
+                ResultSetExractorFactory.createDoubleColumnValueResultSetExtractor(String.class, Integer.class));
+        assertTrue(ints.containsKey("k"));
+        assertNull(ints.get("k"));
+
+        Map<String, Boolean> booleans = (Map<String, Boolean>) jdbcTemplate.query(
+                "SELECT 'k', CAST(NULL AS BOOLEAN)",
+                ResultSetExractorFactory.createDoubleColumnValueResultSetExtractor(String.class, Boolean.class));
+        assertNull(booleans.get("k"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void getColumValShouldStillReadPresentValues() {
+        Map<String, Integer> ints = (Map<String, Integer>) jdbcTemplate.query(
+                "SELECT 'k', 0",
+                ResultSetExractorFactory.createDoubleColumnValueResultSetExtractor(String.class, Integer.class));
+        assertEquals(Integer.valueOf(0), ints.get("k"));
+    }
 }

@@ -179,6 +179,8 @@ public interface EntityDao<T, Id extends Serializable> {
 
     /**
      * 根据criteria统计数量
+     * <p>criteria 中的 ORDER BY 会被忽略（对 COUNT 无意义）；带 groupBy/having/limit
+     * 会抛 {@link com.gysoft.jdbc.bean.GyjdbcException}，分组统计请改用 queryWithSql。</p>
      *
      * @param criteria 查询条件
      * @return long 满足条件的记录数

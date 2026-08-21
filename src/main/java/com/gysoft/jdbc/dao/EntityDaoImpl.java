@@ -342,14 +342,12 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
         sql = pair.getFirst();
         Object[] baseParams = pair.getSecond();
-        String pageSql = "SELECT * FROM (" + sql + ") temp ";
-        Object[] pageParams = baseParams;
-        if (page != null) {
-            pageSql = pageSql + " LIMIT ?,?";
-            pageParams = MixUtils.appendParams(baseParams, page.getOffset(), page.getPageSize());
-        } else {
+        if (page == null) {
             throw new GyjdbcException("page param cannot be null");
         }
+        //数据查询不包派生表:MySQL 合并派生表时会丢弃其中无 LIMIT 的 ORDER BY,导致翻页顺序不稳定
+        String pageSql = sql + " LIMIT ?,?";
+        Object[] pageParams = MixUtils.appendParams(baseParams, page.getOffset(), page.getPageSize());
         List<E> paged = jdbcTemplate.query(pageSql, pageParams, tRowMapper);
         //独立统计总数,避免FOUND_ROWS()依赖同一连接在连接池/并发下取到错误计数
         String countSql = "SELECT COUNT(*) FROM (" + sql + ") temp";
@@ -379,8 +377,20 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
 
     @Override
     public long countWithCriteria(Criteria criteria) {
+        if (criteria != null) {
+            // groupBy/having 会让 COUNT(*) 返回多行，queryForObject 直接抛 IncorrectResultSizeDataAccessException
+            if (CollectionUtils.isNotEmpty(criteria.getGroupFields()) || criteria.getHaving() != null) {
+                throw new GyjdbcException(
+                        "countWithCriteria does not support groupBy or having, count the grouped result with queryWithSql instead");
+            }
+            // LIMIT 会截断 COUNT(*) 的单行结果：offset > 0 时结果集为空，抛 EmptyResultDataAccessException
+            if (criteria.getOffset() >= 0 || criteria.getSize() > 0) {
+                throw new GyjdbcException("countWithCriteria does not support limit in criteria");
+            }
+        }
         String sql = "SELECT COUNT(*) FROM " + tableName;
-        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql));
+        // ORDER BY 对 COUNT(*) 无意义，且 MySQL ONLY_FULL_GROUP_BY 下会报错，这里直接忽略排序
+        Pair<String, Object[]> pair = SqlMakeTools.doCriteria(criteria, new StringBuilder(sql), false);
         Long count = jdbcTemplate.queryForObject(pair.getFirst(), pair.getSecond(), Long.class);
         return count == null ? 0L : count;
     }
@@ -458,7 +468,8 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         String baseSql = pair.getFirst();
         Object[] baseParams = pair.getSecond();
-        String pageSql = "SELECT * FROM (" + baseSql + ") temp LIMIT ?,?";
+        //数据查询不包派生表,保证 SQL 里的 ORDER BY 直接作用于 LIMIT
+        String pageSql = baseSql + " LIMIT ?,?";
         Object[] pageParams = MixUtils.appendParams(baseParams, page.getOffset(), page.getPageSize());
         List<E> paged = jdbcTemplate.query(pageSql, pageParams, EntityRowMapper.newRowMapper(clss));
         String countSql = "SELECT COUNT(*) FROM (" + baseSql + ") temp";
@@ -581,7 +592,14 @@ public class EntityDaoImpl<T, Id extends Serializable> implements EntityDao<T, I
         }
     }
 
+    /**
+     * 建表并（可选）插入数据。
+     * <p>这里必须自己声明 {@code @Transactional}：方法内是 {@code this.insertWithSql(...)} 自调用，
+     * 不走 Spring 代理，被调用方的 {@code @Transactional} 不生效，分批插入会失去事务保护。</p>
+     * <p>注意 MySQL 的 DDL 会隐式提交，建表本身无法回滚，事务只覆盖建表之后的插入。</p>
+     */
     @Override
+    @Transactional
     public String createWithSql(SQL sql) {
         TableMeta tableMeta = sql.getTableMeta();
         String originSqlType = sql.getSqlType();

@@ -33,13 +33,29 @@ public abstract class ResultSetExractorFactory {
         };
     }
 
+    /**
+     * 按目标类型从结果集取值。
+     * <p>包装类型（{@code Integer}/{@code Long}/... ）遇 SQL NULL 返回 null，而不是 0/false；
+     * 基本类型无法表达 null，仍返回 JDBC 默认值。{@code java.util.Date} 走
+     * {@code getTimestamp} 以保留时分秒。</p>
+     *
+     * @param cls 目标类型
+     * @param rs  结果集
+     * @param i   列下标，从 1 开始
+     */
     public static <T> Object getColumVal(Class<T> cls, ResultSet rs, int i) throws SQLException {
         if (String.class.equals(cls)) {
             return rs.getString(i);
-        } else if (int.class.equals(cls) || Integer.class.equals(cls)) {
+        } else if (int.class.equals(cls)) {
             return rs.getInt(i);
-        } else if (double.class.equals(cls) || Double.class.equals(cls)) {
+        } else if (Integer.class.equals(cls)) {
+            int v = rs.getInt(i);
+            return rs.wasNull() ? null : v;
+        } else if (double.class.equals(cls)) {
             return rs.getDouble(i);
+        } else if (Double.class.equals(cls)) {
+            double v = rs.getDouble(i);
+            return rs.wasNull() ? null : v;
         } else if (LocalDateTime.class.equals(cls)) {
             Timestamp timestamp = rs.getTimestamp(i);
             return timestamp == null ? null : timestamp.toLocalDateTime();
@@ -52,18 +68,41 @@ public abstract class ResultSetExractorFactory {
         } else if (Instant.class.equals(cls)) {
             Timestamp timestamp = rs.getTimestamp(i);
             return timestamp == null ? null : timestamp.toInstant();
-        } else if (Date.class.isAssignableFrom(cls)) {
+        } else if (java.sql.Date.class.equals(cls)) {
             return rs.getDate(i);
-        } else if (long.class.equals(cls) || Long.class.equals(cls)) {
+        } else if (Time.class.equals(cls)) {
+            return rs.getTime(i);
+        } else if (Timestamp.class.equals(cls)) {
+            return rs.getTimestamp(i);
+        } else if (Date.class.isAssignableFrom(cls)) {
+            // java.util.Date 及其它子类：用 getTimestamp 避免丢时分秒
+            Timestamp timestamp = rs.getTimestamp(i);
+            return timestamp == null ? null : new Date(timestamp.getTime());
+        } else if (long.class.equals(cls)) {
             return rs.getLong(i);
-        } else if (float.class.equals(cls) || Float.class.equals(cls)) {
+        } else if (Long.class.equals(cls)) {
+            long v = rs.getLong(i);
+            return rs.wasNull() ? null : v;
+        } else if (float.class.equals(cls)) {
             return rs.getFloat(i);
-        } else if (boolean.class.equals(cls) || Boolean.class.equals(cls)) {
+        } else if (Float.class.equals(cls)) {
+            float v = rs.getFloat(i);
+            return rs.wasNull() ? null : v;
+        } else if (boolean.class.equals(cls)) {
             return rs.getBoolean(i);
-        } else if (short.class.equals(cls) || Short.class.equals(cls)) {
+        } else if (Boolean.class.equals(cls)) {
+            boolean v = rs.getBoolean(i);
+            return rs.wasNull() ? null : v;
+        } else if (short.class.equals(cls)) {
             return rs.getShort(i);
-        } else if (byte.class.equals(cls) || Byte.class.equals(cls)) {
+        } else if (Short.class.equals(cls)) {
+            short v = rs.getShort(i);
+            return rs.wasNull() ? null : v;
+        } else if (byte.class.equals(cls)) {
             return rs.getByte(i);
+        } else if (Byte.class.equals(cls)) {
+            byte v = rs.getByte(i);
+            return rs.wasNull() ? null : v;
         } else if (BigDecimal.class.equals(cls)) {
             return rs.getBigDecimal(i);
         } else {

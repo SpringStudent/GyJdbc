@@ -267,6 +267,18 @@ public class SqlMakeTools {
      * 创建条件查询sql和入参（v3: 片段收集 + 统一拼接，消除 setLength 回退）
      */
     public static Pair<String, Object[]> doCriteria(AbstractCriteria criteria, StringBuilder sql) {
+        return doCriteria(criteria, sql, true);
+    }
+
+    /**
+     * 创建条件查询sql和入参
+     *
+     * @param criteria 条件对象
+     * @param sql      待拼接的sql
+     * @param withSort 是否拼接 ORDER BY；COUNT(*) 等聚合查询传 false，
+     *                 避免 MySQL ONLY_FULL_GROUP_BY 下「排序列不在 GROUP BY 中」报错
+     */
+    public static Pair<String, Object[]> doCriteria(AbstractCriteria criteria, StringBuilder sql, boolean withSort) {
         List<Object> params = new ArrayList<>();
         if (null != criteria) {
             if (CollectionUtils.isNotEmpty(criteria.getWhereParams())) {
@@ -405,7 +417,7 @@ public class SqlMakeTools {
                 MixUtils.addAll(params, having.getSecond());
             }
             //排序条件拼接
-            if (CollectionUtils.isNotEmpty(criteria.getSorts())) {
+            if (withSort && CollectionUtils.isNotEmpty(criteria.getSorts())) {
                 sql.append(" ").append("ORDER BY").append(" ");
                 Set<Sort> sorts = criteria.getSorts();
                 for (Sort sort : sorts) {

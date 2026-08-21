@@ -5,15 +5,20 @@ import org.apache.commons.collections4.CollectionUtils;
 
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Time;
 import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 通用工具方法，收敛项目中散落的重复代码。
@@ -100,6 +105,20 @@ public class MixUtils {
             return Types.CHAR;
         } else if (BigDecimal.class.equals(clazz)) {
             return Types.DECIMAL;
+        } else if (BigInteger.class.equals(clazz)) {
+            // BigInteger 可能超出 BIGINT 范围，按 DECIMAL 传更安全
+            return Types.DECIMAL;
+        } else if (clazz != null && clazz.isEnum()) {
+            // 走 setString(value.toString())，默认即枚举 name()
+            return Types.VARCHAR;
+        } else if (UUID.class.equals(clazz)) {
+            return Types.VARCHAR;
+        } else if (byte[].class.equals(clazz) || Byte[].class.equals(clazz)) {
+            return Types.VARBINARY;
+        } else if (OffsetDateTime.class.equals(clazz) || ZonedDateTime.class.equals(clazz)) {
+            return Types.TIMESTAMP;
+        } else if (OffsetTime.class.equals(clazz)) {
+            return Types.TIME;
         } else {
             return Types.OTHER;
         }

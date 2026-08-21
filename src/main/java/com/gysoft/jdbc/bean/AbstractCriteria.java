@@ -313,6 +313,30 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return this.where("NOT EXISTS", "", sql);
     }
 
+    /**
+     * 以 OR 连接的 EXISTS 子查询，生成 {@code ... OR EXISTS (子查询)}
+     *
+     * @param sql 子查询
+     */
+    public S orExists(SQL sql) {
+        if (CollectionUtils.isEmpty(this.whereParams)) {
+            throw new GyjdbcException("sql error,condition \"or\" must be following after \"where\"!");
+        }
+        return this.where(" OR EXISTS", "", sql);
+    }
+
+    /**
+     * 以 OR 连接的 NOT EXISTS 子查询，生成 {@code ... OR NOT EXISTS (子查询)}
+     *
+     * @param sql 子查询
+     */
+    public S orNotExists(SQL sql) {
+        if (CollectionUtils.isEmpty(this.whereParams)) {
+            throw new GyjdbcException("sql error,condition \"or\" must be following after \"where\"!");
+        }
+        return this.where(" OR NOT EXISTS", "", sql);
+    }
+
     @Override
     public <T, R> S or(TypeFunction<T, R> function, String opt, Object value) {
         return this.or(TypeFunction.getLambdaColumnName(function), opt, value);
@@ -647,7 +671,23 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return self();
     }
 
+    /**
+     * 分页限制（MySQL 语义：{@code LIMIT offset, size}）。
+     * <p>两参版本要求 {@code offset >= 0} 且 {@code size > 0}：{@code size <= 0} 无法表达
+     * "从 offset 起不限行数"，若放行会退化成 {@code LIMIT offset} —— 那是"取前 offset 行"，
+     * 与调用者意图相反。只需限制行数请用单参 {@link #limit(int)}。</p>
+     *
+     * @param offset 偏移量，从 0 开始
+     * @param size   每页行数，必须大于 0
+     */
     public S limit(int offset, int size) {
+        if (offset < 0) {
+            throw new GyjdbcException("limit offset must be >= 0, but was " + offset);
+        }
+        if (size <= 0) {
+            throw new GyjdbcException("limit size must be > 0, but was " + size
+                    + "; use limit(int) if you only need a row-count limit");
+        }
         this.offset = offset;
         this.size = size;
         return self();

@@ -59,7 +59,8 @@ public class Result<E> {
         if (hasLimit) {
             throw new GyjdbcException("pageQuery does not support limit in SQL, use Page to control paging");
         }
-        String pageSql = "SELECT * FROM (" + sql + ") temp LIMIT ?,?";
+        //数据查询不包派生表:MySQL 合并派生表时会丢弃其中无 LIMIT 的 ORDER BY,导致翻页顺序不稳定
+        String pageSql = sql + " LIMIT ?,?";
         Object[] pageParams = MixUtils.appendParams(params, page.getOffset(), page.getPageSize());
         List<E> paged = jdbcTemplate.query(pageSql, pageParams, EntityRowMapper.newRowMapper(type));
         //独立统计总数,避免FOUND_ROWS()依赖同一连接在连接池/并发下取到错误计数

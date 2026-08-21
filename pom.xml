@@ -82,16 +82,13 @@
             <artifactId>spring-context</artifactId>
             <version>${spring.version}</version>
         </dependency>
-        <dependency>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
-            <version>1.9.4</version>
-        </dependency>
-        <!-- 提供 @Aspect/@Around 等注解（spring-aop 对 aspectjweaver 是 optional 依赖，不会传递） -->
+        <!-- 提供 @Aspect/@Around 等注解，只有 @BindPoint 多数据源切面需要；
+             声明 optional 避免强制传递给所有使用者（spring-aop 对它也是 optional） -->
         <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjweaver</artifactId>
             <version>1.9.22</version>
+            <optional>true</optional>
         </dependency>
         <!-- 集成测试用 H2 内存库（MODE=MySQL），避免依赖外部 MySQL/Docker -->
         <dependency>

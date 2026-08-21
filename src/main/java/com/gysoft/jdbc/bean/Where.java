@@ -120,14 +120,61 @@ public class Where {
         return this;
     }
 
+    /**
+     * EXISTS 子查询。EXISTS 本身不带列名，因此忽略 key 的列部分，
+     * 但会沿用 {@link #or(String)} 在 key 上留下的 OR 连接符，
+     * 避免 {@code or("x").exists(sub)} 静默退化成 AND。
+     *
+     * @param sql 子查询
+     */
     public Where exists(SQL sql) {
-        criteria.exists(sql);
+        if (isOrKey()) {
+            criteria.orExists(sql);
+        } else {
+            criteria.exists(sql);
+        }
         return this;
     }
 
+    /**
+     * NOT EXISTS 子查询，OR 连接符处理同 {@link #exists(SQL)}
+     *
+     * @param sql 子查询
+     */
     public Where notExists(SQL sql) {
-        criteria.notExists(sql);
+        if (isOrKey()) {
+            criteria.orNotExists(sql);
+        } else {
+            criteria.notExists(sql);
+        }
         return this;
+    }
+
+    /**
+     * 以 OR 连接的 EXISTS 子查询，无需先调用 {@link #or(String)} 占位
+     *
+     * @param sql 子查询
+     */
+    public Where orExists(SQL sql) {
+        criteria.orExists(sql);
+        return this;
+    }
+
+    /**
+     * 以 OR 连接的 NOT EXISTS 子查询
+     *
+     * @param sql 子查询
+     */
+    public Where orNotExists(SQL sql) {
+        criteria.orNotExists(sql);
+        return this;
+    }
+
+    /**
+     * key 是否由 {@link #or(String)} 生成（OR 连接符编码在 key 前缀里）
+     */
+    private boolean isOrKey() {
+        return key != null && key.startsWith(" OR ");
     }
 
     public Where betweenAnd(Object v1, Object v2) {

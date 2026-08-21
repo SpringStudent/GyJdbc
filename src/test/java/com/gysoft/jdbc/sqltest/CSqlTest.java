@@ -23,6 +23,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import javax.sql.DataSource;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.JDBCType;
 import java.sql.SQLException;
@@ -32,6 +33,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -5130,5 +5134,115 @@ public class CSqlTest {
                 .comment("我是表").commit();
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         assertTrue(pair.getFirst(), pair.getFirst().contains(" DEFAULT CURRENT_TIMESTAMP"));
+    }
+
+    // ───────────────── limit 两参版本参数校验 ─────────────────
+
+    @Test(expected = GyjdbcException.class)
+    public void limitWithZeroSizeShouldThrow() {
+        // 曾生成 LIMIT ?/[10]，语义变成"取前 10 行"，与"从第 10 行起"相反
+        new SQL().select("*").from("a").limit(10, 0);
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void limitWithNegativeSizeShouldThrow() {
+        new SQL().select("*").from("a").limit(10, -1);
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void limitWithNegativeOffsetShouldThrow() {
+        // 曾落到单参分支生成 LIMIT ?/[10]
+        new SQL().select("*").from("a").limit(-1, 10);
+    }
+
+    @Test
+    public void limitWithValidRangeShouldBuildCorrectSql() {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(
+                new SQL().select("*").from("a").limit(10, 5));
+        assertTrue(pair.getFirst(), pair.getFirst().endsWith(" LIMIT ?, ?"));
+        assertArrayEquals(new Object[]{10, 5}, pair.getSecond());
+    }
+
+    @Test
+    public void singleArgLimitZeroShouldNotBuildLimitClause() {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(
+                new SQL().select("*").from("a").limit(0));
+        assertFalse(pair.getFirst(), pair.getFirst().contains("LIMIT"));
+    }
+
+    // ───────────────── OR EXISTS ─────────────────
+
+    @Test
+    public void orExistsShouldKeepOrConnector() {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(new SQL().select("*").from("a")
+                .where("x", 1)
+                .orExists(new SQL().select("1").from("b").where("b.aid", new FieldReference("a.id"))));
+        assertTrue(pair.getFirst(), pair.getFirst().contains("OR EXISTS ("));
+    }
+
+    @Test
+    public void orNotExistsShouldKeepOrConnector() {
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(new SQL().select("*").from("a")
+                .where("x", 1)
+                .orNotExists(new SQL().select("1").from("b").where("b.aid", new FieldReference("a.id"))));
+        assertTrue(pair.getFirst(), pair.getFirst().contains("OR NOT EXISTS ("));
+    }
+
+    @Test
+    public void whereOrExistsShouldNotDegradeToAnd() {
+        // Where.or(key) 把 OR 编码在 key 前缀上，exists 曾完全忽略 key 导致 OR 丢失
+        SQL sql = new SQL().select("*").from("t").where("a", 1)
+                .and(Where.where("b").equal(2).or("c").exists(new SQL().select("1").from("s")));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst(), pair.getFirst().contains("OR EXISTS ("));
+    }
+
+    @Test
+    public void whereExistsWithoutOrShouldStayAnd() {
+        SQL sql = new SQL().select("*").from("t").where("a", 1)
+                .and(Where.where("b").equal(2).exists(new SQL().select("1").from("s")));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst(), pair.getFirst().contains("AND EXISTS ("));
+        assertFalse(pair.getFirst(), pair.getFirst().contains("OR EXISTS ("));
+    }
+
+    @Test
+    public void whereOrExistsShortcutShouldKeepOrConnector() {
+        SQL sql = new SQL().select("*").from("t").where("a", 1)
+                .and(Where.where("b").equal(2).orExists(new SQL().select("1").from("s")));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst(), pair.getFirst().contains("OR EXISTS ("));
+    }
+
+    // ───────────────── getSqlType 类型映射 ─────────────────
+
+    /**
+     * getSqlType 映射测试用枚举
+     */
+    private enum TestStatus {
+        ACTIVE, BANNED
+    }
+
+    @Test
+    public void getSqlTypeShouldMapCommonExtraTypes() {
+        // 这些类型曾统一落 Types.OTHER，Connector/J 会序列化写 BLOB 或直接报错
+        assertEquals(Types.DECIMAL, MixUtils.getSqlType(BigInteger.class));
+        assertEquals(Types.VARCHAR, MixUtils.getSqlType(TestStatus.class));
+        assertEquals(Types.VARCHAR, MixUtils.getSqlType(UUID.class));
+        assertEquals(Types.VARBINARY, MixUtils.getSqlType(byte[].class));
+        assertEquals(Types.VARBINARY, MixUtils.getSqlType(Byte[].class));
+        assertEquals(Types.TIMESTAMP, MixUtils.getSqlType(OffsetDateTime.class));
+        assertEquals(Types.TIMESTAMP, MixUtils.getSqlType(ZonedDateTime.class));
+        assertEquals(Types.TIME, MixUtils.getSqlType(OffsetTime.class));
+    }
+
+    @Test
+    public void getSqlTypeShouldKeepExistingMappings() {
+        assertEquals(Types.VARCHAR, MixUtils.getSqlType(String.class));
+        assertEquals(Types.INTEGER, MixUtils.getSqlType(int.class));
+        assertEquals(Types.DECIMAL, MixUtils.getSqlType(java.math.BigDecimal.class));
+        assertEquals(Types.TIMESTAMP, MixUtils.getSqlType(LocalDateTime.class));
+        // 仍未覆盖的类型继续落 OTHER
+        assertEquals(Types.OTHER, MixUtils.getSqlType(Object.class));
     }
 }
