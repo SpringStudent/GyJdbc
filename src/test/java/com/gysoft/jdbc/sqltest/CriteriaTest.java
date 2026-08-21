@@ -6,6 +6,7 @@ import com.gysoft.jdbc.dao.EntityDao;
 import com.gysoft.jdbc.dao.EntityDaoImpl;
 import com.gysoft.jdbc.tools.SqlMakeTools;
 import org.apache.commons.lang3.ArrayUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.sql.JDBCType;
@@ -70,10 +71,10 @@ public class CriteriaTest {
     @Test
     public void testJoinSql() {
         SQL criteria = new SQL().select("t1.name", "t2.username").from(Book.class).as("t1")
-                .natureJoin(new Joins().with(Book.class).as("t2"))
+                .crossJoin(new Joins().with(Book.class).as("t2"))
                 .and("sd", "in", Arrays.asList("sd1", "xg1")).gt("sdf", 12)
                 .andWhere(Opt.OR, WhereParam.where("k1").in(Arrays.asList(1, 3, 4)), WhereParam.where("k2").equal("k2v"), WhereParam.where("k3").isNotNull())
-                .natureJoin(new Joins().with(Book.class).as("t3"))
+                .crossJoin(new Joins().with(Book.class).as("t3"))
                 .leftJoin(Book.class,"t4",lj->lj.on("t4.id", "t2.id").on("t4.name", "t2.name").andIfAbsent("t4.andIfAbsent", "=", "123"))
                 .andCriteria(new Criteria().where("k1", "v1").or("k2", "v2")).or("k3", "k5")
                 .limit(12222, 100)
@@ -86,9 +87,9 @@ public class CriteriaTest {
     @Test
     public void testSubSql() {
         SQL criteria4 = new SQL().select("t1.name", "t2.username").from(Book.class).as("t1")
-                .natureJoin(new Joins().with(Book.class).as("t2"))
+                .crossJoin(new Joins().with(Book.class).as("t2"))
                 .and("sd", "in", Arrays.asList("sd1", "xg1")).gt("sdf", 12)
-                .natureJoin(new Joins().with(Book.class).as("t3"))
+                .crossJoin(new Joins().with(Book.class).as("t3"))
                 .leftJoin(new Joins().with(Book.class).as("t4").on("t4.id", "t2.id"))
                 .andCriteria(new Criteria().where("k1", "v1").or("k2", "v2")).or("k3", "k5")
                 .union().select("un.ke", "un.ke2").from(Book.class).where("un.ke", 1);
@@ -113,9 +114,9 @@ public class CriteriaTest {
         System.out.println(p.getFirst());
         System.out.println(Arrays.toString(p.getSecond()));
         sql = new SQL().select("t1.name", "t2.username").from(Book.class).as("t1")
-                .natureJoin(new Joins().with(Book.class).as("t2"))
+                .crossJoin(new Joins().with(Book.class).as("t2"))
                 .and("sd", "in", Arrays.asList("sd1", "xg1")).gt("sdf", 12)
-                .natureJoin(new Joins().with(Book.class).as("t3"))
+                .crossJoin(new Joins().with(Book.class).as("t3"))
                 .leftJoin(new Joins().with(Book.class).as("t4").on("t4.id", "t2.id"))
                 .andCriteria(new Criteria().where("k1", "v1").or("k2", "v2")).or("k3", "k5")
                 .union().select("un.ke", "un.ke2").from(Book.class).where("un.ke", 1);
@@ -351,7 +352,7 @@ public class CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
 
-        sql = new SQL().select("*").from("test").as("t").natureJoin(new Joins().with("test1").as("t1"))
+        sql = new SQL().select("*").from("test").as("t").crossJoin(new Joins().with("test1").as("t1"))
                 .where("t1.id", new FieldReference("t.id"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
@@ -533,10 +534,10 @@ public class CriteriaTest {
         System.out.println(pair.getFirst());
         System.out.println(Arrays.toString(pair.getSecond()));
         sql = new SQL().select("t1.name", "t2.username").from(Book.class, "t1")
-                .natureJoin(Book.class, "t2")
+                .crossJoin(Book.class, "t2")
                 .and("sd", "in", Arrays.asList("sd1", "xg1")).gt("sdf", 12)
                 .andWhere(Opt.OR, WhereParam.where("k1").in(Arrays.asList(1, 3, 4)), WhereParam.where("k2").equal("k2v"), WhereParam.where("k3").isNotNull())
-                .natureJoin(Book.class, "t3")
+                .crossJoin(Book.class, "t3")
                 .leftJoin(Book.class, "t4").on("t4.id", "t2.id").on("t4.name", "t2.name").on("t4.andIfAbsent", "=", "123")
                 .andCriteria(new Criteria().where("k1", "v1").or("k2", "v2")).or("k3", "k5")
                 .limit(12222, 100)
@@ -624,14 +625,14 @@ public class CriteriaTest {
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
-        sql = new SQL().delete("t1,t2").from("t1").natureJoin(new Joins().with("t2")).natureJoin(new Joins().with("t3"))
+        sql = new SQL().delete("t1,t2").from("t1").crossJoin(new Joins().with("t2")).crossJoin(new Joins().with("t3"))
                 .where("t1.id", new FieldReference("t2.id")).and("t2.id", new FieldReference("t3.id"));
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
         sql = new SQL().select("project.id", "project.projectName", "t2.id", "t2.actualTime")
                 .from("project")
-                .natureJoin(new Joins().with(new SQL().select("t1.id", "max(t2.actualTime) actualTime").from("project").as("t1").leftJoin("inspect", "t2").on("t1.id", "t2.projectId").groupBy("t1.id").asTable("t2")))
+                .crossJoin(new Joins().with(new SQL().select("t1.id", "max(t2.actualTime) actualTime").from("project").as("t1").leftJoin("inspect", "t2").on("t1.id", "t2.projectId").groupBy("t1.id").asTable("t2")))
                 .where("project.id", new FieldReference("t2.id")).and("project.deleteFlag", 0);
         pair = SqlMakeTools.useSql(sql);
         System.out.println(pair.getFirst());
@@ -704,11 +705,14 @@ public class CriteriaTest {
         sql = new SQL().select("*").from("table111").innerJoin("table222", "b", c -> c.on("table111.id", "b.id").and("b.name", "=", "testname"))
                 .leftJoin("table333", "c", c -> c.on(Role::getName, Token::getTk).on("table111.id", "c.id").and("c.type", ">", 2))
                 .rightJoin(Token.class, "d", c -> c.on("table111.id", "d.id").and("d.status", "=", "active"))
-                .natureJoin(Book.class, "e", c -> c.on("table111.id", "e.id"))
+                .innerJoin(Book.class, "e", c -> c.on("table111.id", "e.id"))
                 .leftJoin("table444", c -> c.on("table111.id", "f.id").andIfAbsent("f.flag", 1))
                 .rightJoin(Book.class, c -> c.on("table111.id", "g.id").andIfAbsent("g.type", "standard"))
                 .where("table111.flag", 1).andCriteria(c -> c.where("table111.type", "A").or("table111.type", "B"));
         pair = SqlMakeTools.useSql(sql);
+        // 该组合曾用 natureJoin 生成 ", BOOK e ON ..." 的非法 SQL，这里锁定为合法的 INNER JOIN
+        Assert.assertTrue(pair.getFirst(), pair.getFirst().contains("INNER JOIN BOOK e ON table111.id = e.id"));
+        Assert.assertFalse(pair.getFirst(), pair.getFirst().contains(", BOOK e ON"));
         System.out.println(pair.getFirst());
         System.out.println(ArrayUtils.toString(pair.getSecond()));
         sql = new SQL()

@@ -106,6 +106,49 @@ public class MixUtils {
     }
 
     /**
+     * SQL 字符串字面量转义，用于必须把常量内联进 SQL 文本的场景（函数表达式、DDL 注释/默认值）。
+     * <p>按 MySQL 默认 sql_mode（反斜杠是转义符）处理：反斜杠加倍，单引号双写，
+     * NUL/换行/回车/Ctrl-Z 转为对应转义序列。单引号采用双写而非 {@code \'}，
+     * 因为双写在 {@code NO_BACKSLASH_ESCAPES} 模式下同样合法。</p>
+     * <p>必须单趟扫描完成：先 {@code ' -> ''} 再 {@code \ -> \\} 会把已生成的转义再转一次。</p>
+     *
+     * @param s 原始字符串
+     * @return String 转义后可安全内联单引号字面量的字符串，入参为 null 时返回 null
+     */
+    public static String escapeSqlLiteral(String s) {
+        if (s == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder(s.length() + 8);
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '\\':
+                    sb.append("\\\\");
+                    break;
+                case '\'':
+                    sb.append("''");
+                    break;
+                case '\0':
+                    sb.append("\\0");
+                    break;
+                case '\n':
+                    sb.append("\\n");
+                    break;
+                case '\r':
+                    sb.append("\\r");
+                    break;
+                case '\032':
+                    sb.append("\\Z");
+                    break;
+                default:
+                    sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
      * 将任意数组（含原始类型数组，如 int[]、long[]）转换为 Object[]，用于展开元组比较值
      *
      * @param value 数组对象

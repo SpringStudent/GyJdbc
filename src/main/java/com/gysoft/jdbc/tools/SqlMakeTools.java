@@ -668,11 +668,11 @@ public class SqlMakeTools {
                     if (columnMeta.getJdbcType().equals(JDBCType.TIMESTAMP) || "NULL".equals(upperVal) || "CURRENT_TIMESTAMP".equals(upperVal) || upperVal.contains("()")) {
                         createSql.append(String.format(" DEFAULT %s", (columnMeta.getVal())));
                     } else {
-                        createSql.append(String.format(" DEFAULT '%s'", columnMeta.getVal()));
+                        createSql.append(String.format(" DEFAULT '%s'", MixUtils.escapeSqlLiteral(columnMeta.getVal())));
                     }
                 }
                 if (StringUtils.isNotEmpty(columnMeta.getComment())) {
-                    createSql.append(String.format(" COMMENT '%s'", columnMeta.getComment()));
+                    createSql.append(String.format(" COMMENT '%s'", MixUtils.escapeSqlLiteral(columnMeta.getComment())));
                 }
                 createSql.append(",");
             }
@@ -689,7 +689,7 @@ public class SqlMakeTools {
                     createSql.append(" ").append(indexMeta.getIndexType());
                 }
                 if (StringUtils.isNotEmpty(indexMeta.getComment())) {
-                    createSql.append(" COMMENT '").append(indexMeta.getComment()).append("'");
+                    createSql.append(" COMMENT '").append(MixUtils.escapeSqlLiteral(indexMeta.getComment())).append("'");
                 }
                 createSql.append(",");
             }
@@ -713,7 +713,7 @@ public class SqlMakeTools {
                 createSql.append(" ROW_FORMAT=").append(tableMeta.getRowFormat());
             }
             if (StringUtils.isNotEmpty(tableMeta.getComment())) {
-                createSql.append(" COMMENT='" + tableMeta.getComment() + "'");
+                createSql.append(" COMMENT='" + MixUtils.escapeSqlLiteral(tableMeta.getComment()) + "'");
             }
             return new Pair<>(createSql.toString(), new Object[]{tbName});
         }

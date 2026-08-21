@@ -404,6 +404,15 @@ new SQL()
                 .and("t.status", "=", "active"));
 ```
 
+`crossJoin` 生成标准的 `CROSS JOIN`（笛卡尔积，与 `INNER JOIN` 语法等价，可携带 ON 条件）：
+
+```java
+// SELECT * FROM a CROSS JOIN b bb
+new SQL().select("*").from("a").crossJoin("b", "bb");
+```
+
+`natureJoin` 已废弃：它生成的是逗号连接 `FROM a, b`（并非 SQL 的 `NATURAL JOIN`），逗号优先级低于显式 JOIN，且 MySQL 中 `a, b ON ...` 是语法错误——对逗号连接使用 ON 会在构建期抛出 `GyjdbcException`。需要连接条件请用 `innerJoin`，需要笛卡尔积请用 `crossJoin`。
+
 ### Where / WhereParam 与 SQL 组合
 
 复杂筛选条件可以直接挂在 `SQL` 上，适合报表查询、列表筛选、权限条件等场景。
@@ -482,9 +491,9 @@ new SQL().select("*").from(
 - `String` → **裸 SQL**（列名 / 表达式 / 变量），原样拼接，**不加引号**；
 - `TypeFunction`（如 `TbUser::getAge`）→ 解析为对应的列名（兼容 `@Column` 改名）；
 - `FuncExpr` → 已组合的表达式（`col()` / `lit()` / 其它函数的结果）；
-- 值参数（`Object`）→ **值字面量**：`String` 自动加引号并转义（`'` → `''`），`Number` / `Boolean` 原样输出，`null` 输出 `NULL`。
+- 值参数（`Object`）→ **值字面量**：`String` 自动加引号并转义（单引号双写 `'` → `''`，反斜杠加倍 `\` → `\\`，并转义 NUL / 换行 / 回车 / Ctrl-Z），`Number` / `Boolean` 原样输出，`null` 输出 `NULL`。
 
-由此列与字面量在类型层面被区分开——列用 `col("...")` / 裸 `String`，字符串常量用 `lit("...")`，数字直接传值。这正是框架避免手写引号、杜绝 SQL 注入的设计。
+由此列与字面量在类型层面被区分开——列用 `col("...")` / 裸 `String`，字符串常量用 `lit("...")`，数字直接传值，无需手写引号。注意 `String` 类型的列名 / 表达式参数按设计原样拼接，其内容由调用方负责，不要把外部输入直接当列名传进去。
 
 ```java
 import static com.gysoft.jdbc.bean.FuncBuilder.*;

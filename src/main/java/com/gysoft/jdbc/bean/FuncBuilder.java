@@ -1,5 +1,7 @@
 package com.gysoft.jdbc.bean;
 
+import com.gysoft.jdbc.tools.MixUtils;
+
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -11,12 +13,14 @@ import java.util.stream.Collectors;
  *   <li>{@code String} 参数 = 裸 SQL 片段（列名 / 表达式 / 变量），原样拼接，不加引号；</li>
  *   <li>{@code TypeFunction} 参数 = 实体方法引用，解析为对应列名；</li>
  *   <li>{@code FuncExpr} 参数 = 已组合的表达式（{@link #col} / {@link #lit} / 其它函数结果）；</li>
- *   <li>{@code Object} 值参数 = 值字面量：{@code String} 自动加单引号并转义（' → ''），
+ *   <li>{@code Object} 值参数 = 值字面量：{@code String} 自动加单引号并转义（单引号双写、
+ *       反斜杠加倍，见 {@link MixUtils#escapeSqlLiteral(String)}），
  *       {@code Number}/{@code Boolean} 原样输出，{@code FuncExpr} 取表达式文本，
  *       {@link FieldReference} 取列名，{@code null} 输出 NULL。</li>
  * </ul>
  * <p>由此列/表达式与字符串常量在类型上区分开：想拼常量必须用 {@link #lit(String)} 或直接传
- * 值参数，杜绝手写引号导致的 SQL 语法破坏与注入。</p>
+ * 值参数，无需手写引号。注意 {@code String} 类型的列名/表达式参数按设计原样拼接，
+ * 其内容由调用方负责，不要把外部输入直接当列名传入。</p>
  *
  * @author 周宁
  */
@@ -64,7 +68,7 @@ public final class FuncBuilder {
     }
 
     /**
-     * 字符串字面量：自动加单引号并转义（' → ''）。
+     * 字符串字面量：自动加单引号并转义。
      * <p>与 {@code val()} 语义统一：{@code null} 输出 NULL 而非空字符串。</p>
      *
      * @param value 字符串常量
@@ -78,13 +82,14 @@ public final class FuncBuilder {
     }
 
     /**
-     * 单引号转义（' → ''）
+     * 字符串字面量转义，委托给 {@link MixUtils#escapeSqlLiteral(String)}：
+     * 单引号双写、反斜杠加倍及控制字符转义，与 DDL 注释/默认值共用同一份规则
      *
      * @param s 原始字符串
      * @return String 转义后字符串
      */
     private static String escape(String s) {
-        return s.replace("'", "''");
+        return MixUtils.escapeSqlLiteral(s);
     }
 
     /**

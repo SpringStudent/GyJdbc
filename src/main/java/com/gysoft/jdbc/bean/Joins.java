@@ -19,9 +19,15 @@ public class Joins {
 
     private boolean hasOnCondition;
 
+    private JoinType joinType;
+
     public abstract class BaseJoin {
 
         public void setJoinType(JoinType joinType) {
+            if (joinType == JoinType.NatureJoin && hasOnCondition) {
+                throw new GyjdbcException(COMMA_JOIN_ON_ERROR);
+            }
+            Joins.this.joinType = joinType;
             String joinTypeSql = joinType == JoinType.NatureJoin ? joinType.getType() : " " + joinType.getType();
             if (joinSql.indexOf("%s") == 0) {
                 joinSql.replace(0, "%s".length(), joinTypeSql);
@@ -91,6 +97,7 @@ public class Joins {
         }
 
         public On and(String key, String opt, Object value) {
+            assertOnAllowed();
             CriteriaProxy criteriaProxy = new CriteriaProxy();
             Pair<String, Object[]> pair = SqlMakeTools.doCriteria(new Criteria().where(key, opt, value), new StringBuilder());
             String criteriaSql = pair.getFirst().trim();
@@ -133,6 +140,21 @@ public class Joins {
         this.joinSql = new StringBuilder();
         this.criteriaProxys = new ArrayList<>();
         this.hasOnCondition = false;
+    }
+
+    /**
+     * 逗号连接携带 ON 条件时的错误提示
+     */
+    private static final String COMMA_JOIN_ON_ERROR =
+            "comma join (natureJoin) cannot carry ON conditions, use innerJoin or crossJoin instead";
+
+    /**
+     * 校验当前连接类型允许 ON 条件。
+     */
+    private void assertOnAllowed() {
+        if (joinType == JoinType.NatureJoin) {
+            throw new GyjdbcException(COMMA_JOIN_ON_ERROR);
+        }
     }
 
     public static With joinWith(Object table) {
@@ -187,6 +209,7 @@ public class Joins {
     }
 
     private void appendOn(String field, String field2) {
+        assertOnAllowed();
         joinSql.append(hasOnCondition ? " AND " : " ON ")
                 .append(field)
                 .append(" = ")

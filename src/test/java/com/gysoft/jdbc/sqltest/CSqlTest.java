@@ -3242,6 +3242,7 @@ public class CSqlTest {
 
     @Test
     public void natureJoinWithTableShouldBuildCorrectSql() {
+        // 保留一条已废弃入口的回归用例，确认 natureJoin 仍生成逗号连接
         SQL sql = new SQL()
                 .select("*").from("a")
                 .natureJoin("b");
@@ -3250,22 +3251,74 @@ public class CSqlTest {
     }
 
     @Test
-    public void natureJoinWithAliasShouldBuildCorrectSql() {
+    public void crossJoinWithAliasShouldBuildCrossJoin() {
         SQL sql = new SQL()
                 .select("*").from("a")
-                .natureJoin("b", "bb")
-                .on("a.id", "bb.id");
+                .crossJoin("b", "bb");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        assertTrue(pair.getFirst().contains(", b bb ON a.id = bb.id"));
+        assertTrue(pair.getFirst(), pair.getFirst().contains("CROSS JOIN b bb"));
+        // crossJoin 不复用逗号连接的拼接
+        assertFalse(pair.getFirst(), pair.getFirst().contains(", b bb"));
     }
 
     @Test
-    public void natureJoinWithConsumerShouldBuildCorrectSql() {
+    public void crossJoinTableOnlyShouldBuildCrossJoin() {
         SQL sql = new SQL()
                 .select("*").from("a")
-                .natureJoin("b", "bb", c -> c.on("a.id", "bb.id"));
+                .crossJoin("b");
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
-        assertTrue(pair.getFirst().contains(", b bb ON a.id = bb.id"));
+        assertTrue(pair.getFirst(), pair.getFirst().contains("CROSS JOIN b"));
+        assertFalse(pair.getFirst(), pair.getFirst().contains(", b"));
+    }
+
+    @Test
+    public void innerJoinWithAliasAndOnShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("a")
+                .innerJoin("b", "bb")
+                .on("a.id", "bb.id");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().contains("INNER JOIN b bb ON a.id = bb.id"));
+    }
+
+    @Test
+    public void innerJoinWithConsumerShouldBuildCorrectSql() {
+        SQL sql = new SQL()
+                .select("*").from("a")
+                .innerJoin("b", "bb", c -> c.on("a.id", "bb.id"));
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst().contains("INNER JOIN b bb ON a.id = bb.id"));
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void commaJoinFollowedByOnShouldThrow() {
+        // 逗号连接挂 ON 会生成 ", b bb ON ..." 这种 MySQL 非法语法，必须构建期就报错
+        new SQL().select("*").from("a")
+                .natureJoin("b", "bb")
+                .on("a.id", "bb.id");
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void commaJoinWithOnConsumerShouldThrow() {
+        new SQL().select("*").from("a")
+                .join("b", "bb", c -> c.on("a.id", "bb.id"), JoinType.NatureJoin);
+    }
+
+    @Test(expected = GyjdbcException.class)
+    public void commaJoinOverJoinsCarryingOnShouldThrow() {
+        // ON 先于 setJoinType 的路径：Joins 上已挂 ON，再声明为逗号连接
+        new SQL().select("*").from("a")
+                .natureJoin(Joins.joinWith("b").as("bb").on("a.id", "bb.id"));
+    }
+
+    @Test
+    public void crossJoinWithOnShouldBuildCorrectSql() {
+        // CROSS JOIN 与 INNER JOIN 语法等价，MySQL 允许携带 ON，不应报错
+        SQL sql = new SQL().select("*").from("a")
+                .crossJoin("b", "bb")
+                .on("a.id", "bb.id");
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst(), pair.getFirst().contains("CROSS JOIN b bb ON a.id = bb.id"));
     }
 
     @Test
@@ -4071,8 +4124,8 @@ public class CSqlTest {
                                 .where("amount", ">", 0)
                                 .groupBy("member_id"))
                         .as("p").on("p.member_id", "u.id"))
-                // NATURE JOIN（逗号连接）
-                .natureJoin("member_extra", "me")
+                // CROSS JOIN 交叉连接
+                .crossJoin("member_extra", "me")
                 // WHERE 含 FieldReference（列对列比较）
                 .where("u.type", "<>", "banned")
                 .and("o.amount", ">", new SQL()
@@ -4105,7 +4158,7 @@ public class CSqlTest {
                         + " LEFT JOIN address a ON u.id = a.member_id"
                         + " RIGHT JOIN (SELECT member_id, MAX(paid_at) AS last_paid FROM payment"
                         + " WHERE amount > ? GROUP BY member_id) p ON p.member_id = u.id"
-                        + ", member_extra me"
+                        + " CROSS JOIN member_extra me"
                         + " WHERE u.type <> ?"
                         + " AND o.amount >(SELECT AVG(amount) FROM order)"
                         + " AND u.score > u.baseline"
@@ -4139,8 +4192,8 @@ public class CSqlTest {
         assertTrue("INNER JOIN missing", sqlStr.contains("INNER JOIN"));
         assertTrue("LEFT JOIN missing", sqlStr.contains("LEFT JOIN"));
         assertTrue("RIGHT JOIN missing", sqlStr.contains("RIGHT JOIN"));
-        // NATURE JOIN → 逗号连接表
-        assertTrue("comma-join missing", sqlStr.contains(", member_extra me"));
+        // CROSS JOIN 交叉连接表
+        assertTrue("cross-join missing", sqlStr.contains(" CROSS JOIN member_extra me"));
         // FieldReference: 列名直接拼接（非 ? 占位符）
         assertTrue("baseline FieldRef missing", sqlStr.contains("u.score > u.baseline"));
         // ValueReference: ? 占位符注入
@@ -4946,5 +4999,118 @@ public class CSqlTest {
         Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
         assertEquals("SELECT * FROM student_score WHERE student_score.number = stu_info.number", pair.getFirst());
         assertEquals(0, pair.getSecond().length);
+    }
+
+    /**
+     * 单个反斜杠
+     */
+    private static final String BS = String.valueOf((char) 92);
+    /**
+     * 换行
+     */
+    private static final char LF = (char) 10;
+    /**
+     * 回车
+     */
+    private static final char CR = (char) 13;
+    /**
+     * NUL
+     */
+    private static final char NUL = (char) 0;
+    /**
+     * Ctrl-Z
+     */
+    private static final char CTRL_Z = (char) 26;
+
+    // ==================== MixUtils.escapeSqlLiteral ====================
+
+    @Test
+    public void escapeShouldDoubleSingleQuote() {
+        assertEquals("Tom''s", MixUtils.escapeSqlLiteral("Tom's"));
+    }
+
+    @Test
+    public void escapeShouldDoubleBackslash() {
+        assertEquals("x" + BS + BS, MixUtils.escapeSqlLiteral("x" + BS));
+    }
+
+    @Test
+    public void escapeShouldHandleBackslashQuoteCombo() {
+        // 修复前 a\' OR 1=1 --  只做 ' -> '' 会生成 'a\'' OR 1=1 -- '：
+        // MySQL 默认 sql_mode 下 \' 是字面引号，紧随的 '' 提前闭合字符串，后半段变成可执行 SQL
+        String raw = "a" + BS + "' OR 1=1 -- ";
+        assertEquals("a" + BS + BS + "'' OR 1=1 -- ", MixUtils.escapeSqlLiteral(raw));
+    }
+
+    @Test
+    public void escapeShouldConvertControlChars() {
+        String raw = "a" + LF + "b" + CR + "c" + NUL + "d" + CTRL_Z;
+        assertEquals("a" + BS + "nb" + BS + "rc" + BS + "0d" + BS + "Z", MixUtils.escapeSqlLiteral(raw));
+    }
+
+    @Test
+    public void escapeShouldReturnNullForNull() {
+        assertNull(MixUtils.escapeSqlLiteral(null));
+    }
+
+    @Test
+    public void escapeShouldBeSinglePass() {
+        // 单趟扫描：反斜杠加倍与单引号双写互不影响，先 ' -> '' 再 \ -> \\ 会把已生成的转义再转一次
+        assertEquals(BS + BS + "''", MixUtils.escapeSqlLiteral(BS + "'"));
+    }
+
+    // ==================== FuncBuilder 字面量 ====================
+
+    @Test
+    public void litShouldEscapeBackslashQuoteInjection() {
+        String expected = "'a" + BS + BS + "'' OR 1=1 -- '";
+        assertEquals(expected, FuncBuilder.lit("a" + BS + "' OR 1=1 -- ").getSql());
+    }
+
+    @Test
+    public void litShouldKeepQuoteDoublingUnchanged() {
+        assertEquals("'Tom''s'", FuncBuilder.lit("Tom's").getSql());
+    }
+
+    @Test
+    public void valParamShouldEscapeBackslash() {
+        // 值参数走 val()，修复前生成 REPLACE(name,'x\','y')，反斜杠转义掉结尾引号导致语法破损
+        assertEquals("REPLACE(name,'x" + BS + BS + "','y')",
+                FuncBuilder.replace("name", "x" + BS, "y").getSql());
+    }
+
+    @Test
+    public void ifNullValueShouldEscapeBackslashQuoteInjection() {
+        assertEquals("IFNULL(name,'a" + BS + BS + "'' OR 1=1 -- ')",
+                FuncBuilder.ifNull("name", "a" + BS + "' OR 1=1 -- ").getSql());
+    }
+
+    // ==================== DDL 注释 / 默认值 ====================
+
+    @Test
+    public void createTableShouldEscapeCommentAndDefaultVal() {
+        SQL sql = new SQL().create().table("tmp_escape")
+                .comment("table's comment")
+                .column().name("id").integer().primary().autoIncrement().notNull().commit()
+                .column().name("name").varchar(32).defaultVal("a'b").comment("it's a name").commit()
+                .column().name("path").varchar(64).defaultVal("c" + BS + "d").commit()
+                .index().name("ix_name").column("name").comment("name's index").commit()
+                .commit();
+        String ddl = SqlMakeTools.useSql(sql).getFirst();
+        assertTrue(ddl, ddl.contains(" DEFAULT 'a''b'"));
+        assertTrue(ddl, ddl.contains(" COMMENT 'it''s a name'"));
+        assertTrue(ddl, ddl.contains(" DEFAULT 'c" + BS + BS + "d'"));
+        assertTrue(ddl, ddl.contains(" COMMENT 'name''s index'"));
+        assertTrue(ddl, ddl.contains(" COMMENT='table''s comment'"));
+    }
+
+    @Test
+    public void createTableShouldKeepFunctionDefaultUnquoted() {
+        SQL sql = new SQL().create().table("tmp_escape2")
+                .column().name("id").integer().primary().commit()
+                .column().name("createdAt").datetime().defaultCurrentTimestamp().commit()
+                .comment("我是表").commit();
+        Pair<String, Object[]> pair = SqlMakeTools.useSql(sql);
+        assertTrue(pair.getFirst(), pair.getFirst().contains(" DEFAULT CURRENT_TIMESTAMP"));
     }
 }

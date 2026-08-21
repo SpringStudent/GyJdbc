@@ -450,11 +450,26 @@ public class SQL extends AbstractCriteria<SQL> {
         return join(table, null, joinConsumer, JoinType.InnerJoin);
     }
 
+    public SQL crossJoin(Joins.BaseJoin as) {
+        as.setJoinType(JoinType.CrossJoin);
+        joins.add(as);
+        return this;
+    }
+
+    public SQL crossJoin(Object table, String aliasName) {
+        return join(JoinType.CrossJoin, table, aliasName);
+    }
+
+    public SQL crossJoin(Object table) {
+        return join(JoinType.CrossJoin, table);
+    }
+
     public SQL natureJoin(Joins.BaseJoin as) {
         as.setJoinType(JoinType.NatureJoin);
         joins.add(as);
         return this;
     }
+
 
     public SQL natureJoin(Object table, String alias, Consumer<Joins.On> joinConsumer) {
         return join(table, alias, joinConsumer, JoinType.NatureJoin);
@@ -514,6 +529,7 @@ public class SQL extends AbstractCriteria<SQL> {
     public SQL innerJoin(Object table) {
         return join(JoinType.InnerJoin, table);
     }
+
 
     public SQL natureJoin(Object table, String aliasName) {
         return join(JoinType.NatureJoin, table, aliasName);

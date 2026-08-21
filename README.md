@@ -404,6 +404,15 @@ new SQL()
                 .and("t.status", "=", "active"));
 ```
 
+`crossJoin` emits a standard `CROSS JOIN` (cartesian product; syntactically equivalent to `INNER JOIN`, so an ON clause is allowed):
+
+```java
+// SELECT * FROM a CROSS JOIN b bb
+new SQL().select("*").from("a").crossJoin("b", "bb");
+```
+
+`natureJoin` is deprecated: it produces a comma join `FROM a, b` (not SQL `NATURAL JOIN`). The comma operator binds less tightly than an explicit JOIN, and `a, b ON ...` is a syntax error in MySQL — attaching ON to a comma join throws `GyjdbcException` at build time. Use `innerJoin` when you need join conditions, `crossJoin` when you need a cartesian product.
+
 ### Where / WhereParam with SQL
 
 Complex filter conditions can be attached directly to the `SQL` builder — useful for report queries, list filtering, permission conditions, and similar scenarios.
@@ -482,9 +491,9 @@ new SQL().select("*").from(
 - `String` → **raw SQL** (column name / expression / variable), concatenated as-is, **never quoted**;
 - `TypeFunction` (e.g. `TbUser::getAge`) → resolved to the mapped column name (respects `@Column`);
 - `FuncExpr` → an already-composed expression (result of `col()` / `lit()` / another function);
-- value parameters (`Object`) → **literals**: `String` is auto-quoted and escaped (`'` → `''`), `Number` / `Boolean` are output as-is, `null` becomes `NULL`.
+- value parameters (`Object`) → **literals**: `String` is auto-quoted and escaped (`'` → `''`, `\` → `\\`, plus NUL / LF / CR / Ctrl-Z), `Number` / `Boolean` are output as-is, `null` becomes `NULL`.
 
-Columns and literals are therefore distinguished at the type level — use `col("...")` / a bare `String` for columns, `lit("...")` for literal strings, and a plain value for numbers. This is what prevents hand-written quotes and accidental SQL injection.
+Columns and literals are therefore distinguished at the type level — use `col("...")` / a bare `String` for columns, `lit("...")` for literal strings, and a plain value for numbers, so you never hand-write quotes. Note that `String` column / expression parameters are concatenated verbatim by design: their content is the caller's responsibility, so never pass untrusted input as a column name.
 
 ```java
 import static com.gysoft.jdbc.bean.FuncBuilder.*;
