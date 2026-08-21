@@ -3,7 +3,7 @@
 # GyJdbc
 
 <p align="center">
-  <a href="https://central.sonatype.com/artifact/io.github.springstudent/GyJdbc"><img src="https://img.shields.io/badge/Maven%20Central-13.0.0.RELEASE-blue" alt="Maven Central" /></a>
+  <a href="https://central.sonatype.com/artifact/io.github.springstudent/GyJdbc"><img src="https://img.shields.io/badge/Maven%20Central-14.0.0.RELEASE-blue" alt="Maven Central" /></a>
   <img src="https://img.shields.io/badge/Java-8%2B-orange" alt="Java 8+" />
   <img src="https://img.shields.io/badge/Spring%20JDBC-5.3.x-brightgreen" alt="Spring JDBC 5.3.x" />
   <img src="https://img.shields.io/badge/License-Apache%202.0-blue" alt="Apache 2.0" />
@@ -56,7 +56,7 @@ GyJdbc 很适合：
 <dependency>
     <groupId>io.github.springstudent</groupId>
     <artifactId>GyJdbc</artifactId>
-    <version>13.0.0.RELEASE</version>
+    <version>14.0.0.RELEASE</version>
 </dependency>
 ```
 
