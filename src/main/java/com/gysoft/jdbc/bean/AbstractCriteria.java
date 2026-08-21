@@ -313,11 +313,6 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return this.where("NOT EXISTS", "", sql);
     }
 
-    /**
-     * 以 OR 连接的 EXISTS 子查询，生成 {@code ... OR EXISTS (子查询)}
-     *
-     * @param sql 子查询
-     */
     public S orExists(SQL sql) {
         if (CollectionUtils.isEmpty(this.whereParams)) {
             throw new GyjdbcException("sql error,condition \"or\" must be following after \"where\"!");
@@ -325,11 +320,6 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return this.where(" OR EXISTS", "", sql);
     }
 
-    /**
-     * 以 OR 连接的 NOT EXISTS 子查询，生成 {@code ... OR NOT EXISTS (子查询)}
-     *
-     * @param sql 子查询
-     */
     public S orNotExists(SQL sql) {
         if (CollectionUtils.isEmpty(this.whereParams)) {
             throw new GyjdbcException("sql error,condition \"or\" must be following after \"where\"!");
@@ -671,15 +661,6 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return self();
     }
 
-    /**
-     * 分页限制（MySQL 语义：{@code LIMIT offset, size}）。
-     * <p>两参版本要求 {@code offset >= 0} 且 {@code size > 0}：{@code size <= 0} 无法表达
-     * "从 offset 起不限行数"，若放行会退化成 {@code LIMIT offset} —— 那是"取前 offset 行"，
-     * 与调用者意图相反。只需限制行数请用单参 {@link #limit(int)}。</p>
-     *
-     * @param offset 偏移量，从 0 开始
-     * @param size   每页行数，必须大于 0
-     */
     public S limit(int offset, int size) {
         if (offset < 0) {
             throw new GyjdbcException("limit offset must be >= 0, but was " + offset);
@@ -693,13 +674,6 @@ public abstract class AbstractCriteria<S extends AbstractCriteria<S>> implements
         return self();
     }
 
-    /**
-     * 限制最大返回行数（MySQL 语义：LIMIT n，即从第 0 行起取前 n 行）。
-     * 注意：单参版本是"行数限制"而非偏移量，与两参 limit(offset, size) 语义不同。
-     * 未调用 limit 时不生成 LIMIT 子句；limit(0) 表示不限制（不生成 LIMIT）。
-     *
-     * @param limit 最大返回行数，<=0 时不限制
-     */
     public S limit(int limit) {
         this.size = limit;
         return self();

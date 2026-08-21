@@ -35,9 +35,6 @@ public abstract class ResultSetExractorFactory {
 
     /**
      * 按目标类型从结果集取值。
-     * <p>包装类型（{@code Integer}/{@code Long}/... ）遇 SQL NULL 返回 null，而不是 0/false；
-     * 基本类型无法表达 null，仍返回 JDBC 默认值。{@code java.util.Date} 走
-     * {@code getTimestamp} 以保留时分秒。</p>
      *
      * @param cls 目标类型
      * @param rs  结果集
